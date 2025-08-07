@@ -68,7 +68,7 @@ const CampusMarketplace = () => {
 
   const handleRoleSelect = (role) => {
     if (role === 'buyer') {
-      router.push('/buyer-dashboard');
+      router.push('/buyer-registration');
     } else if (role === 'seller') {
       router.push('/registration-seller');
     }

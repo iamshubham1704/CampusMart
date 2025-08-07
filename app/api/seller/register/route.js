@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
-const dbName = 'campusmart'; // replace with your actual DB name
+const dbName = 'campusmart'; 
 
 export async function POST(req) {
   try {
