@@ -10,9 +10,9 @@ export async function POST(req) {
     const body = await req.json();
     console.log('Request body parsed:', body);
 
-    const { name, email, phone, password, shippingAddress } = body;
+    const { name, email, phone, password, college } = body;
 
-    if (!name || !email || !phone || !password || !shippingAddress) {
+    if (!name || !email || !phone || !password || !college) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -36,7 +36,7 @@ export async function POST(req) {
       email,
       password: hashedPassword,
       phone,
-      shippingAddress,
+      college,
       createdAt: new Date(),
     };
 

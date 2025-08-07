@@ -73,7 +73,7 @@ export async function POST(req) {
           name: buyer.name, // Fixed variable reference
           email: buyer.email, // Fixed variable reference
           phone: buyer.phone, // Fixed variable reference
-          shippingAddress: buyer.shippingAddress // Added shipping address
+          college: buyer.college // Added shipping address
         }
       }), 
       { 

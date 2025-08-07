@@ -13,7 +13,7 @@ const BuyerRegistration = () => {
     phone: '',
     password: '',
     confirmPassword: '', // Added missing field
-    shippingAddress: '',
+    college: '',
   });
 
   const [error, setError] = useState('');
@@ -110,9 +110,9 @@ const BuyerRegistration = () => {
 
           <input 
             type="text"
-            name="shippingAddress" // Added missing name attribute
+            name="college" // Added missing name attribute
             placeholder="Shipping Address"
-            value={form.shippingAddress}
+            value={form.college}
             onChange={handleChange}
             required 
           />
