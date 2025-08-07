@@ -1,0 +1,267 @@
+.loginWrapper {
+  min-height: 100vh;
+  background: #0a0a0a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.loginBox {
+  background: #1f2937;
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.2);
+  max-width: 400px;
+  width: 100%;
+  color: white;
+  text-align: center;
+}
+
+.title {
+  font-size: 1.8rem;
+  color: #a855f7;
+  margin-bottom: 1.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form input {
+  background: #111827;
+  color: white;
+  border: 1px solid #374151;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border 0.2s ease;
+}
+
+.form input:focus {
+  outline: none;
+  border-color: #a855f7;
+}
+
+.loginButton {
+  background-color: #a855f7;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.loginButton:hover {
+  background-color: #9333ea;
+}
+
+.or {
+  margin: 1rem 0;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.googleButton {
+  background: white;
+  color: #111827;
+  border: none;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.googleButton:hover {
+  background: #f3f4f6;
+}
+
+.error {
+  color: #f87171;
+  font-size: 0.95rem;
+  margin-bottom: -0.5rem;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .loginBox {
+    padding: 2rem 1.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+}
+
+/* Add these styles to your SellerDashboard.module.css */
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  text-align: center;
+  padding: 2rem;
+}
+
+.errorContainer h2 {
+  margin: 1rem 0;
+  font-size: 2rem;
+}
+
+.errorContainer p {
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+}
+
+.errorContainer button {
+  background: white;
+  color: #ff6b6b;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.errorContainer button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.emptyState svg {
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.emptyState h3 {
+  color: white;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.emptyState p {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2rem;
+}
+
+/* Upload Area Enhancements */
+.uploadArea {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.uploadArea:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.uploadButton {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.uploadButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.selectedFiles {
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+/* Profile Image Error Handling */
+.userProfile img,
+.profileImage img {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.profileImage img {
+  width: 80px;
+  height: 80px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .loadingContainer,
+  .errorContainer {
+    padding: 1rem;
+  }
+
+  .errorContainer h2 {
+    font-size: 1.5rem;
+  }
+
+  .errorContainer p {
+    font-size: 1rem;
+  }
+
+  .emptyState {
+    padding: 2rem 1rem;
+  }
+
+  .uploadArea {
+    padding: 1rem;
+  }
+}
