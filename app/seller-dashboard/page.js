@@ -60,9 +60,23 @@ const SellerDashboard = () => {
             return null;
           }
 
-          // Try different possible field names for seller ID
-          const sellerId = payload.sellerId || payload.userId || payload.id || payload.sub;
+          // Enhanced seller ID extraction for different OAuth providers
+          const sellerId = payload.sellerId ||
+            payload.userId ||
+            payload.id ||
+            payload.sub ||
+            payload.user_id ||
+            payload.googleId ||
+            payload.email; // Fallback to email for Google OAuth
+
           console.log('getCurrentSellerId - extracted sellerId:', sellerId);
+
+          // Additional validation for Google OAuth
+          if (payload.iss && payload.iss.includes('google')) {
+            console.log('Google OAuth token detected');
+            // For Google OAuth, we might need to use 'sub' field or email
+            return payload.sub || payload.email;
+          }
 
           return sellerId;
         } catch (e) {
@@ -132,18 +146,34 @@ const SellerDashboard = () => {
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
+
       if (token) {
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const currentTime = Date.now() / 1000;
+          // Handle different token formats (JWT vs simple tokens)
+          if (token.includes('.')) {
+            // JWT token
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+              console.log('Invalid JWT format, removing token');
+              localStorage.removeItem('token');
+              return null;
+            }
 
-          if (payload.exp < currentTime) {
-            console.log('Token expired, removing');
-            localStorage.removeItem('token');
-            return null;
+            const payload = JSON.parse(atob(parts[1]));
+            const currentTime = Date.now() / 1000;
+
+            if (payload.exp && payload.exp < currentTime) {
+              console.log('Token expired, removing');
+              localStorage.removeItem('token');
+              return null;
+            }
+
+            return token;
+          } else {
+            // Non-JWT token (might be from OAuth)
+            console.log('Non-JWT token detected, validating...');
+            return token;
           }
-
-          return token;
         } catch (e) {
           console.error('Error validating token:', e);
           localStorage.removeItem('token');
@@ -155,7 +185,7 @@ const SellerDashboard = () => {
   };
 
   const debugAuth = () => {
-    console.log('=== AUTH DEBUG ===');
+    console.log('=== ENHANCED AUTH DEBUG ===');
 
     if (typeof window === 'undefined') {
       console.log('Running on server side');
@@ -163,7 +193,7 @@ const SellerDashboard = () => {
     }
 
     const token = localStorage.getItem('token');
-    console.log('Raw token from localStorage:', token);
+    console.log('Raw token from localStorage:', token ? `${token.substring(0, 50)}...` : 'null');
 
     if (!token) {
       console.log('❌ No token found in localStorage');
@@ -172,48 +202,71 @@ const SellerDashboard = () => {
     }
 
     try {
-      // Split the token into parts
-      const parts = token.split('.');
-      console.log('Token parts count:', parts.length);
+      // Check if it's a JWT token
+      if (token.includes('.')) {
+        const parts = token.split('.');
+        console.log('Token parts count:', parts.length);
 
-      if (parts.length !== 3) {
-        console.log('❌ Invalid JWT format - should have 3 parts');
-        return;
-      }
+        if (parts.length !== 3) {
+          console.log('❌ Invalid JWT format - should have 3 parts');
+          return;
+        }
 
-      // Decode the payload (middle part)
-      const payload = JSON.parse(atob(parts[1]));
-      console.log('🔍 Decoded token payload:', payload);
+        // Decode the payload (middle part)
+        const payload = JSON.parse(atob(parts[1]));
+        console.log('🔍 Decoded token payload:', payload);
 
-      // Check expiration
-      const currentTime = Date.now() / 1000;
-      const isExpired = payload.exp < currentTime;
+        // Check for Google OAuth specific fields
+        if (payload.iss) {
+          console.log('Token issuer:', payload.iss);
+          if (payload.iss.includes('google')) {
+            console.log('🔍 Google OAuth token detected');
+            console.log('Google ID (sub):', payload.sub);
+            console.log('Email:', payload.email);
+            console.log('Name:', payload.name);
+          }
+        }
 
-      console.log('Current time:', currentTime);
-      console.log('Token expires at:', payload.exp);
-      console.log('Token expired:', isExpired);
+        // Check expiration
+        const currentTime = Date.now() / 1000;
+        const isExpired = payload.exp < currentTime;
 
-      if (isExpired) {
-        console.log('❌ Token is expired');
-        const expiredDate = new Date(payload.exp * 1000);
-        console.log('Token expired on:', expiredDate.toLocaleString());
+        console.log('Current time:', currentTime);
+        console.log('Token expires at:', payload.exp);
+        console.log('Token expired:', isExpired);
+
+        if (isExpired) {
+          console.log('❌ Token is expired');
+          const expiredDate = new Date(payload.exp * 1000);
+          console.log('Token expired on:', expiredDate.toLocaleString());
+        } else {
+          console.log('✅ Token is valid');
+          const expiresDate = new Date(payload.exp * 1000);
+          console.log('Token expires on:', expiresDate.toLocaleString());
+        }
+
+        // Check all possible ID fields
+        console.log('=== POSSIBLE USER IDS ===');
+        console.log('sellerId:', payload.sellerId);
+        console.log('userId:', payload.userId);
+        console.log('id:', payload.id);
+        console.log('sub:', payload.sub);
+        console.log('user_id:', payload.user_id);
+        console.log('googleId:', payload.googleId);
+        console.log('email:', payload.email);
+
       } else {
-        console.log('✅ Token is valid');
-        const expiresDate = new Date(payload.exp * 1000);
-        console.log('Token expires on:', expiresDate.toLocaleString());
+        console.log('🔍 Non-JWT token (possibly OAuth access token)');
+        console.log('Token length:', token.length);
+        console.log('Token starts with:', token.substring(0, 20));
       }
-
-      // Check required fields
-      console.log('Seller ID in token:', payload.sellerId || payload.userId || payload.id);
-      console.log('Email in token:', payload.email);
-      console.log('Name in token:', payload.name);
 
     } catch (error) {
       console.log('❌ Error decoding token:', error.message);
-      console.log('Token might be corrupted');
+      console.log('Token might be corrupted or not a JWT');
     }
 
-    console.log('=== END AUTH DEBUG ===');
+    console.log('=== END ENHANCED AUTH DEBUG ===');
   };
 
   // Fetch seller data from MongoDB
@@ -224,14 +277,42 @@ const SellerDashboard = () => {
         setLoading(true);
         setError(null);
 
+        // Add a small delay to ensure localStorage is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Enhanced debug logging
+        debugAuth();
+
         const sellerId = getCurrentSellerId();
         const token = getAuthToken();
 
+        console.log('🔍 Auth Check Results:', {
+          sellerId: sellerId ? String(sellerId).substring(0, 10) + '...' : null,
+          hasToken: !!token,
+          tokenType: token && token.includes('.') ? 'JWT' : 'Other'
+        });
+
         if (!sellerId || !token) {
-          console.log('❌ Missing authentication - redirecting to login');
-          router.push('/seller-login');
+          console.log('❌ Missing authentication credentials');
+          console.log('SellerId present:', !!sellerId);
+          console.log('Token present:', !!token);
+
+          // Clear potentially corrupted data
+          if (!sellerId && token) {
+            console.log('Token exists but sellerId is null - clearing corrupted token');
+            localStorage.removeItem('token');
+          }
+
+          // Add delay before redirect to prevent rapid redirects
+          setTimeout(() => {
+            console.log('Redirecting to seller login...');
+            router.push('/seller-login');
+          }, 1000);
+
           return;
         }
+
+        console.log('✅ Authentication successful - proceeding with data fetch');
 
         // Try to fetch real data first, fall back to mock data
         try {
@@ -240,32 +321,74 @@ const SellerDashboard = () => {
             'Authorization': `Bearer ${token}`,
           };
 
-          // Try to fetch seller profile
-          const sellerResponse = await fetch(`/api/sellers/${sellerId}`, {
+          // Enhanced URL encoding for different ID formats (especially Google OAuth)
+          const encodedSellerId = encodeURIComponent(sellerId);
+          const apiUrl = `/api/sellers/${encodedSellerId}`;
+
+          console.log('Fetching seller data from:', apiUrl);
+
+          const sellerResponse = await fetch(apiUrl, {
             method: 'GET',
             headers: headers,
           });
 
+          console.log('API Response:', {
+            status: sellerResponse.status,
+            statusText: sellerResponse.statusText,
+            ok: sellerResponse.ok
+          });
+
           if (sellerResponse.ok) {
             const text = await sellerResponse.text();
+            console.log('Response text length:', text.length);
+
             if (!text.trim().startsWith('<!DOCTYPE') && !text.trim().startsWith('<html')) {
-              const sellerData = JSON.parse(text);
-              setSellerData(sellerData);
+              try {
+                const sellerData = JSON.parse(text);
+                console.log('✅ Successfully parsed seller data:', {
+                  id: sellerData._id,
+                  name: sellerData.name,
+                  email: sellerData.email
+                });
+                setSellerData(sellerData);
+              } catch (parseError) {
+                console.error('Failed to parse JSON response:', parseError);
+                throw new Error('Invalid JSON response from server');
+              }
             } else {
-              throw new Error('API returned HTML');
+              console.warn('API returned HTML instead of JSON');
+              throw new Error('API returned HTML page instead of JSON data');
             }
+          } else if (sellerResponse.status === 401) {
+            console.error('❌ 401 Unauthorized - token may be invalid');
+            localStorage.removeItem('token');
+
+            setTimeout(() => {
+              router.push('/seller-login');
+            }, 1000);
+
+            return;
+          } else if (sellerResponse.status === 404) {
+            console.warn('Seller not found - may be first time login, creating mock profile');
+            throw new Error('Seller profile not found');
           } else {
-            throw new Error('API not available');
+            const errorText = await sellerResponse.text();
+            console.error('API error:', {
+              status: sellerResponse.status,
+              statusText: sellerResponse.statusText,
+              body: errorText.substring(0, 200)
+            });
+            throw new Error(`API returned status: ${sellerResponse.status}`);
           }
         } catch (apiError) {
-          console.warn('API not available, using mock data:', apiError.message);
+          console.warn('🔄 API not available, using mock data:', apiError.message);
 
-          // Use mock data when API is not available
+          // Create enhanced mock data that works with both normal and Google OAuth
           const mockSellerData = {
             _id: sellerId,
             name: 'Demo Seller',
-            email: 'demo@campusmart.com',
-            joinDate: '2024-01-15',
+            email: String(sellerId).includes('@') ? sellerId : 'demo@campusmart.com',
+            joinDate: new Date().toISOString().split('T')[0],
             rating: 4.8,
             totalSales: 0,
             responseRate: 100,
@@ -276,13 +399,16 @@ const SellerDashboard = () => {
             categories: ['textbooks', 'electronics'],
             phone: '+1-234-567-8900',
             location: 'Campus',
-            bio: 'Welcome to my CampusMart store! I sell quality items at great prices.'
+            bio: 'Welcome to my CampusMart store! I sell quality items at great prices.',
+            authProvider: String(sellerId).includes('@') ? 'google' : 'normal',
+            lastLogin: new Date().toISOString()
           };
 
+          console.log('Created mock seller data:', mockSellerData);
           setSellerData(mockSellerData);
         }
 
-        // Set mock data for other endpoints
+        // Set mock data for other sections
         setEarningsData({
           today: 0,
           thisWeek: 0,
@@ -302,22 +428,32 @@ const SellerDashboard = () => {
 
         setMyListings([]);
 
-      } catch (err) {
-        console.error('Error in fetchSellerData:', err);
-        setError(err.message);
+        console.log('✅ Data initialization complete');
 
-        // Only redirect to login for authentication errors
-        if (err.message.includes('401') || err.message.includes('Authentication failed')) {
+      } catch (err) {
+        console.error('❌ Error in fetchSellerData:', err);
+        setError(`Failed to load dashboard: ${err.message}`);
+
+        // Enhanced error handling
+        if (err.message.includes('401') ||
+          err.message.includes('Authentication failed') ||
+          err.message.includes('Unauthorized')) {
+          console.log('Authentication error detected - clearing token');
           localStorage.removeItem('token');
-          router.push('/seller-login');
+
+          setTimeout(() => {
+            router.push('/seller-login');
+          }, 2000);
         }
       } finally {
         setLoading(false);
       }
     };
 
+    // Only run on client side and add a small delay
     if (typeof window !== 'undefined') {
-      fetchSellerData();
+      const timeoutId = setTimeout(fetchSellerData, 200);
+      return () => clearTimeout(timeoutId);
     }
   }, [router]);
 

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import styles from './buyer_login.module.css';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 
 const BuyerLogin = () => {
   const router = useRouter();
@@ -15,9 +16,34 @@ const BuyerLogin = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      setError('');
+      
+      const result = await signIn('google', {
+        callbackUrl: '/buyer-dashboard',
+        redirect: false, // Don't redirect automatically, handle it manually
+      });
+
+      if (result?.error) {
+        setError('Google login failed. Please try again.');
+      } else if (result?.ok) {
+        setSuccess('Google login successful! Redirecting...');
+        setTimeout(() => router.push('/buyer-dashboard'), 1500);
+      }
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError('Google login failed. Please try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -95,7 +121,7 @@ const BuyerLogin = () => {
           <button 
             type="submit" 
             className={styles.loginButton}
-            disabled={loading}
+            disabled={loading || googleLoading}
           >
             {loading ? 'Logging in...' : 'Log In'}
           </button>
@@ -115,7 +141,15 @@ const BuyerLogin = () => {
         </div>
 
         <div className={styles.or}>or</div>
-        <button className={styles.googleButton}>Continue with Google</button>
+        
+        <button 
+          type="button"
+          onClick={handleGoogleLogin}
+          className={styles.googleButton}
+          disabled={loading || googleLoading}
+        >
+          {googleLoading ? 'Signing in with Google...' : 'Continue with Google'}
+        </button>
       </div>
     </div>
   );

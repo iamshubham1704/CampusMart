@@ -18,6 +18,7 @@ const RegistrationSeller = () => {
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,9 +26,13 @@ const RegistrationSeller = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match!');
+      setLoading(false);
       return;
     }
 
@@ -46,18 +51,35 @@ const RegistrationSeller = () => {
       }
 
       setSuccess('Registration successful! Redirecting...');
-      setError('');
-      setTimeout(() => router.push('/seller-dashboard'), 1500);
+      setTimeout(() => router.push('/seller-login'), 1500);
     } catch (err) {
       console.error(err);
       setError('Something went wrong.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleSignup = async () => {
-    await signIn('google', {
-      callbackUrl: '/seller-dashboard',
-    });
+    try {
+      setLoading(true);
+      
+      // Store seller preference before OAuth
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('preferredUserType', 'seller');
+      }
+      
+      // Sign in with Google and redirect to account type selection
+      const result = await signIn('google', {
+        callbackUrl: '/choose-account-type?type=seller',
+        redirect: true // Let NextAuth handle the redirect
+      });
+      
+    } catch (error) {
+      console.error('Google signup error:', error);
+      setError('Google signup failed. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,6 +98,7 @@ const RegistrationSeller = () => {
             value={form.name}
             onChange={handleChange}
             required
+            disabled={loading}
           />
           <input
             type="email"
@@ -84,6 +107,7 @@ const RegistrationSeller = () => {
             value={form.email}
             onChange={handleChange}
             required
+            disabled={loading}
           />
           <input
             type="tel"
@@ -92,6 +116,7 @@ const RegistrationSeller = () => {
             value={form.phone}
             onChange={handleChange}
             required
+            disabled={loading}
           />
           <input
             type="password"
@@ -100,6 +125,7 @@ const RegistrationSeller = () => {
             value={form.password}
             onChange={handleChange}
             required
+            disabled={loading}
           />
           <input
             type="password"
@@ -108,10 +134,15 @@ const RegistrationSeller = () => {
             value={form.confirmPassword}
             onChange={handleChange}
             required
+            disabled={loading}
           />
 
-          <button type="submit" className={styles.registerButton}>
-            Register
+          <button 
+            type="submit" 
+            className={styles.registerButton}
+            disabled={loading}
+          >
+            {loading ? 'Registering...' : 'Register'}
           </button>
 
           <div className={styles.alternativeLogin}>
@@ -127,8 +158,9 @@ const RegistrationSeller = () => {
             type="button"
             className={styles.googleButton}
             onClick={handleGoogleSignup}
+            disabled={loading}
           >
-            Sign Up with Google
+            {loading ? 'Signing in...' : 'Sign Up with Google'}
           </button>
         </form>
       </div>
