@@ -38,24 +38,20 @@ const SellerDashboard = () => {
   const getCurrentSellerId = () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
-      console.log('getCurrentSellerId - token from localStorage:', !!token);
-
+ 
       if (token) {
         try {
           const parts = token.split('.');
           if (parts.length !== 3) {
-            console.log('Invalid JWT format');
+       
             localStorage.removeItem('token');
             return null;
           }
-
           const payload = JSON.parse(atob(parts[1]));
-          console.log('getCurrentSellerId - decoded payload:', payload);
-
           // Check if token is expired
           const currentTime = Date.now() / 1000;
           if (payload.exp < currentTime) {
-            console.log('Token expired in getCurrentSellerId');
+
             localStorage.removeItem('token');
             return null;
           }
@@ -67,20 +63,17 @@ const SellerDashboard = () => {
             payload.sub ||
             payload.user_id ||
             payload.googleId ||
-            payload.email; // Fallback to email for Google OAuth
-
-          console.log('getCurrentSellerId - extracted sellerId:', sellerId);
+            payload.email; 
 
           // Additional validation for Google OAuth
           if (payload.iss && payload.iss.includes('google')) {
-            console.log('Google OAuth token detected');
+  
             // For Google OAuth, we might need to use 'sub' field or email
             return payload.sub || payload.email;
           }
 
           return sellerId;
         } catch (e) {
-          console.error('Error decoding token in getCurrentSellerId:', e);
           localStorage.removeItem('token');
           return null;
         }
@@ -88,6 +81,53 @@ const SellerDashboard = () => {
     }
     return null;
   };
+
+  // Enhanced function to get user info from token
+  const getCurrentUserInfo = () => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      
+      if (token) {
+        try {
+          const parts = token.split('.');
+          if (parts.length !== 3) {
+            localStorage.removeItem('token');
+            return null;
+          }
+
+          const payload = JSON.parse(atob(parts[1]));
+
+          // Check if token is expired
+          const currentTime = Date.now() / 1000;
+          if (payload.exp < currentTime) {
+            localStorage.removeItem('token');
+            return null;
+          }
+
+          // Extract user information from different providers
+          const userInfo = {
+            id: payload.sellerId || payload.userId || payload.id || payload.sub || payload.user_id || payload.googleId || payload.email,
+            name: payload.name || payload.given_name || payload.first_name || payload.username || 'User',
+            email: payload.email || '',
+            picture: payload.picture || payload.avatar || payload.profileImage || null,
+            provider: payload.iss && payload.iss.includes('google') ? 'google' : 'local'
+          };
+
+          // For Google OAuth, construct full name if needed
+          if (userInfo.provider === 'google' && !userInfo.name && (payload.given_name || payload.family_name)) {
+            userInfo.name = `${payload.given_name || ''} ${payload.family_name || ''}`.trim();
+          }
+
+          return userInfo;
+        } catch (e) {
+          localStorage.removeItem('token');
+          return null;
+        }
+      }
+    }
+    return null;
+  };
+
   const handleProfileEdit = async (updatedData) => {
     try {
       const sellerId = getCurrentSellerId();
@@ -122,7 +162,6 @@ const SellerDashboard = () => {
 
       return { success: true, message: 'Profile updated successfully' };
     } catch (err) {
-      console.error('Error updating profile:', err);
       return { success: false, message: err.message };
     }
   };
@@ -142,7 +181,6 @@ const SellerDashboard = () => {
     }
   };
 
-
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
@@ -154,7 +192,6 @@ const SellerDashboard = () => {
             // JWT token
             const parts = token.split('.');
             if (parts.length !== 3) {
-              console.log('Invalid JWT format, removing token');
               localStorage.removeItem('token');
               return null;
             }
@@ -163,7 +200,6 @@ const SellerDashboard = () => {
             const currentTime = Date.now() / 1000;
 
             if (payload.exp && payload.exp < currentTime) {
-              console.log('Token expired, removing');
               localStorage.removeItem('token');
               return null;
             }
@@ -171,11 +207,9 @@ const SellerDashboard = () => {
             return token;
           } else {
             // Non-JWT token (might be from OAuth)
-            console.log('Non-JWT token detected, validating...');
             return token;
           }
         } catch (e) {
-          console.error('Error validating token:', e);
           localStorage.removeItem('token');
           return null;
         }
@@ -185,19 +219,13 @@ const SellerDashboard = () => {
   };
 
   const debugAuth = () => {
-    console.log('=== ENHANCED AUTH DEBUG ===');
 
     if (typeof window === 'undefined') {
-      console.log('Running on server side');
       return;
     }
 
     const token = localStorage.getItem('token');
-    console.log('Raw token from localStorage:', token ? `${token.substring(0, 50)}...` : 'null');
-
     if (!token) {
-      console.log('❌ No token found in localStorage');
-      console.log('Available localStorage keys:', Object.keys(localStorage));
       return;
     }
 
@@ -205,25 +233,16 @@ const SellerDashboard = () => {
       // Check if it's a JWT token
       if (token.includes('.')) {
         const parts = token.split('.');
-        console.log('Token parts count:', parts.length);
-
         if (parts.length !== 3) {
-          console.log('❌ Invalid JWT format - should have 3 parts');
           return;
         }
 
         // Decode the payload (middle part)
         const payload = JSON.parse(atob(parts[1]));
-        console.log('🔍 Decoded token payload:', payload);
 
         // Check for Google OAuth specific fields
         if (payload.iss) {
-          console.log('Token issuer:', payload.iss);
           if (payload.iss.includes('google')) {
-            console.log('🔍 Google OAuth token detected');
-            console.log('Google ID (sub):', payload.sub);
-            console.log('Email:', payload.email);
-            console.log('Name:', payload.name);
           }
         }
 
@@ -231,49 +250,21 @@ const SellerDashboard = () => {
         const currentTime = Date.now() / 1000;
         const isExpired = payload.exp < currentTime;
 
-        console.log('Current time:', currentTime);
-        console.log('Token expires at:', payload.exp);
-        console.log('Token expired:', isExpired);
-
         if (isExpired) {
-          console.log('❌ Token is expired');
           const expiredDate = new Date(payload.exp * 1000);
-          console.log('Token expired on:', expiredDate.toLocaleString());
         } else {
-          console.log('✅ Token is valid');
           const expiresDate = new Date(payload.exp * 1000);
-          console.log('Token expires on:', expiresDate.toLocaleString());
         }
-
-        // Check all possible ID fields
-        console.log('=== POSSIBLE USER IDS ===');
-        console.log('sellerId:', payload.sellerId);
-        console.log('userId:', payload.userId);
-        console.log('id:', payload.id);
-        console.log('sub:', payload.sub);
-        console.log('user_id:', payload.user_id);
-        console.log('googleId:', payload.googleId);
-        console.log('email:', payload.email);
-
       } else {
-        console.log('🔍 Non-JWT token (possibly OAuth access token)');
-        console.log('Token length:', token.length);
-        console.log('Token starts with:', token.substring(0, 20));
       }
-
     } catch (error) {
-      console.log('❌ Error decoding token:', error.message);
-      console.log('Token might be corrupted or not a JWT');
     }
-
-    console.log('=== END ENHANCED AUTH DEBUG ===');
   };
 
   // Fetch seller data from MongoDB
   useEffect(() => {
     const fetchSellerData = async () => {
       try {
-        console.log('Starting to fetch seller data...');
         setLoading(true);
         setError(null);
 
@@ -285,34 +276,29 @@ const SellerDashboard = () => {
 
         const sellerId = getCurrentSellerId();
         const token = getAuthToken();
+        const userInfo = getCurrentUserInfo(); // Get user info from token
 
         console.log('🔍 Auth Check Results:', {
           sellerId: sellerId ? String(sellerId).substring(0, 10) + '...' : null,
           hasToken: !!token,
-          tokenType: token && token.includes('.') ? 'JWT' : 'Other'
+          tokenType: token && token.includes('.') ? 'JWT' : 'Other',
+          userInfo: userInfo
         });
 
         if (!sellerId || !token) {
-          console.log('❌ Missing authentication credentials');
-          console.log('SellerId present:', !!sellerId);
-          console.log('Token present:', !!token);
 
           // Clear potentially corrupted data
           if (!sellerId && token) {
-            console.log('Token exists but sellerId is null - clearing corrupted token');
             localStorage.removeItem('token');
           }
 
           // Add delay before redirect to prevent rapid redirects
           setTimeout(() => {
-            console.log('Redirecting to seller login...');
             router.push('/seller-login');
           }, 1000);
 
           return;
         }
-
-        console.log('✅ Authentication successful - proceeding with data fetch');
 
         // Try to fetch real data first, fall back to mock data
         try {
@@ -324,9 +310,6 @@ const SellerDashboard = () => {
           // Enhanced URL encoding for different ID formats (especially Google OAuth)
           const encodedSellerId = encodeURIComponent(sellerId);
           const apiUrl = `/api/sellers/${encodedSellerId}`;
-
-          console.log('Fetching seller data from:', apiUrl);
-
           const sellerResponse = await fetch(apiUrl, {
             method: 'GET',
             headers: headers,
@@ -340,7 +323,6 @@ const SellerDashboard = () => {
 
           if (sellerResponse.ok) {
             const text = await sellerResponse.text();
-            console.log('Response text length:', text.length);
 
             if (!text.trim().startsWith('<!DOCTYPE') && !text.trim().startsWith('<html')) {
               try {
@@ -352,15 +334,12 @@ const SellerDashboard = () => {
                 });
                 setSellerData(sellerData);
               } catch (parseError) {
-                console.error('Failed to parse JSON response:', parseError);
                 throw new Error('Invalid JSON response from server');
               }
             } else {
-              console.warn('API returned HTML instead of JSON');
               throw new Error('API returned HTML page instead of JSON data');
             }
           } else if (sellerResponse.status === 401) {
-            console.error('❌ 401 Unauthorized - token may be invalid');
             localStorage.removeItem('token');
 
             setTimeout(() => {
@@ -369,7 +348,6 @@ const SellerDashboard = () => {
 
             return;
           } else if (sellerResponse.status === 404) {
-            console.warn('Seller not found - may be first time login, creating mock profile');
             throw new Error('Seller profile not found');
           } else {
             const errorText = await sellerResponse.text();
@@ -381,13 +359,11 @@ const SellerDashboard = () => {
             throw new Error(`API returned status: ${sellerResponse.status}`);
           }
         } catch (apiError) {
-          console.warn('🔄 API not available, using mock data:', apiError.message);
-
-          // Create enhanced mock data that works with both normal and Google OAuth
           const mockSellerData = {
             _id: sellerId,
-            name: 'Demo Seller',
-            email: String(sellerId).includes('@') ? sellerId : 'demo@campusmart.com',
+            name: userInfo?.name || 'Demo Seller', // Use actual name from token
+            email: userInfo?.email || (String(sellerId).includes('@') ? sellerId : 'demo@campusmart.com'),
+            profileImage: userInfo?.picture || null, // Use actual profile picture if available
             joinDate: new Date().toISOString().split('T')[0],
             rating: 4.8,
             totalSales: 0,
@@ -399,12 +375,10 @@ const SellerDashboard = () => {
             categories: ['textbooks', 'electronics'],
             phone: '+1-234-567-8900',
             location: 'Campus',
-            bio: 'Welcome to my CampusMart store! I sell quality items at great prices.',
-            authProvider: String(sellerId).includes('@') ? 'google' : 'normal',
+            bio: `Welcome to my CampusMart store! I'm ${userInfo?.name || 'a seller'} and I sell quality items at great prices.`,
+            authProvider: userInfo?.provider || (String(sellerId).includes('@') ? 'google' : 'normal'),
             lastLogin: new Date().toISOString()
           };
-
-          console.log('Created mock seller data:', mockSellerData);
           setSellerData(mockSellerData);
         }
 
@@ -428,8 +402,6 @@ const SellerDashboard = () => {
 
         setMyListings([]);
 
-        console.log('✅ Data initialization complete');
-
       } catch (err) {
         console.error('❌ Error in fetchSellerData:', err);
         setError(`Failed to load dashboard: ${err.message}`);
@@ -438,7 +410,6 @@ const SellerDashboard = () => {
         if (err.message.includes('401') ||
           err.message.includes('Authentication failed') ||
           err.message.includes('Unauthorized')) {
-          console.log('Authentication error detected - clearing token');
           localStorage.removeItem('token');
 
           setTimeout(() => {
@@ -531,9 +502,6 @@ const SellerDashboard = () => {
           throw new Error('API not available');
         }
       } catch (apiError) {
-        console.warn('API not available, creating mock listing:', apiError.message);
-
-        // Create mock listing
         const mockListing = {
           _id: Date.now().toString(),
           title: newListing.title,
@@ -577,7 +545,6 @@ const SellerDashboard = () => {
       }
 
     } catch (err) {
-      console.error('Error creating listing:', err);
       setError(`Failed to create listing: ${err.message}`);
     }
   };
@@ -637,7 +604,6 @@ const SellerDashboard = () => {
       }
 
     } catch (err) {
-      console.error('Error deleting listing:', err);
       setError(`Failed to delete listing: ${err.message}`);
     }
   };
@@ -645,6 +611,16 @@ const SellerDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/seller-login');
+  };
+
+  // Enhanced function to generate user avatar
+  const generateUserAvatar = (name, profileImage) => {
+    if (profileImage) {
+      return profileImage;
+    }
+    
+    const initial = name ? name.charAt(0).toUpperCase() : 'U';
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23667eea' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.35em' fill='%23ffffff' font-size='16' font-family='Arial, sans-serif' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
   };
 
   const StatCard = ({ icon: Icon, title, value, change, color = 'purple' }) => (
@@ -666,7 +642,6 @@ const SellerDashboard = () => {
       </div>
     </div>
   );
-
 
   const ListingCard = ({ listing }) => (
     <div className={`${styles.listingCard} ${styles[listing.status || 'active']}`}>
@@ -820,12 +795,13 @@ const SellerDashboard = () => {
               <Settings size={20} />
             </button>
 
-            <div className={styles.userProfile} onClick={handleLogout}>
+            <div className={styles.userProfile} onClick={handleLogout} title={`Logout ${sellerData?.name || 'User'}`}>
               <img
-                src={sellerData?.profileImage || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23667eea' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.35em' fill='%23ffffff' font-size='16' font-family='Arial, sans-serif' font-weight='bold'%3E${sellerData?.name?.charAt(0) || 'U'}%3C/text%3E%3C/svg%3E`}
-                alt="Profile"
+                src={generateUserAvatar(sellerData?.name, sellerData?.profileImage)}
+                alt={`${sellerData?.name || 'User'}'s Profile`}
                 style={{ width: 40, height: 40, borderRadius: '50%' }}
               />
+              <span className={styles.userName}>{sellerData?.name || 'User'}</span>
             </div>
           </div>
         </div>
@@ -939,7 +915,7 @@ const SellerDashboard = () => {
                               : `${listing.title} is pending`
                           }
                         </span>
-                        <span className={styles.time}>{listing.datePosted}</span>
+                        <span className={styles.time}>{formatDate(listing.createdAt)}</span>
                       </div>
                     ))}
                     {myListings.length === 0 && (
@@ -1104,8 +1080,8 @@ const SellerDashboard = () => {
               <div className={styles.profileHeader}>
                 <div className={styles.profileImage}>
                   <img
-                    src={sellerData?.profileImage || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' fill='%23667eea' rx='40'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.35em' fill='%23ffffff' font-size='32' font-family='Arial, sans-serif' font-weight='bold'%3E${sellerData?.name?.charAt(0) || 'U'}%3C/text%3E%3C/svg%3E`}
-                    alt="Profile"
+                    src={generateUserAvatar(sellerData?.name, sellerData?.profileImage, 80)}
+                    alt={`${sellerData?.name || 'User'}'s Profile`}
                     style={{ width: 80, height: 80, borderRadius: '50%' }}
                   />
                   <button className={styles.changePhotoButton}>
@@ -1114,7 +1090,7 @@ const SellerDashboard = () => {
                 </div>
                 <div className={styles.profileInfo}>
                   <h2>{sellerData.name}</h2>
-                  <p>Member since {sellerData.joinDate}</p>
+                  <p>Member since {formatDate(sellerData.joinDate)}</p>
                   <div className={styles.profileStats}>
                     <div className={styles.profileStat}>
                       <Star size={16} fill="currentColor" />
