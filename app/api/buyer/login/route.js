@@ -21,7 +21,7 @@ export async function POST(req) {
 
     const client = await clientPromise;
     const db = client.db('campusmart');
-    const buyers = db.collection('Buyers'); // Changed variable name for consistency
+    const buyers = db.collection('buyers'); // Changed variable name for consistency
 
     // Find buyer by email
     const buyer = await buyers.findOne({ email }); // Changed variable name
