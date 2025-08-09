@@ -14,7 +14,7 @@ import {
 
 import styles from './styles/Landing.module.css';
 import LottiePlayer from '../components/LottiePlayer';
-import './globals.css';
+
 
 const CampusMarketplace = () => {
   const [isLoaded, setIsLoaded] = useState(true);
