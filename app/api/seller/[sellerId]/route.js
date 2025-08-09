@@ -1,4 +1,4 @@
-import { connectToDatabase } from '../../../lib/mongodb'; // Adjust path to your DB connection
+import clientPromise from '@/lib/mongo'; // Adjust path to your DB connection
 import { ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
 
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     }
 
     // Connect to database
-    const { db } = await connectToDatabase();
+    const { db } = await clientPromise();
     
     if (req.method === 'GET') {
       // GET: Fetch seller data
