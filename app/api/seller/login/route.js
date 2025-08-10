@@ -8,8 +8,9 @@ export async function POST(req) {
     const body = await req.json();
     const { email, password } = body;
     
-    console.log('Login attempt for email:', email); // Debug log
+    console.log('Login attempt for email:', email);
 
+    // Input validation
     if (!email || !password) {
       return new Response(
         JSON.stringify({ error: 'Email and password are required' }), 
@@ -20,13 +21,25 @@ export async function POST(req) {
       );
     }
 
+    // Verify the input password is not empty
+    if (!password || password.trim() === '') {
+      console.error('Input password is empty');
+      return new Response(
+        JSON.stringify({ error: 'Password cannot be empty' }), 
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const client = await clientPromise;
-    const db = client.db('campusmart'); // Replace with your actual database name
+    const db = client.db('campusmart');
     const sellers = db.collection('sellers');
 
     // Find seller by email
-    const seller = await sellers.findOne({ email });
-    console.log('Seller found:', seller ? 'Yes' : 'No'); // Debug log
+    const seller = await sellers.findOne({ email: email.toLowerCase() });
+    console.log('Seller found:', seller ? 'Yes' : 'No');
     
     if (!seller) {
       return new Response(
@@ -38,9 +51,40 @@ export async function POST(req) {
       );
     }
 
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, seller.password);
-    console.log('Password valid:', isValidPassword); // Debug log
+    // Verify the password exists in the seller object
+    if (!seller.password) {
+      console.error('Seller password is null or undefined for email:', email);
+      return new Response(
+        JSON.stringify({ error: 'Account configuration error. Please contact support.' }), 
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Comparing passwords...');
+    console.log('Input password length:', password.length);
+    console.log('Stored password exists:', !!seller.password);
+    console.log('Stored password starts with $2a or $2b:', seller.password.startsWith('$2a') || seller.password.startsWith('$2b'));
+    
+    // Compare passwords with proper error handling
+    let isValidPassword;
+    try {
+      isValidPassword = await bcrypt.compare(password, seller.password);
+    } catch (bcryptError) {
+      console.error('Bcrypt comparison error:', bcryptError);
+      console.error('Password hash format:', seller.password?.substring(0, 10) + '...');
+      return new Response(
+        JSON.stringify({ error: 'Password verification failed' }), 
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Password valid:', isValidPassword);
     
     if (!isValidPassword) {
       return new Response(
@@ -52,16 +96,40 @@ export async function POST(req) {
       );
     }
 
+    // Check if seller account is active (if you have this field)
+    if (seller.isActive !== undefined && !seller.isActive) {
+      return new Response(
+        JSON.stringify({ error: 'Account is deactivated. Please contact support.' }), 
+        { 
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Login successful for:', seller.email);
+
     // Generate JWT token
     const token = jwt.sign(
       { 
-        sellerId: seller._id.toString(), // Changed from seller.id
+        sellerId: seller._id.toString(),
         email: seller.email,
         name: seller.name
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
+
+    // Update last login time (optional)
+    try {
+      await sellers.updateOne(
+        { _id: seller._id }, 
+        { $set: { lastLogin: new Date() } }
+      );
+    } catch (updateError) {
+      console.warn('Failed to update last login time:', updateError);
+      // Don't fail the login for this
+    }
 
     // Return success response with token
     return new Response(
@@ -70,10 +138,11 @@ export async function POST(req) {
         message: 'Login successful',
         token,
         seller: {
-          id: seller._id.toString(), // Changed from seller.id
+          id: seller._id.toString(),
           name: seller.name,
           email: seller.email,
-          phone: seller.phone
+          phone: seller.phone || null,
+          profileImage: seller.profileImage || null
         }
       }), 
       { 
