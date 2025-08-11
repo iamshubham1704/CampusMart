@@ -16,11 +16,11 @@ export const listingsAPI = {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching listings:', error);
@@ -56,12 +56,12 @@ export const listingsAPI = {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching listing:', error);
@@ -155,41 +155,169 @@ export const listingsAPI = {
 
 // Dashboard API functions
 export const dashboardAPI = {
-  // Get dashboard statistics
-  getStats: async () => {
+  // Get dashboard statistics for the seller
+  getSellerStats: async () => {
     try {
-      const response = await fetch('/api/dashboard/stats', {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/stats', {
         method: 'GET',
-        headers: getAuthHeaders()
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(data.message || 'Failed to fetch stats');
       }
-      
-      return await response.json();
+
+      return {
+        success: true,
+        stats: data.stats
+      };
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      throw error;
+      console.error('Error fetching seller stats:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch stats'
+      };
     }
   },
 
-  // Get recent activity
+  // Get recent activity for the seller
   getRecentActivity: async () => {
     try {
-      const response = await fetch('/api/dashboard/recent-activity', {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/activity', {
         method: 'GET',
-        headers: getAuthHeaders()
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(data.message || 'Failed to fetch activity');
       }
-      
-      return await response.json();
+
+      return {
+        success: true,
+        activities: data.activities
+      };
     } catch (error) {
       console.error('Error fetching recent activity:', error);
-      throw error;
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch activity'
+      };
+    }
+  },
+
+  // Get saved items count
+  getSavedItemsCount: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/saved-items/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch saved items count');
+      }
+
+      return {
+        success: true,
+        count: data.count
+      };
+    } catch (error) {
+      console.error('Error fetching saved items count:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch saved items count'
+      };
+    }
+  },
+
+  // Get active chats count
+  getActiveChatsCount: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/chats/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch chats count');
+      }
+
+      return {
+        success: true,
+        count: data.count
+      };
+    } catch (error) {
+      console.error('Error fetching chats count:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch chats count'
+      };
+    }
+  },
+
+  // Get reviews count
+  getReviewsCount: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/reviews/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch reviews count');
+      }
+
+      return {
+        success: true,
+        count: data.count,
+        averageRating: data.averageRating || 0
+      };
+    } catch (error) {
+      console.error('Error fetching reviews count:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch reviews count'
+      };
     }
   }
 };
@@ -203,11 +331,11 @@ export const userAPI = {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -246,11 +374,11 @@ export const messagesAPI = {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching chats:', error);
@@ -265,11 +393,11 @@ export const messagesAPI = {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -395,7 +523,7 @@ export const getCurrentUser = () => {
 
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    
+
     // Check if token is expired
     if (payload.exp && payload.exp < Date.now() / 1000) {
       localStorage.removeItem('token');

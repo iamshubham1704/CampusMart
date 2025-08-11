@@ -7,9 +7,10 @@ import {
   Loader2, AlertCircle
 } from 'lucide-react';
 import styles from './SellerDashboard.module.css';
-import { listingsAPI } from '../utils/api';
+import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
 import Link from 'next/link';
+
 
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -106,48 +107,113 @@ const SellerDashboard = () => {
         return;
       }
 
-      // Fetch real listings data
-      try {
-        const listingsResponse = await listingsAPI.getMyListings();
-        if (listingsResponse.success) {
-          setMyListings(listingsResponse.listings);
-        }
-      } catch (listingsError) {
-        console.error('Error fetching listings:', listingsError);
-        setMyListings([]); // Set empty array on error
+      // Fetch all data in parallel for better performance
+      const [listingsResponse, statsResponse, activityResponse] = await Promise.all([
+        listingsAPI.getMyListings().catch(err => ({ success: false, listings: [] })),
+        dashboardAPI.getSellerStats().catch(err => ({ success: false, stats: null })),
+        dashboardAPI.getRecentActivity().catch(err => ({ success: false, activities: [] }))
+      ]);
+
+      // Set listings
+      if (listingsResponse.success) {
+        setMyListings(listingsResponse.listings);
+      } else {
+        console.error('Error fetching listings:', listingsResponse.message);
+        setMyListings([]);
       }
 
-      // Set user data (keep some mock stats for now)
-      const mockSellerData = {
+      // Set seller data with real stats
+      let sellerStats = {};
+
+      if (statsResponse.success && statsResponse.stats) {
+        sellerStats = statsResponse.stats;
+      } else {
+        console.error('Error fetching stats:', statsResponse.message);
+        // Fallback to basic stats calculation from listings
+        const activeListingsCount = listingsResponse.success
+          ? listingsResponse.listings.filter(listing => listing.status === 'active').length
+          : 0;
+
+        sellerStats = {
+          savedItems: 0,
+          activeChats: 0,
+          activeListings: activeListingsCount,
+          reviewsGiven: 0,
+          rating: 0,
+          totalSales: 0,
+          totalEarnings: 0,
+          responseRate: 95,
+          unreadNotifications: 0,
+          memberSince: new Date().getFullYear(),
+          accountType: 'Standard',
+          changes: {
+            savedItemsWeekly: "+0 this week",
+            activeChatsDaily: "+0 new today",
+            activeListingsMonthly: "This month",
+            reviewsRating: "0 avg rating"
+          }
+        };
+      }
+
+      // Combine user data with real stats
+      const completeSellerData = {
         _id: user.id,
         name: user.name,
         email: user.email,
         profileImage: user.picture,
-        savedItems: 25,
-        activeChats: 8,
-        itemsPurchased: 12,
-        reviewsGiven: 7,
-        rating: 4.5,
-        totalSales: 120,
-        totalEarnings: 35000,
-        responseRate: 95,
-        unreadNotifications: 3,
-        memberSince: '2023',
-        accountType: 'Premium'
+        ...sellerStats
       };
 
-      const mockActivity = [
-        { type: 'listing', title: 'New listing created', subtitle: 'Item posted successfully', time: '1h ago' },
-        { type: 'message', title: 'New message', subtitle: 'Buyer inquiry', time: '2h ago' },
-        { type: 'view', title: 'Item viewed', subtitle: 'Someone viewed your MacBook', time: '3h ago' }
-      ];
+      setSellerData(completeSellerData);
 
-      setSellerData(mockSellerData);
-      setRecentActivity(mockActivity);
+      // Set recent activity
+      if (activityResponse.success) {
+        setRecentActivity(activityResponse.activities);
+      } else {
+        console.error('Error fetching activity:', activityResponse.message);
+        // Fallback to basic activity based on recent listings
+        const fallbackActivity = listingsResponse.success && listingsResponse.listings.length > 0
+          ? listingsResponse.listings.slice(0, 3).map((listing, index) => ({
+            type: 'listing',
+            title: 'Listing created',
+            subtitle: listing.title,
+            time: `${index + 1}d ago`
+          }))
+          : [
+            { type: 'info', title: 'Welcome!', subtitle: 'Start by creating your first listing', time: 'Now' }
+          ];
+
+        setRecentActivity(fallbackActivity);
+      }
 
     } catch (err) {
-      console.error('Error fetching data:', err);
+      console.error('Error fetching dashboard data:', err);
       setError('Failed to load dashboard data');
+
+      // Set basic user data even on error
+      const user = getCurrentUser();
+      if (user) {
+        setSellerData({
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+          profileImage: user.picture,
+          savedItems: 0,
+          activeChats: 0,
+          activeListings: 0,
+          reviewsGiven: 0,
+          rating: 0,
+          totalSales: 0,
+          totalEarnings: 0,
+          responseRate: 95,
+          unreadNotifications: 0,
+          memberSince: new Date().getFullYear(),
+          accountType: 'Standard'
+        });
+      }
+
+      setMyListings([]);
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }
@@ -425,23 +491,7 @@ const SellerDashboard = () => {
               </button>
 
               <button
-                onClick={() => setActiveTab('chats')}
-                className={`${styles.navItem} ${activeTab === 'chats' ? styles.active : ''}`}
-              >
-                <MessageSquare size={20} />
-                <span>Messages</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('saved')}
-                className={`${styles.navItem} ${activeTab === 'saved' ? styles.active : ''}`}
-              >
-                <Heart size={20} />
-                <span>Saved</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('products')}
+                onClick={() => router.push('/seller-dashboard/products')}
                 className={`${styles.navItem} ${activeTab === 'products' ? styles.active : ''}`}
               >
                 <Package size={20} />
@@ -513,7 +563,8 @@ const SellerDashboard = () => {
                   <Package className={styles.sectionIcon} />
                   Your Products
                 </h2>
-                <button className={styles.viewAllButton}>
+                <button className={styles.viewAllButton}
+                  onClick={() => router.push('/seller-dashboard/products')}>
                   View All ({myListings.length})
                 </button>
               </div>
