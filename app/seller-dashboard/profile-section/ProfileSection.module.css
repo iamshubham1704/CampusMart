@@ -1,0 +1,519 @@
+.profileContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+
+.profileHeader {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.profileImageSection {
+  flex-shrink: 0;
+}
+
+.profileImageContainer {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.profileImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #e5e7eb;
+}
+
+.imageUploadButton {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.imageUploadButton:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+
+.profileInfo {
+  flex: 1;
+}
+
+.displayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.editingHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.profileName {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.nameInput {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.nameInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.editButton:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.editActions {
+  display: flex;
+  gap: 12px;
+}
+
+.saveButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.saveButton:hover {
+  background: #059669;
+}
+
+.cancelButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: #4b5563;
+}
+
+.profileMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.metaItem svg {
+  color: #9ca3af;
+}
+
+/* Profile Stats */
+.profileStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statContent {
+  flex: 1;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Profile Content */
+.profileContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.profileSection {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.sectionTitle svg {
+  color: #3b82f6;
+}
+
+/* Form Elements */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.formInput {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+}
+
+.formSelect {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.formSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+}
+
+.formTextarea {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+}
+
+.formValue {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.formHint {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+/* Security Section */
+.securityContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.securityItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.securityInfo h3 {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.securityInfo p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.securityButton {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.securityButton:hover {
+  background: #2563eb;
+}
+
+/* Password Change Form */
+.passwordChangeForm {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.passwordGrid {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.passwordGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.passwordInput {
+  position: relative;
+}
+
+.passwordInput input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.passwordToggle:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.passwordActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.updatePasswordButton {
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.updatePasswordButton:hover {
+  background: #059669;
+}
+
+.cancelPasswordButton {
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.cancelPasswordButton:hover {
+  background: #4b5563;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .profileContainer {
+    padding: 16px;
+  }
+  
+  .profileHeader {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+    padding: 24px;
+  }
+  
+  .displayHeader {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .editingHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .profileStats {
+    grid-template-columns: 1fr;
+  }
+  
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .securityItem {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .passwordActions {
+    flex-direction: column;
+  }
+  
+  .updatePasswordButton,
+  .cancelPasswordButton {
+    width: 100%;
+  }
+}

@@ -9,6 +9,7 @@ import {
 import styles from './SellerDashboard.module.css';
 import { listingsAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
+import Link from 'next/link';
 
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -357,13 +358,13 @@ const SellerDashboard = () => {
                       <div className={styles.profileDivider}></div>
 
                       <div className={styles.profileMenuItems}>
-                        <button
+                        <Link href="/seller-dashboard/profile-section"><button
                           className={styles.profileMenuItem}
                           onClick={() => handleProfileAction('profile')}
                         >
                           <User size={16} />
                           <span>My Profile</span>
-                        </button>
+                        </button></Link>
 
                         <button
                           className={styles.profileMenuItem}
