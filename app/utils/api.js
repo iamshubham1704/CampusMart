@@ -1,4 +1,4 @@
-// utils/api.js
+// utils/api.js - Enhanced version with settings APIs
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -27,7 +27,6 @@ export const listingsAPI = {
       throw error;
     }
   },
-
 
   // Create new listing
   createListing: async (listingData) => {
@@ -366,6 +365,240 @@ export const userAPI = {
   }
 };
 
+// Settings API functions
+export const settingsAPI = {
+  // Get user settings
+  getSettings: async () => {
+    try {
+      const response = await fetch('/api/user/settings', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      throw error;
+    }
+  },
+
+  // Update notification preferences
+  updateNotificationPreferences: async (preferences) => {
+    try {
+      const response = await fetch('/api/user/settings/notifications', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(preferences)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update notification preferences');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      throw error;
+    }
+  },
+
+  // Update privacy settings
+  updatePrivacySettings: async (privacySettings) => {
+    try {
+      const response = await fetch('/api/user/settings/privacy', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(privacySettings)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update privacy settings');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating privacy settings:', error);
+      throw error;
+    }
+  },
+
+  // Change password
+  changePassword: async (passwordData) => {
+    try {
+      const response = await fetch('/api/user/settings/change-password', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(passwordData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to change password');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  },
+
+  // Upload profile image
+  uploadProfileImage: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/user/settings/upload-image', {
+        method: 'POST',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload image');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  },
+
+  // Delete account
+  deleteAccount: async (confirmationData) => {
+    try {
+      const response = await fetch('/api/user/settings/delete-account', {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(confirmationData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete account');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+    }
+  },
+
+  // Get login sessions
+  getLoginSessions: async () => {
+    try {
+      const response = await fetch('/api/user/settings/sessions', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching login sessions:', error);
+      throw error;
+    }
+  },
+
+  // Revoke login session
+  revokeSession: async (sessionId) => {
+    try {
+      const response = await fetch(`/api/user/settings/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to revoke session');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error revoking session:', error);
+      throw error;
+    }
+  },
+
+  // Setup 2FA
+  setup2FA: async () => {
+    try {
+      const response = await fetch('/api/user/settings/2fa/setup', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to setup 2FA');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error setting up 2FA:', error);
+      throw error;
+    }
+  },
+
+  // Verify 2FA setup
+  verify2FA: async (verificationData) => {
+    try {
+      const response = await fetch('/api/user/settings/2fa/verify', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(verificationData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to verify 2FA');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error verifying 2FA:', error);
+      throw error;
+    }
+  },
+
+  // Disable 2FA
+  disable2FA: async (verificationData) => {
+    try {
+      const response = await fetch('/api/user/settings/2fa/disable', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(verificationData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to disable 2FA');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+      throw error;
+    }
+  }
+};
+
 // Messages/Chat API functions
 export const messagesAPI = {
   // Get user's chats
@@ -497,6 +730,29 @@ export const authAPI = {
       localStorage.removeItem('token');
       console.error('Error during logout:', error);
       return { success: true }; // Still return success since token is removed
+    }
+  },
+
+  // Forgot password
+  forgotPassword: async (email) => {
+    try {
+      const response = await fetch('/api/seller/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send reset email');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error during forgot password:', error);
+      throw error;
     }
   }
 };
