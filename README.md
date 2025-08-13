@@ -1,37 +1,35 @@
-📚 CampusMart
+# 📚 CampusMart
 
-CampusMart is a student-to-student marketplace where students from different campuses can buy and sell items easily within their community.
-Built with Next.js, MongoDB, and NextAuth.js, it provides a secure and user-friendly platform for second-hand trading among students.
+CampusMart is a **student-to-student marketplace** where students from different campuses can **buy** and **sell** items easily within their community.  
+Built with **Next.js**, **MongoDB**, and **NextAuth.js**, it provides a secure and user-friendly platform for second-hand trading among students.
 
-🚀 Features
+---
 
-🛒 Post & Browse Items – Students can sell their used items and explore what others are offering.
+## 🚀 Features
 
-🔍 Search & Filter – Quickly find products by name or category.
+- 🛒 **Post & Browse Items** – Students can sell their used items and explore what others are offering.
+- 🔍 **Search & Filter** – Quickly find products by name or category.
+- 🏫 **Campus-Based Listings** – Connect buyers and sellers from specific campuses.
+- 🔐 **Google Authentication** – Sign in quickly and securely with Google.
+- 📸 **Image Uploads** – Add product photos for better engagement.
+- 📩 **Email Notifications** – Get alerts for new messages or offers.
 
-🏫 Campus-Based Listings – Connect buyers and sellers from specific campuses.
+---
 
-🔐 Google Authentication – Sign in quickly and securely with Google.
+## 🛠️ Tech Stack
 
-📸 Image Uploads – Add product photos for better engagement.
+- **Frontend:** Next.js  
+- **Backend:** Node.js (Next.js API routes)  
+- **Database:** MongoDB  
+- **Authentication:** NextAuth.js (Google OAuth)  
+- **Email Service:** Nodemailer (SMTP)  
+- **Package Manager:** npm  
 
-📩 Email Notifications – Get alerts for new messages or offers.
+---
 
-🛠️ Tech Stack
+## 📂 Project Structure
 
-Frontend: Next.js
-
-Backend: Node.js (Next.js API routes)
-
-Database: MongoDB
-
-Authentication: NextAuth.js (Google OAuth)
-
-Email Service: Nodemailer (SMTP)
-
-Package Manager: npm
-
-📂 Project Structure
+```plaintext
 CampusMart/
 │── .next/             # Next.js build output (auto-generated)
 │── app/               # App Router pages & API routes
@@ -47,21 +45,19 @@ CampusMart/
 │── package.json       # Dependencies & scripts
 │── README.md          # Project documentation
 
+```
 ⚙️ Installation & Setup
-
-Clone the repository
-
+1️⃣ Clone the repository
+```
 git clone https://github.com/iamshubham1704/CampusMart.git
 cd CampusMart
-
-
-Install dependencies
-
+```
+2️⃣ Install dependencies
+```
 npm install
-
-
-Create .env.local and add the following variables:
-
+```
+3️⃣ Create .env.local and add the following variables:
+```
 # ===== Database Connection =====
 MONGODB_URI=your_mongodb_connection_string
 
@@ -80,15 +76,16 @@ EMAIL_PASS=your_email_password_or_app_password
 
 # ===== Public Base URL =====
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
-
-
-Run the development server
-
+```
+4️⃣ Run the development server
+```
 npm run dev
-
-
+```
+5️⃣ Open the app
+```
 Visit http://localhost:3000 in your browser.
 
+```
 📌 Roadmap
 
 ✅ Marketplace listing & search
@@ -102,17 +99,3 @@ Visit http://localhost:3000 in your browser.
 🔄 Email-based campus verification
 
 🔄 Mobile app version using React Native
-
-🤝 Contributing
-
-Fork this repository
-
-Create a new branch (feature/your-feature-name)
-
-Commit your changes
-
-Push to your branch and open a Pull Request
-
-📜 License
-
-Licensed under the MIT License – free to use, modify, and share.
