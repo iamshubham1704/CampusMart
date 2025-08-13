@@ -28,7 +28,8 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
-import './BuyerDashboard.css';
+import { useCart } from '../../components/contexts/CartContext';
+import CartDrawer from '../../components/CartDrawer';
 import ProductViewModal from './quick-view/page';
 
 const BuyerDashboard = () => {
@@ -38,7 +39,6 @@ const BuyerDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [wishlist, setWishlist] = useState(new Set());
-  const [cart, setCart] = useState(new Set());
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,12 +46,21 @@ const BuyerDashboard = () => {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
+  // Get cart context
+  const { 
+    totalItems, 
+    addToCart, 
+    isInCart, 
+    openCart,
+    isLoading: cartLoading 
+  } = useCart();
+
   // Filter states
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 10000 },
     conditions: [],
     locations: [],
-    sortBy: 'newest' // newest, oldest, price-low, price-high
+    sortBy: 'newest'
   });
 
   useEffect(() => {
@@ -74,7 +83,6 @@ const BuyerDashboard = () => {
 
       console.log('Fetching listings from API...');
 
-      // Fetch all public listings
       const response = await fetch('/api/listings/public', {
         method: 'GET',
         headers: {
@@ -93,7 +101,6 @@ const BuyerDashboard = () => {
         throw new Error(data.message || 'Failed to fetch listings');
       }
 
-      // Handle both array and object responses
       const listingsArray = data.listings || [];
       console.log(`Found ${listingsArray.length} listings from API`);
 
@@ -103,7 +110,6 @@ const BuyerDashboard = () => {
         return;
       }
 
-      // Transform the data to match the expected format
       const transformedListings = listingsArray.map(listing => {
         console.log('Processing listing:', listing.title || listing._id);
         return {
@@ -127,7 +133,6 @@ const BuyerDashboard = () => {
 
       console.log('Transformed listings:', transformedListings.length);
 
-      // Filter out sold items (optional since we're already filtering in the API)
       const activeListings = transformedListings.filter(listing => {
         const isActive = listing.status === 'active' || !listing.status;
         console.log(`Listing ${listing.title}: status=${listing.status}, isActive=${isActive}`);
@@ -140,7 +145,6 @@ const BuyerDashboard = () => {
     } catch (err) {
       console.error('Error fetching listings:', err);
       setError(`Failed to load listings: ${err.message}`);
-      // Fallback to mock data if API fails
       console.log('Using mock data as fallback');
       setListings(getMockData());
     } finally {
@@ -148,7 +152,6 @@ const BuyerDashboard = () => {
     }
   };
 
-  // Helper function to format time ago
   const formatTimeAgo = (dateString) => {
     if (!dateString) return 'Recently';
 
@@ -166,7 +169,6 @@ const BuyerDashboard = () => {
     return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
   };
 
-  // Helper function to map backend categories to frontend categories
   const mapCategory = (backendCategory) => {
     const categoryMap = {
       'Books': 'textbooks',
@@ -183,7 +185,6 @@ const BuyerDashboard = () => {
     return categoryMap[backendCategory] || 'all';
   };
 
-  // Fallback mock data with more items for testing
   const getMockData = () => [
     {
       id: 1,
@@ -200,7 +201,7 @@ const BuyerDashboard = () => {
       description: 'Barely used calculus textbook. Only a few pages highlighted.',
       views: 24,
       status: 'active',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
     },
     {
       id: 2,
@@ -217,7 +218,7 @@ const BuyerDashboard = () => {
       description: 'Perfect condition MacBook, comes with charger and case.',
       views: 156,
       status: 'active',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
+      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
     },
     {
       id: 3,
@@ -289,7 +290,6 @@ const BuyerDashboard = () => {
     }
   ];
 
-  // Fetch listings on component mount
   useEffect(() => {
     fetchAllListings();
   }, []);
@@ -304,7 +304,6 @@ const BuyerDashboard = () => {
     { id: 'gaming', name: 'Gaming', icon: Gamepad2 },
   ];
 
-  // Filter handling functions
   const handlePriceRangeChange = (field, value) => {
     setFilters(prev => ({
       ...prev,
@@ -351,31 +350,24 @@ const BuyerDashboard = () => {
     setSearchQuery('');
   };
 
-  // Enhanced filtering and sorting logic
   const filteredProducts = listings.filter(product => {
-    // Search filter
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.seller.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Category filter
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
 
-    // Price range filter
     const matchesPrice = product.price >= filters.priceRange.min && 
                         product.price <= filters.priceRange.max;
 
-    // Condition filter
     const matchesCondition = filters.conditions.length === 0 || 
                            filters.conditions.includes(product.condition);
 
-    // Location filter
     const matchesLocation = filters.locations.length === 0 || 
                           filters.locations.includes(product.location);
 
     return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesLocation;
   }).sort((a, b) => {
-    // Sorting logic
     switch (filters.sortBy) {
       case 'newest':
         return new Date(b.createdAt || Date.now()) - new Date(a.createdAt || Date.now());
@@ -400,17 +392,22 @@ const BuyerDashboard = () => {
     setWishlist(newWishlist);
   };
 
-  const addToCart = (productId) => {
-    const newCart = new Set(cart);
-    newCart.add(productId);
-    setCart(newCart);
+  // Updated addToCart function to use cart context
+  const handleAddToCart = async (product) => {
+    try {
+      const success = await addToCart(product.id, 1);
+      if (success) {
+        console.log(`Added ${product.title} to cart`);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
   };
 
   const toggleTheme = () => {
     setIsDarkTheme(!isDarkTheme);
   };
 
-  // Contact seller function
   const contactSeller = (listing) => {
     console.log('Contacting seller for:', listing.title);
   };
@@ -434,7 +431,6 @@ const BuyerDashboard = () => {
     openProductModal(productId);
   }
 
-  // Get active filter count
   const getActiveFilterCount = () => {
     let count = 0;
     if (filters.conditions.length > 0) count++;
@@ -445,54 +441,551 @@ const BuyerDashboard = () => {
     return count;
   };
 
-  return (
-    <div className={`dashboard ${isDarkTheme ? 'dark-theme' : 'light-theme'}`}>
-      {/* Animated Background */}
-      <div className="animated-background">
-        <div
-          className="gradient-overlay"
-          style={{
-            transform: `translate(${mousePosition.x * 0.01}px, ${mousePosition.y * 0.01}px)`,
-          }}
-        />
+  const styles = {
+    dashboard: {
+      minHeight: '100vh',
+      backgroundColor: isDarkTheme ? '#0a0b14' : '#f8fafc',
+      color: isDarkTheme ? '#e2e8f0' : '#1a202c',
+      position: 'relative',
+      overflow: 'hidden',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    },
+    animatedBackground: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: -1,
+      background: isDarkTheme 
+        ? `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 35%, transparent 60%)`
+        : `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 35%, transparent 60%)`,
+      transition: 'all 0.3s ease'
+    },
+    header: {
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      backgroundColor: isDarkTheme ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+      backdropFilter: 'blur(20px)',
+      borderBottom: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
+      padding: '1rem 2rem'
+    },
+    headerContent: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      maxWidth: '1400px',
+      margin: '0 auto'
+    },
+    logoSection: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem'
+    },
+    menuToggle: {
+      display: 'none',
+      background: 'none',
+      border: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      padding: '0.5rem',
+      borderRadius: '0.5rem',
+      transition: 'background-color 0.2s',
+      '@media (max-width: 768px)': {
+        display: 'block'
+      }
+    },
+    logo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      fontSize: '1.5rem',
+      fontWeight: '700',
+      background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text'
+    },
+    searchSection: {
+      flex: 1,
+      maxWidth: '500px',
+      margin: '0 2rem'
+    },
+    searchBar: {
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+      backgroundColor: isDarkTheme ? '#1e293b' : '#f1f5f9',
+      border: `2px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
+      borderRadius: '1rem',
+      padding: '0.75rem 1rem',
+      transition: 'all 0.3s ease'
+    },
+    searchInput: {
+      flex: 1,
+      background: 'none',
+      border: 'none',
+      outline: 'none',
+      color: 'inherit',
+      fontSize: '1rem',
+      marginLeft: '0.5rem'
+    },
+    headerActions: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem'
+    },
+    actionButton: {
+      position: 'relative',
+      background: 'none',
+      border: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      padding: '0.75rem',
+      borderRadius: '0.75rem',
+      transition: 'all 0.2s',
+      backgroundColor: isDarkTheme ? 'rgba(51, 65, 85, 0.5)' : 'rgba(241, 245, 249, 0.5)'
+    },
+    badge: {
+      position: 'absolute',
+      top: '0.25rem',
+      right: '0.25rem',
+      backgroundColor: '#ef4444',
+      color: 'white',
+      fontSize: '0.75rem',
+      fontWeight: '600',
+      borderRadius: '50%',
+      width: '1.25rem',
+      height: '1.25rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    mainContent: {
+      display: 'flex',
+      maxWidth: '1400px',
+      margin: '0 auto',
+      padding: '2rem',
+      gap: '2rem'
+    },
+    sidebar: {
+      width: '300px',
+      backgroundColor: isDarkTheme ? '#1e293b' : '#ffffff',
+      borderRadius: '1rem',
+      padding: '1.5rem',
+      height: 'fit-content',
+      position: 'sticky',
+      top: '120px',
+      border: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
+      '@media (max-width: 768px)': {
+        display: 'none'
+      }
+    },
+    categorySection: {
+      marginBottom: '2rem'
+    },
+    categoryList: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.5rem',
+      marginTop: '1rem'
+    },
+    categoryItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      padding: '0.75rem 1rem',
+      borderRadius: '0.5rem',
+      border: 'none',
+      background: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      fontWeight: '500',
+      transition: 'all 0.2s',
+      textAlign: 'left',
+      width: '100%'
+    },
+    categoryItemActive: {
+      backgroundColor: '#3b82f6',
+      color: '#ffffff'
+    },
+    contentArea: {
+      flex: 1
+    },
+    contentHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: '2rem',
+      flexWrap: 'wrap',
+      gap: '1rem'
+    },
+    resultsInfo: {
+      flex: 1
+    },
+    viewControls: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem'
+    },
+    filterToggle: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.75rem 1rem',
+      borderRadius: '0.5rem',
+      border: 'none',
+      backgroundColor: isDarkTheme ? '#334155' : '#f1f5f9',
+      color: 'inherit',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      fontWeight: '500',
+      position: 'relative',
+      transition: 'all 0.2s'
+    },
+    viewModeToggle: {
+      display: 'flex',
+      backgroundColor: isDarkTheme ? '#334155' : '#f1f5f9',
+      borderRadius: '0.5rem',
+      padding: '0.25rem'
+    },
+    viewButton: {
+      padding: '0.5rem',
+      border: 'none',
+      background: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      borderRadius: '0.25rem',
+      transition: 'all 0.2s'
+    },
+    viewButtonActive: {
+      backgroundColor: '#3b82f6',
+      color: '#ffffff'
+    },
+    productsContainer: {
+      display: 'grid',
+      gap: '1.5rem'
+    },
+    gridView: {
+      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))'
+    },
+    listView: {
+      gridTemplateColumns: '1fr'
+    },
+    productCard: {
+      backgroundColor: isDarkTheme ? '#1e293b' : '#ffffff',
+      borderRadius: '1rem',
+      overflow: 'hidden',
+      border: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      position: 'relative'
+    },
+    productImage: {
+      position: 'relative',
+      height: '200px',
+      overflow: 'hidden'
+    },
+    productImageImg: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover'
+    },
+    productOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity: 0,
+      transition: 'opacity 0.3s'
+    },
+    quickViewButton: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#3b82f6',
+      color: 'white',
+      border: 'none',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      fontWeight: '500'
+    },
+    wishlistButton: {
+      position: 'absolute',
+      top: '0.5rem',
+      right: '0.5rem',
+      padding: '0.5rem',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '50%',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      zIndex: 10
+    },
+    wishlistButtonActive: {
+      backgroundColor: '#ef4444',
+      color: 'white'
+    },
+    conditionBadge: {
+      position: 'absolute',
+      top: '0.5rem',
+      left: '0.5rem',
+      padding: '0.25rem 0.5rem',
+      backgroundColor: '#10b981',
+      color: 'white',
+      fontSize: '0.75rem',
+      fontWeight: '600',
+      borderRadius: '0.25rem'
+    },
+    productInfo: {
+      padding: '1rem'
+    },
+    productTitle: {
+      fontSize: '1.1rem',
+      fontWeight: '600',
+      marginBottom: '0.5rem',
+      lineHeight: '1.4'
+    },
+    sellerInfo: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: '0.75rem'
+    },
+    sellerDetails: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      fontSize: '0.85rem',
+      opacity: 0.8
+    },
+    rating: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+      color: '#fbbf24'
+    },
+    productMeta: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '1rem',
+      marginBottom: '1rem',
+      fontSize: '0.8rem',
+      opacity: 0.7
+    },
+    productMetaItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem'
+    },
+    priceSection: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      marginBottom: '1rem',
+      flexWrap: 'wrap'
+    },
+    currentPrice: {
+      display: 'flex',
+      alignItems: 'center',
+      fontSize: '1.25rem',
+      fontWeight: '700',
+      color: '#10b981'
+    },
+    originalPrice: {
+      fontSize: '0.9rem',
+      textDecoration: 'line-through',
+      opacity: 0.6
+    },
+    savings: {
+      fontSize: '0.8rem',
+      color: '#ef4444',
+      fontWeight: '600'
+    },
+    productActions: {
+      display: 'flex',
+      gap: '0.5rem'
+    },
+    addToCartButton: {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.5rem',
+      padding: '0.75rem',
+      backgroundColor: '#3b82f6',
+      color: 'white',
+      border: 'none',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      fontWeight: '500',
+      transition: 'background-color 0.2s',
+      disabled: cartLoading
+    },
+    contactSellerButton: {
+      flex: 1,
+      padding: '0.75rem',
+      backgroundColor: 'transparent',
+      color: 'inherit',
+      border: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      fontWeight: '500',
+      transition: 'all 0.2s'
+    },
+    filterTag: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.5rem 0.75rem',
+      backgroundColor: isDarkTheme ? '#334155' : '#e2e8f0',
+      borderRadius: '1rem',
+      fontSize: '0.8rem',
+      fontWeight: '500'
+    },
+    filterTagButton: {
+      background: 'none',
+      border: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      fontSize: '1rem',
+      lineHeight: 1,
+      marginLeft: '0.25rem'
+    },
+    loadingContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '400px',
+      gap: '1rem'
+    },
+    spinner: {
+      animation: 'spin 1s linear infinite'
+    },
+    errorContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '400px',
+      gap: '1rem',
+      color: '#ef4444'
+    },
+    tryAgainButton: {
+      padding: '0.5rem 1rem',
+      backgroundColor: '#3b82f6',
+      color: 'white',
+      border: 'none',
+      borderRadius: '0.375rem',
+      cursor: 'pointer'
+    },
+    noItemsContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '400px',
+      gap: '1rem',
+      opacity: 0.7
+    },
+    clearFiltersButton: {
+      padding: '0.5rem 1rem',
+      backgroundColor: '#ef4444',
+      color: 'white',
+      border: 'none',
+      borderRadius: '0.375rem',
+      cursor: 'pointer'
+    },
+    filterGroup: {
+      marginBottom: '1.5rem'
+    },
+    filterLabel: {
+      display: 'block',
+      fontSize: '0.9rem',
+      fontWeight: '600',
+      marginBottom: '0.5rem'
+    },
+    filterSelect: {
+      width: '100%',
+      padding: '0.5rem',
+      borderRadius: '0.25rem',
+      border: '1px solid #ccc',
+      backgroundColor: isDarkTheme ? '#333' : '#fff',
+      color: isDarkTheme ? '#fff' : '#000'
+    },
+    priceRange: {
+      marginTop: '0.5rem'
+    },
+    priceLabels: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      fontSize: '0.8rem',
+      opacity: 0.7,
+      marginTop: '0.25rem'
+    },
+    checkboxGroup: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.5rem'
+    },
+    checkboxLabel: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      fontSize: '0.85rem',
+      cursor: 'pointer'
+    },
+    sidebarOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 999,
+      display: 'none',
+    }
+  };
 
-        {/* Floating particles */}
-        <div className="floating-particles">
-          {[...Array(15)].map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 8}s`,
-                animationDuration: `${6 + Math.random() * 4}s`,
-              }}
-            />
-          ))}
-        </div>
-      </div>
+  return (
+    <div style={styles.dashboard}>
+      {/* Animated Background */}
+      <div style={styles.animatedBackground} />
 
       {/* Header */}
-      <header className="header">
-        <div className="header-content">
-          <div className="logo-section">
+      <header style={styles.header}>
+        <div style={styles.headerContent}>
+          <div style={styles.logoSection}>
             <button
-              className="menu-toggle"
+              style={styles.menuToggle}
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
               <Menu size={24} />
             </button>
-            <div className="logo">
+            <div style={styles.logo}>
               <Sparkles size={32} />
               <span>CampusMart</span>
             </div>
           </div>
 
-          <div className="search-section">
-            <div className="search-bar">
+          <div style={styles.searchSection}>
+            <div style={styles.searchBar}>
               <Search size={20} />
               <input
+                style={styles.searchInput}
                 type="text"
                 placeholder="Search for textbooks, electronics, furniture..."
                 value={searchQuery}
@@ -501,53 +994,56 @@ const BuyerDashboard = () => {
             </div>
           </div>
 
-          <div className="header-actions">
-            <button className="action-button" onClick={toggleTheme}>
+          <div style={styles.headerActions}>
+            <button style={styles.actionButton} onClick={toggleTheme}>
               {isDarkTheme ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
-            <button className="action-button">
+            <button style={styles.actionButton}>
               <Bell size={20} />
-              <span className="badge">3</span>
+              <span style={styles.badge}>3</span>
             </button>
 
-            <button className="action-button">
+            <button style={styles.actionButton}>
               <Heart size={20} />
-              <span className="badge">{wishlist.size}</span>
+              <span style={styles.badge}>{wishlist.size}</span>
             </button>
 
-            <button className="action-button">
+            <button style={styles.actionButton} onClick={openCart}>
               <ShoppingCart size={20} />
-              <span className="badge">{cart.size}</span>
+              {totalItems > 0 && <span style={styles.badge}>{totalItems}</span>}
             </button>
 
-            <div className="user-profile">
+            <div style={styles.actionButton}>
               <User size={20} />
             </div>
           </div>
         </div>
       </header>
 
-      <div className="main-content">
+      <div style={styles.mainContent}>
         {/* Sidebar */}
-        <aside className={`sidebar ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-          <div className="sidebar-content">
+        <aside style={{...styles.sidebar, display: isSidebarOpen ? 'block' : styles.sidebar.display}}>
+          <div>
             <button
-              className="close-sidebar"
+              style={{background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', float: 'right'}}
               onClick={() => setIsSidebarOpen(false)}
             >
               <X size={20} />
             </button>
 
-            <div className="category-section">
+            <div style={styles.categorySection}>
               <h3>Categories</h3>
-              <div className="category-list">
+              <div style={styles.categoryList}>
                 {categories.map(category => {
                   const IconComponent = category.icon;
                   return (
                     <button
                       key={category.id}
-                      className={`category-item ${selectedCategory === category.id ? 'active' : ''}`}
+                      style={{
+                        ...styles.categoryItem,
+                        ...(selectedCategory === category.id ? styles.categoryItemActive : {})
+                      }}
                       onClick={() => setSelectedCategory(category.id)}
                     >
                       <IconComponent size={20} />
@@ -558,19 +1054,18 @@ const BuyerDashboard = () => {
               </div>
             </div>
 
-            <div className="filter-section">
-              <div className="filter-header">
+            <div>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
                 <h3>Filters</h3>
                 {getActiveFilterCount() > 0 && (
                   <button 
-                    className="clear-filters-btn"
                     onClick={clearAllFilters}
                     style={{
                       background: 'none',
                       border: 'none',
                       color: '#ef4444',
                       cursor: 'pointer',
-                      fontSize: '12px'
+                      fontSize: '0.75rem'
                     }}
                   >
                     Clear All ({getActiveFilterCount()})
@@ -578,19 +1073,12 @@ const BuyerDashboard = () => {
                 )}
               </div>
 
-              <div className="filter-group">
-                <label>Sort By</label>
+              <div style={styles.filterGroup}>
+                <label style={styles.filterLabel}>Sort By</label>
                 <select 
                   value={filters.sortBy}
                   onChange={(e) => handleSortChange(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc',
-                    background: isDarkTheme ? '#333' : '#fff',
-                    color: isDarkTheme ? '#fff' : '#000'
-                  }}
+                  style={styles.filterSelect}
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -599,9 +1087,9 @@ const BuyerDashboard = () => {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Price Range: ₹{filters.priceRange.min} - ₹{filters.priceRange.max}</label>
-                <div className="price-range">
+              <div style={styles.filterGroup}>
+                <label style={styles.filterLabel}>Price Range: ₹{filters.priceRange.min} - ₹{filters.priceRange.max}</label>
+                <div style={styles.priceRange}>
                   <input 
                     type="range" 
                     min="0" 
@@ -616,18 +1104,18 @@ const BuyerDashboard = () => {
                     value={filters.priceRange.max}
                     onChange={(e) => handlePriceRangeChange('max', e.target.value)}
                   />
-                  <div className="price-labels">
+                  <div style={styles.priceLabels}>
                     <span>₹0</span>
                     <span>₹10000+</span>
                   </div>
                 </div>
               </div>
 
-              <div className="filter-group">
-                <label>Condition ({filters.conditions.length} selected)</label>
-                <div className="checkbox-group">
+              <div style={styles.filterGroup}>
+                <label style={styles.filterLabel}>Condition ({filters.conditions.length} selected)</label>
+                <div style={styles.checkboxGroup}>
                   {['Like New', 'Excellent', 'Good', 'Fair'].map(condition => (
-                    <label key={condition}>
+                    <label key={condition} style={styles.checkboxLabel}>
                       <input 
                         type="checkbox"
                         checked={filters.conditions.includes(condition)}
@@ -639,11 +1127,11 @@ const BuyerDashboard = () => {
                 </div>
               </div>
 
-              <div className="filter-group">
-                <label>Location ({filters.locations.length} selected)</label>
-                <div className="checkbox-group">
+              <div style={styles.filterGroup}>
+                <label style={styles.filterLabel}>Location ({filters.locations.length} selected)</label>
+                <div style={styles.checkboxGroup}>
                   {['North Campus', 'South Campus', 'East Campus', 'West Campus'].map(location => (
-                    <label key={location}>
+                    <label key={location} style={styles.checkboxLabel}>
                       <input 
                         type="checkbox"
                         checked={filters.locations.includes(location)}
@@ -659,10 +1147,10 @@ const BuyerDashboard = () => {
         </aside>
 
         {/* Content Area */}
-        <main className="content-area">
+        <main style={styles.contentArea}>
           {/* Content Header */}
-          <div className="content-header">
-            <div className="results-info">
+          <div style={styles.contentHeader}>
+            <div style={styles.resultsInfo}>
               <h2>Found {filteredProducts.length} items</h2>
               <p>
                 {getActiveFilterCount() > 0 
@@ -672,27 +1160,44 @@ const BuyerDashboard = () => {
               </p>
             </div>
 
-            <div className="view-controls">
+            <div style={styles.viewControls}>
               <button 
-                className={`filter-toggle ${getActiveFilterCount() > 0 ? 'has-filters' : ''}`}
+                style={{
+                  ...styles.filterToggle,
+                  ...(getActiveFilterCount() > 0 ? {backgroundColor: '#3b82f6', color: 'white'} : {})
+                }}
                 onClick={() => setIsSidebarOpen(true)}
               >
                 <Filter size={18} />
                 Filters
                 {getActiveFilterCount() > 0 && (
-                  <span className="filter-count">{getActiveFilterCount()}</span>
+                  <span style={{
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    borderRadius: '50%',
+                    padding: '0.125rem 0.375rem',
+                    fontSize: '0.75rem',
+                    marginLeft: '0.5rem'
+                  }}>
+                    {getActiveFilterCount()}
+                  </span>
                 )}
               </button>
 
-              <div className="view-mode-toggle">
+              <div style={styles.viewModeToggle}>
                 <button
-                  className={`view-button ${viewMode === 'grid' ? 'active' : ''}`}
+                  style={{
+                    ...styles.viewButton,
+                    ...(viewMode === 'grid' ? styles.viewButtonActive : {})
+                  }}
                   onClick={() => setViewMode('grid')}
                 >
                   <Grid3X3 size={18} />
                 </button>
                 <button
-                  className={`view-button ${viewMode === 'list' ? 'active' : ''}`}
+                  style={{
+                    ...styles.viewButton,
+                    ...(viewMode === 'list' ? styles.viewButtonActive : {})
+                  }}
                   onClick={() => setViewMode('list')}
                 >
                   <List size={18} />
@@ -703,37 +1208,37 @@ const BuyerDashboard = () => {
 
           {/* Active Filters Display */}
           {getActiveFilterCount() > 0 && (
-            <div className="active-filters" style={{
+            <div style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '8px',
-              marginBottom: '16px',
-              padding: '12px',
-              background: isDarkTheme ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-              borderRadius: '8px'
+              gap: '0.5rem',
+              marginBottom: '1rem',
+              padding: '0.75rem',
+              backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+              borderRadius: '0.5rem'
             }}>
               {selectedCategory !== 'all' && (
-                <span className="filter-tag">
+                <span style={styles.filterTag}>
                   Category: {categories.find(c => c.id === selectedCategory)?.name}
-                  <button onClick={() => setSelectedCategory('all')}>×</button>
+                  <button style={styles.filterTagButton} onClick={() => setSelectedCategory('all')}>×</button>
                 </span>
               )}
               {searchQuery && (
-                <span className="filter-tag">
+                <span style={styles.filterTag}>
                   Search: "{searchQuery}"
-                  <button onClick={() => setSearchQuery('')}>×</button>
+                  <button style={styles.filterTagButton} onClick={() => setSearchQuery('')}>×</button>
                 </span>
               )}
               {filters.conditions.map(condition => (
-                <span key={condition} className="filter-tag">
+                <span key={condition} style={styles.filterTag}>
                   {condition}
-                  <button onClick={() => handleConditionChange(condition, false)}>×</button>
+                  <button style={styles.filterTagButton} onClick={() => handleConditionChange(condition, false)}>×</button>
                 </span>
               ))}
               {filters.locations.map(location => (
-                <span key={location} className="filter-tag">
+                <span key={location} style={styles.filterTag}>
                   {location}
-                  <button onClick={() => handleLocationChange(location, false)}>×</button>
+                  <button style={styles.filterTagButton} onClick={() => handleLocationChange(location, false)}>×</button>
                 </span>
               ))}
             </div>
@@ -741,43 +1246,18 @@ const BuyerDashboard = () => {
 
           {/* Loading and Error States */}
           {loading && (
-            <div className="loading-container" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '400px',
-              gap: '16px'
-            }}>
-              <Loader2 size={48} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+            <div style={styles.loadingContainer}>
+              <Loader2 size={48} style={styles.spinner} />
               <p>Loading amazing deals...</p>
             </div>
           )}
 
           {error && (
-            <div className="error-container" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '400px',
-              gap: '16px',
-              color: '#ef4444'
-            }}>
+            <div style={styles.errorContainer}>
               <AlertCircle size={48} />
               <h3>Oops! Something went wrong</h3>
               <p>{error}</p>
-              <button
-                onClick={fetchAllListings}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
+              <button style={styles.tryAgainButton} onClick={fetchAllListings}>
                 Try Again
               </button>
             </div>
@@ -785,32 +1265,17 @@ const BuyerDashboard = () => {
 
           {/* Products Container */}
           {!loading && !error && (
-            <div className={`products-container ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
+            <div style={{
+              ...styles.productsContainer,
+              ...(viewMode === 'grid' ? styles.gridView : styles.listView)
+            }}>
               {filteredProducts.length === 0 ? (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: '400px',
-                  gap: '16px',
-                  opacity: 0.7
-                }}>
+                <div style={styles.noItemsContainer}>
                   <Search size={64} />
                   <h3>No items found</h3>
                   <p>Try adjusting your search or filters</p>
                   {getActiveFilterCount() > 0 && (
-                    <button 
-                      onClick={clearAllFilters}
-                      style={{
-                        padding: '8px 16px',
-                        backgroundColor: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer'
-                      }}
-                    >
+                    <button style={styles.clearFiltersButton} onClick={clearAllFilters}>
                       Clear All Filters
                     </button>
                   )}
@@ -819,18 +1284,38 @@ const BuyerDashboard = () => {
                 filteredProducts.map(product => (
                   <div key={product.id}
                     onClick={() => handleProductClick(product)}
-                    className="product-card">
-                    <div className="product-image">
-                      <img src={product.image} alt={product.title} />
-                      <div className="product-overlay">
-                        <button className="quick-view-button"
-                        onClick={(e)=>handleQuickView(e,product.id)}>
+                    style={styles.productCard}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = isDarkTheme 
+                        ? '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
+                        : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+                      const overlay = e.currentTarget.querySelector('[data-overlay]');
+                      if (overlay) overlay.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                      const overlay = e.currentTarget.querySelector('[data-overlay]');
+                      if (overlay) overlay.style.opacity = '0';
+                    }}
+                  >
+                    <div style={styles.productImage}>
+                      <img style={styles.productImageImg} src={product.image} alt={product.title} />
+                      <div data-overlay style={styles.productOverlay}>
+                        <button 
+                          style={styles.quickViewButton}
+                          onClick={(e) => handleQuickView(e, product.id)}
+                        >
                           <Eye size={18} />
                           Quick View
                         </button>
                       </div>
                       <button
-                        className={`wishlist-button ${wishlist.has(product.id) ? 'active' : ''}`}
+                        style={{
+                          ...styles.wishlistButton,
+                          ...(wishlist.has(product.id) ? styles.wishlistButtonActive : {})
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleWishlist(product.id);
@@ -838,71 +1323,81 @@ const BuyerDashboard = () => {
                       >
                         <Heart size={18} />
                       </button>
-                      <div className="condition-badge">
+                      <div style={styles.conditionBadge}>
                         {product.condition}
                       </div>
                     </div>
 
-                    <div className="product-info">
-                      <h3 className="product-title">{product.title}</h3>
+                    <div style={styles.productInfo}>
+                      <h3 style={styles.productTitle}>{product.title}</h3>
 
-                      <div className="seller-info">
-                        <div className="seller-details">
+                      <div style={styles.sellerInfo}>
+                        <div style={styles.sellerDetails}>
                           <User size={14} />
                           <span>{product.seller}</span>
-                          <div className="rating">
+                          <div style={styles.rating}>
                             <Star size={12} />
                             <span>{product.rating}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="product-meta">
-                        <div>
+                      <div style={styles.productMeta}>
+                        <div style={styles.productMetaItem}>
                           <MapPin size={14} />
                           <span>{product.location}</span>
                         </div>
-                        <div>
+                        <div style={styles.productMetaItem}>
                           <Clock size={14} />
                           <span>{product.timePosted}</span>
                         </div>
-                        <div>
+                        <div style={styles.productMetaItem}>
                           <Eye size={14} />
                           <span>{product.views} views</span>
                         </div>
                       </div>
 
-                      <div className="price-section">
-                        <div className="current-price">
+                      <div style={styles.priceSection}>
+                        <div style={styles.currentPrice}>
                           <DollarSign size={20} />
                           {product.price}
                         </div>
                         {product.originalPrice > product.price && (
                           <>
-                            <div className="original-price">
+                            <div style={styles.originalPrice}>
                               ₹{product.originalPrice}
                             </div>
-                            <div className="savings">
+                            <div style={styles.savings}>
                               Save ₹{(product.originalPrice - product.price).toFixed(2)}
                             </div>
                           </>
                         )}
                       </div>
 
-                      <div className="product-actions">
+                      <div style={styles.productActions}>
                         <button
-                          className="add-to-cart-button"
+                          style={{
+                            ...styles.addToCartButton,
+                            opacity: cartLoading || isInCart(product.id) ? 0.6 : 1,
+                            cursor: cartLoading || isInCart(product.id) ? 'not-allowed' : 'pointer'
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            addToCart(product.id);
+                            if (!isInCart(product.id)) {
+                              handleAddToCart(product);
+                            }
                           }}
+                          disabled={cartLoading || isInCart(product.id)}
                         >
                           <ShoppingCart size={16} />
-                          Add to Cart
+                          {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}
                         </button>
                         <button
-                          className="contact-seller-button"
-                          onClick={() => contactSeller(product)}
+                          style={styles.contactSellerButton}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            contactSeller(product);
+                          }}
                         >
                           Contact Seller
                         </button>
@@ -917,15 +1412,19 @@ const BuyerDashboard = () => {
       </div>
 
       {/* Sidebar Overlay for Mobile */}
-      {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />}
+      {isSidebarOpen && <div style={styles.sidebarOverlay} onClick={() => setIsSidebarOpen(false)} />}
 
-        {selectedProductId && (
-          <ProductViewModal
+      {/* Product Modal */}
+      {selectedProductId && (
+        <ProductViewModal
           productId={selectedProductId}
           isOpen={isProductModalOpen}
-          onClose={closeProductModal}/>
-        )}
+          onClose={closeProductModal}
+        />
+      )}
 
+      {/* Cart Drawer */}
+      <CartDrawer />
     </div>
   );
 };

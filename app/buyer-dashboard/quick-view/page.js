@@ -1,4 +1,3 @@
-'use client'
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
@@ -24,8 +23,11 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
-  Package
+  Package,
+  Trash2,
+  ShoppingBag
 } from 'lucide-react';
+import { useCart } from '../../../components/contexts/CartContext';
 import './ProductPage.css';
 
 const ProductViewModal = ({ productId, isOpen, onClose }) => {
@@ -39,6 +41,22 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [actionLoading, setActionLoading] = useState({ buy: false, cart: false, contact: false });
+  
+  // Cart-specific states using CartContext
+  const { 
+    totalItems, 
+    addToCart, 
+    removeFromCart,
+    updateQuantity,
+    getItemQuantity,
+    isInCart, 
+    openCart,
+    isLoading: cartLoading,
+    cart // This should come from CartContext
+  } = useCart();
+  
+  const [showCartPreview, setShowCartPreview] = useState(false);
+  const [cartItemQuantity, setCartItemQuantity] = useState(0);
 
   useEffect(() => {
     if (isOpen && productId) {
@@ -46,60 +64,69 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
     }
   }, [isOpen, productId]);
 
- const fetchProductDetails = async () => {
-  try {
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    // Update cart item quantity when cart or productId changes
+    if (productId) {
+      setCartItemQuantity(getItemQuantity(productId));
+    }
+  }, [cart, productId, getItemQuantity]);
 
-    const response = await fetch(`/api/listings/public/${productId}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
+  // Remove these functions since you're using CartContext
+  // const loadCart = () => { ... }
+  // const saveCart = (newCart) => { ... }
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  const fetchProductDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const data = await response.json();
-    console.log('Raw API response:', data); // Add this line
+      const response = await fetch(`/api/listings/public/${productId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-    const transformedProduct = {
-      id: data._id || data.id,
-      title: data.title,
-      description: data.description,
-      price: parseFloat(data.price),
-      originalPrice: data.originalPrice ? parseFloat(data.originalPrice) : parseFloat(data.price) * 1.3,
-      condition: data.condition || 'Good',
-      category: data.category,
-      images: data.images || ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=500&fit=crop'],
-      seller: {
-        id: data.seller?._id || data.sellerId,
-        name: data.seller?.name || data.sellerName || 'Anonymous Seller',
-        yearDept: data.seller?.yearDept || data.seller?.department || '3rd Year • CSE',
-        verified: data.seller?.verified || false,
-        rating: data.seller?.rating || 4.5,
-        totalRatings: data.seller?.totalRatings || 0,
-        joinDate: data.seller?.createdAt || new Date().toISOString(),
-        email: data.seller?.email,
-        phone: data.seller?.phone
-      },
-      location: data.location || 'Campus',
-      createdAt: data.createdAt,
-      views: data.views || 0,
-      status: data.status || 'active',
-      specifications: data.specifications || {},
-      tags: data.tags || []
-    };
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-    console.log('Transformed product:', transformedProduct); // Add this line
-    setProduct(transformedProduct);
-    setPickupInfo(`Meet at ${transformedProduct.location}`);
-    updateViewCount(productId);
-  } catch (err) {
-    console.error('Error fetching product:', err);
-    setError(`Failed to load product details: ${err.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
+      const data = await response.json();
+
+      const transformedProduct = {
+        id: data._id || data.id,
+        title: data.title,
+        description: data.description,
+        price: parseFloat(data.price),
+        originalPrice: data.originalPrice ? parseFloat(data.originalPrice) : parseFloat(data.price) * 1.3,
+        condition: data.condition || 'Good',
+        category: data.category,
+        images: data.images || ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=500&fit=crop'],
+        seller: {
+          id: data.seller?._id || data.sellerId,
+          name: data.seller?.name || data.sellerName || 'Anonymous Seller',
+          yearDept: data.seller?.yearDept || data.seller?.department || '3rd Year • CSE',
+          verified: data.seller?.verified || false,
+          rating: data.seller?.rating || 4.5,
+          totalRatings: data.seller?.totalRatings || 0,
+          joinDate: data.seller?.createdAt || new Date().toISOString(),
+          email: data.seller?.email,
+          phone: data.seller?.phone
+        },
+        location: data.location || 'Campus',
+        createdAt: data.createdAt,
+        views: data.views || 0,
+        status: data.status || 'active',
+        specifications: data.specifications || {},
+        tags: data.tags || []
+      };
+
+      setProduct(transformedProduct);
+      setPickupInfo(`Meet at ${transformedProduct.location}`);
+      updateViewCount(productId);
+    } catch (err) {
+      console.error('Error fetching product:', err);
+      setError(`Failed to load product details: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateViewCount = async (id) => {
     try {
@@ -111,6 +138,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
       console.error('Error updating view count:', err);
     }
   };
+
   const handleBuyNow = async () => {
     try {
       setActionLoading({ ...actionLoading, buy: true });
@@ -142,20 +170,66 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   const handleAddToCart = async () => {
     try {
       setActionLoading({ ...actionLoading, cart: true });
-      const cartData = { productId: product.id, quantity };
-      const response = await fetch('/api/cart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cartData)
-      });
-      if (!response.ok) throw new Error('Failed to add to cart');
-      alert('Added to cart successfully!');
+      
+      const success = await addToCart(product.id, quantity);
+      
+      if (success) {
+        setShowCartPreview(true);
+        
+        // Auto-hide preview after 3 seconds
+        setTimeout(() => setShowCartPreview(false), 3000);
+        
+        console.log(`Added ${product.title} to cart`);
+      } else {
+        console.error('Failed to add item to cart');
+        alert('Failed to add to cart. Please try again.');
+      }
+
     } catch (err) {
       console.error('Error adding to cart:', err);
       alert('Failed to add to cart. Please try again.');
     } finally {
       setActionLoading({ ...actionLoading, cart: false });
     }
+  };
+
+  const handleRemoveFromCart = async () => {
+    try {
+      const success = await removeFromCart(productId);
+      if (!success) {
+        alert('Failed to remove item from cart');
+      }
+    } catch (err) {
+      console.error('Error removing from cart:', err);
+      alert('Failed to remove item from cart');
+    }
+  };
+
+  const handleUpdateCartQuantity = async (newQuantity) => {
+    if (newQuantity <= 0) {
+      await handleRemoveFromCart();
+      return;
+    }
+
+    try {
+      const success = await updateQuantity(productId, newQuantity);
+      if (!success) {
+        alert('Failed to update cart quantity');
+      }
+    } catch (err) {
+      console.error('Error updating cart quantity:', err);
+      alert('Failed to update cart quantity');
+    }
+  };
+
+  const getCartTotal = () => {
+    // Add null check for cart
+    if (!cart || !Array.isArray(cart)) return 0;
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  const getCartItemCount = () => {
+    return totalItems || 0;
   };
 
   const handleContactSeller = async () => {
@@ -234,6 +308,69 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
           <X size={24} />
         </button>
 
+        {/* Cart Preview Notification */}
+        {showCartPreview && (
+          <div className="cart-preview-notification">
+            <CheckCircle size={20} />
+            <span>Added to cart! ({getCartItemCount()} items)</span>
+            <button onClick={() => setShowCartPreview(false)}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Cart Icon with Badge */}
+        {getCartItemCount() > 0 && (
+          <div className="cart-badge-container">
+            <button className="cart-icon-btn" onClick={() => {
+              setShowCartPreview(false);
+              openCart();
+            }}>
+              <ShoppingCart size={20} />
+              <span className="cart-badge">{getCartItemCount()}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Cart Preview Dropdown - Add null checks */}
+        {showCartPreview && cart && Array.isArray(cart) && cart.length > 0 && (
+          <div className="cart-preview-dropdown">
+            <div className="cart-preview-header">
+              <h3>Cart ({getCartItemCount()} items)</h3>
+              <button onClick={() => setShowCartPreview(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="cart-preview-items">
+              {cart.slice(0, 3).map((item) => (
+                <div key={item.id} className="cart-preview-item">
+                  <img src={item.image} alt={item.title} />
+                  <div className="item-details">
+                    <h4>{item.title}</h4>
+                    <p>₹{item.price} × {item.quantity}</p>
+                  </div>
+                  <button
+                    onClick={() => removeFromCart(item.id)}
+                    className="remove-item"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              {cart.length > 3 && (
+                <p className="more-items">+{cart.length - 3} more items</p>
+              )}
+            </div>
+            <div className="cart-preview-footer">
+              <div className="cart-total">Total: ₹{getCartTotal()}</div>
+              <button className="view-cart-btn" onClick={openCart}>
+                <ShoppingBag size={16} />
+                View Cart
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div className="modal-loading">
@@ -292,6 +429,12 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                     <div className="verified-badge">
                       <Shield size={14} />
                       Verified
+                    </div>
+                  )}
+                  {isInCart(product?.id) && (
+                    <div className="in-cart-badge">
+                      <ShoppingCart size={14} />
+                      In Cart ({cartItemQuantity})
                     </div>
                   )}
                 </div>
@@ -380,6 +523,29 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                   </div>
                 </div>
 
+                {/* Cart Management for Already Added Items */}
+                {isInCart(product?.id) && (
+                  <div className="cart-management">
+                    <label>In Cart ({cartItemQuantity} items):</label>
+                    <div className="cart-controls">
+                      <button onClick={() => handleUpdateCartQuantity(cartItemQuantity - 1)}>
+                        <Minus size={16} />
+                      </button>
+                      <span>{cartItemQuantity}</span>
+                      <button onClick={() => handleUpdateCartQuantity(cartItemQuantity + 1)}>
+                        <Plus size={16} />
+                      </button>
+                      <button 
+                        onClick={handleRemoveFromCart}
+                        className="remove-from-cart"
+                        title="Remove from cart"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="payment-section">
                   <label>Payment Method:</label>
                   <div className="payment-options">
@@ -434,16 +600,18 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                     Buy Now - ₹{product.price * quantity}
                   </button>
                   <button
-                    className="add-cart-btn"
+                    className={`add-cart-btn ${isInCart(product?.id) ? 'in-cart' : ''}`}
                     onClick={handleAddToCart}
-                    disabled={actionLoading.cart}
+                    disabled={actionLoading.cart || cartLoading}
                   >
-                    {actionLoading.cart ? (
+                    {actionLoading.cart || cartLoading ? (
                       <Loader2 size={16} className="spinner" />
+                    ) : isInCart(product?.id) ? (
+                      <CheckCircle size={16} />
                     ) : (
                       <Package size={16} />
                     )}
-                    Add to Cart
+                    {isInCart(product?.id) ? `Update Cart (+${quantity})` : 'Add to Cart'}
                   </button>
                 </div>
 
