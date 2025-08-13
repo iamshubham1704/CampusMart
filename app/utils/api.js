@@ -28,6 +28,7 @@ export const listingsAPI = {
     }
   },
 
+
   // Create new listing
   createListing: async (listingData) => {
     try {
