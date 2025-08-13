@@ -11,7 +11,6 @@ import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
 import Link from 'next/link';
 
-
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
@@ -92,9 +91,7 @@ const SellerDashboard = () => {
     return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' fill='%23667eea' rx='18'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.35em' fill='%23ffffff' font-size='14' font-family='Arial, sans-serif' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
   };
 
-  // Fetch data
-  // In your SellerDashboard component, replace the fetchData function:
-
+  // Fetch data function
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -223,7 +220,6 @@ const SellerDashboard = () => {
     fetchData();
   }, [router]);
 
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/seller-login');
@@ -241,10 +237,10 @@ const SellerDashboard = () => {
         setActiveTab('profile');
         break;
       case 'settings':
-        setActiveTab('settings');
+        router.push('/seller-dashboard/settings');
         break;
       case 'notifications':
-        setActiveTab('notifications');
+        router.push('/seller-dashboard/notifications');
         break;
       case 'logout':
         handleLogout();
@@ -424,13 +420,15 @@ const SellerDashboard = () => {
                       <div className={styles.profileDivider}></div>
 
                       <div className={styles.profileMenuItems}>
-                        <Link href="/seller-dashboard/profile-section"><button
-                          className={styles.profileMenuItem}
-                          onClick={() => handleProfileAction('profile')}
-                        >
-                          <User size={16} />
-                          <span>My Profile</span>
-                        </button></Link>
+                        <Link href="/seller-dashboard/profile-section">
+                          <button
+                            className={styles.profileMenuItem}
+                            onClick={() => handleProfileAction('profile')}
+                          >
+                            <User size={16} />
+                            <span>My Profile</span>
+                          </button>
+                        </Link>
 
                         <button
                           className={styles.profileMenuItem}
@@ -498,7 +496,18 @@ const SellerDashboard = () => {
                 <span>My Products</span>
               </button>
 
-              <button className={styles.navItem}>
+              <button
+                onClick={() => router.push('/seller-dashboard/notifications')}
+                className={`${styles.navItem} ${activeTab === 'notifications' ? styles.active : ''}`}
+              >
+                <Bell size={20} />
+                <span>Notifications</span>
+              </button>
+
+              <button 
+                onClick={() => router.push('/seller-dashboard/settings')}
+                className={`${styles.navItem} ${activeTab === 'settings' ? styles.active : ''}`}
+              >
                 <Settings size={20} />
                 <span>Settings</span>
               </button>
@@ -528,14 +537,14 @@ const SellerDashboard = () => {
             <StatCard
               icon={Heart}
               value={sellerData?.savedItems || 0}
-              label="Saved Items"
+              label="Total Listings"
               change="+3 this week"
               color="#ec4899"
             />
             <StatCard
               icon={MessageSquare}
               value={sellerData?.activeChats || 0}
-              label="Active Chats"
+              label="Pending Messages"
               change="+2 new today"
               color="#3b82f6"
             />
