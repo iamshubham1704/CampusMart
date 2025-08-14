@@ -14,15 +14,6 @@ export async function POST(request) {
     if (!accountType || !['buyer', 'seller'].includes(accountType)) {
       return Response.json({ error: "Invalid account type" }, { status: 400 });
     }
-
-    // Update user in your database
-    // This is where you'd update your user record with the account type
-    // Example with Prisma:
-    // await prisma.user.update({
-    //   where: { email: session.user.email },
-    //   data: { accountType }
-    // });
-
     console.log(`Setting account type to: ${accountType} for user: ${session.user.email}`);
     
     return Response.json({ 
