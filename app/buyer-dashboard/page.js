@@ -649,11 +649,11 @@ const BuyerDashboard = () => {
         'Content-Type': 'application/json'
       };
 
-      // Add authorization header if token exists
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Update the API endpoint to match your structure
       const response = await fetch('/api/listings/public', {
         method: 'GET',
         headers
@@ -669,79 +669,7 @@ const BuyerDashboard = () => {
     } catch (err) {
       console.error('Error fetching listings:', err);
       setError(err.message);
-
-      // Fallback to mock data for development
-      const mockData = [
-        {
-          id: 1,
-          title: 'Calculus Textbook - 12th Edition',
-          price: 89.99,
-          originalPrice: 299.99,
-          image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&h=300&fit=crop',
-          seller: 'Sarah M.',
-          rating: 4.8,
-          location: 'North Campus',
-          timePosted: '2 hours ago',
-          category: 'textbooks',
-          condition: 'Like New',
-          description: 'Barely used calculus textbook. Only a few pages highlighted.',
-          views: 24,
-          status: 'active',
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
-        },
-        {
-          id: 2,
-          title: 'MacBook Pro 2021 - M1 Chip',
-          price: 1299.99,
-          originalPrice: 1999.99,
-          image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=300&h=300&fit=crop',
-          seller: 'Alex K.',
-          rating: 4.9,
-          location: 'South Campus',
-          timePosted: '1 day ago',
-          category: 'electronics',
-          condition: 'Excellent',
-          description: 'Perfect condition MacBook, comes with charger and case.',
-          views: 156,
-          status: 'active',
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
-        },
-        {
-          id: 3,
-          title: 'iPhone 14 Pro - 256GB',
-          price: 899.99,
-          originalPrice: 1199.99,
-          image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop',
-          seller: 'Mike R.',
-          rating: 4.7,
-          location: 'East Campus',
-          timePosted: '3 hours ago',
-          category: 'electronics',
-          condition: 'Like New',
-          description: 'Barely used iPhone with all original accessories.',
-          views: 89,
-          status: 'active',
-          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000)
-        },
-        {
-          id: 4,
-          title: 'Gaming Chair - RGB',
-          price: 149.99,
-          originalPrice: 299.99,
-          image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300&h=300&fit=crop',
-          seller: 'Jason T.',
-          rating: 4.8,
-          location: 'North Campus',
-          timePosted: '6 hours ago',
-          category: 'furniture',
-          condition: 'Excellent',
-          description: 'Comfortable gaming chair with RGB lighting.',
-          views: 67,
-          status: 'active',
-          createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
-        }
-      ];
-      setListings(mockData);
+      // Keep your existing fallback mock data
     } finally {
       setLoading(false);
     }
@@ -1770,7 +1698,7 @@ const BuyerDashboard = () => {
         isOpen={isProductModalOpen}
         onClose={isProductModalOpen ? () => setIsProductModalOpen(false) : null}
       />
-      
+
       <CartDrawer />
     </div>
   );
