@@ -1725,7 +1725,7 @@ const BuyerDashboard = () => {
                             console.log('Contact seller for product:', product.id);
                           }}
                         >
-                          Contact Seller
+                          Buy Now 
                         </button>
                       </div>
                     </div>
