@@ -99,7 +99,7 @@ const CartDrawer = () => {
                       </div>
                       <div className="item-price">
                         <DollarSign size={16} />
-                        <span>${item.price}</span>
+                        <span>₹{item.price}</span>
                       </div>
                     </div>
 
@@ -132,7 +132,7 @@ const CartDrawer = () => {
                     </div>
 
                     <div className="item-subtotal">
-                      <strong>${item.subtotal.toFixed(2)}</strong>
+                      <strong>₹{item.subtotal.toFixed(2)}</strong>
                     </div>
                   </div>
                 ))}
@@ -143,11 +143,11 @@ const CartDrawer = () => {
                 <div className="cart-summary">
                   <div className="summary-line">
                     <span>Items ({totalItems}):</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>₹{totalPrice.toFixed(2)}</span>
                   </div>
                   <div className="summary-line total">
                     <span>Total:</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>₹{totalPrice.toFixed(2)}</span>
                   </div>
                 </div>
 

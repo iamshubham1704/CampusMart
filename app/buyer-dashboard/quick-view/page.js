@@ -41,20 +41,20 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [actionLoading, setActionLoading] = useState({ buy: false, cart: false, contact: false });
-  
+
   // Cart-specific states using CartContext
-  const { 
-    totalItems, 
-    addToCart, 
+  const {
+    totalItems,
+    addToCart,
     removeFromCart,
     updateQuantity,
     getItemQuantity,
-    isInCart, 
+    isInCart,
     openCart,
     isLoading: cartLoading,
-    cart // This should come from CartContext
+    cartItems // Use cartItems instead of cart
   } = useCart();
-  
+
   const [showCartPreview, setShowCartPreview] = useState(false);
   const [cartItemQuantity, setCartItemQuantity] = useState(0);
 
@@ -69,7 +69,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
     if (productId) {
       setCartItemQuantity(getItemQuantity(productId));
     }
-  }, [cart, productId, getItemQuantity]);
+  }, [cartItems, productId, getItemQuantity]);
 
   // Remove these functions since you're using CartContext
   // const loadCart = () => { ... }
@@ -170,15 +170,15 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   const handleAddToCart = async () => {
     try {
       setActionLoading({ ...actionLoading, cart: true });
-      
+
       const success = await addToCart(product.id, quantity);
-      
+
       if (success) {
         setShowCartPreview(true);
-        
+
         // Auto-hide preview after 3 seconds
         setTimeout(() => setShowCartPreview(false), 3000);
-        
+
         console.log(`Added ${product.title} to cart`);
       } else {
         console.error('Failed to add item to cart');
@@ -223,9 +223,9 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   };
 
   const getCartTotal = () => {
-    // Add null check for cart
-    if (!cart || !Array.isArray(cart)) return 0;
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    // Add null check for cartItems
+    if (!cartItems || !Array.isArray(cartItems)) return 0;
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   const getCartItemCount = () => {
@@ -333,7 +333,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
         )}
 
         {/* Cart Preview Dropdown - Add null checks */}
-        {showCartPreview && cart && Array.isArray(cart) && cart.length > 0 && (
+        {showCartPreview && cartItems && Array.isArray(cartItems) && cartItems.length > 0 && (
           <div className="cart-preview-dropdown">
             <div className="cart-preview-header">
               <h3>Cart ({getCartItemCount()} items)</h3>
@@ -342,7 +342,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
               </button>
             </div>
             <div className="cart-preview-items">
-              {cart.slice(0, 3).map((item) => (
+              {cartItems.slice(0, 3).map((item) => (
                 <div key={item.id} className="cart-preview-item">
                   <img src={item.image} alt={item.title} />
                   <div className="item-details">
@@ -357,8 +357,8 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                   </button>
                 </div>
               ))}
-              {cart.length > 3 && (
-                <p className="more-items">+{cart.length - 3} more items</p>
+              {cartItems.length > 3 && (
+                <p className="more-items">+{cartItems.length - 3} more items</p>
               )}
             </div>
             <div className="cart-preview-footer">
@@ -535,7 +535,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                       <button onClick={() => handleUpdateCartQuantity(cartItemQuantity + 1)}>
                         <Plus size={16} />
                       </button>
-                      <button 
+                      <button
                         onClick={handleRemoveFromCart}
                         className="remove-from-cart"
                         title="Remove from cart"

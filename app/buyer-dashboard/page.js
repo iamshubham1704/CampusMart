@@ -26,34 +26,581 @@ import {
   Sun,
   Moon,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Settings,
+  LogOut,
+  Camera,
+  Phone,
+  Mail,
+  Edit3,
+  Save,
+  Package,
+  ChevronDown
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
 import ProductViewModal from './quick-view/page';
 
+// Updated useBuyer hook with real API integration
+const useBuyer = () => {
+  const [buyer, setBuyer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch buyer profile from API
+  const fetchBuyerProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/buyer/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('buyerToken');
+          localStorage.removeItem('token');
+          window.location.href = '/buyer-login';
+          return;
+        }
+        throw new Error(`Failed to fetch profile: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setBuyer(data.data);
+    } catch (error) {
+      console.error('Error fetching buyer profile:', error);
+      setError(error.message);
+
+      // Fallback to mock data for development
+      setBuyer({
+        _id: '1',
+        name: 'John Doe',
+        email: 'john.doe@university.edu',
+        phone: '+1 234 567 8900',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+        location: 'North Campus',
+        university: 'State University',
+        year: 'Junior',
+        createdAt: '2023-09-15T00:00:00.Z',
+        verified: true,
+        totalPurchases: 12,
+        totalSaved: 2450,
+        favoriteCategory: 'Electronics'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProfile = async (updates) => {
+    try {
+      setLoading(true);
+
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/buyer/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('buyerToken');
+          localStorage.removeItem('token');
+          window.location.href = '/buyer-login';
+          return { success: false, error: 'Authentication failed' };
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
+      }
+
+      const data = await response.json();
+      setBuyer(data.data);
+      return { success: true, data: data.data };
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initialize buyer data on mount
+  useEffect(() => {
+    fetchBuyerProfile();
+  }, []);
+
+  return { buyer, updateProfile, loading, error, refetch: fetchBuyerProfile };
+};
+
+const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
+  const { buyer, updateProfile, loading } = useBuyer();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    university: '',
+    year: ''
+  });
+
+  // Update form data when buyer data changes
+  useEffect(() => {
+    if (buyer) {
+      setFormData({
+        name: buyer.name || '',
+        email: buyer.email || '',
+        phone: buyer.phone || '',
+        location: buyer.location || '',
+        university: buyer.university || '',
+        year: buyer.year || ''
+      });
+    }
+  }, [buyer]);
+
+  const handleSave = async () => {
+    const result = await updateProfile(formData);
+    if (result.success) {
+      setIsEditing(false);
+    } else {
+      alert(`Failed to update profile: ${result.error}`);
+    }
+  };
+
+  const handleLogout = () => {
+    // Clear all possible token variations
+    localStorage.removeItem('buyerToken');
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+
+    // Redirect to login
+    window.location.href = '/buyer-login';
+  };
+
+  if (!isOpen || !buyer) return null;
+
+  const overlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: '1rem'
+  };
+
+  const modalStyle = {
+    backgroundColor: isDarkTheme ? '#1e293b' : '#ffffff',
+    color: isDarkTheme ? '#e2e8f0' : '#1a202c',
+    borderRadius: '1rem',
+    padding: '2rem',
+    maxWidth: '500px',
+    width: '100%',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+  };
+
+  
+  return (
+    <div style={overlayStyle} onClick={onClose}>
+      <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '2rem',
+          borderBottom: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
+          paddingBottom: '1rem'
+        }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>Profile</h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = isDarkTheme ? '#334155' : '#f1f5f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Profile Section */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+          <div style={{ position: 'relative', marginBottom: '1rem' }}>
+            <img
+              src={buyer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(buyer.name)}&size=120&background=3b82f6&color=ffffff`}
+              alt={buyer.name}
+              style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '4px solid #3b82f6'
+              }}
+            />
+            <button style={{
+              position: 'absolute',
+              bottom: '5px',
+              right: '5px',
+              backgroundColor: '#3b82f6',
+              border: 'none',
+              borderRadius: '50%',
+              padding: '0.5rem',
+              cursor: 'pointer',
+              color: 'white',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+            }}>
+              <Camera size={16} />
+            </button>
+          </div>
+
+          <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem' }}>{buyer.name}</h3>
+          <p style={{ margin: '0 0 0.5rem 0', opacity: 0.7, fontSize: '0.9rem' }}>
+            {buyer.year} at {buyer.university}
+          </p>
+          <p style={{ margin: 0, opacity: 0.6, fontSize: '0.8rem' }}>
+            Member since {new Date(buyer.createdAt).toLocaleDateString()}
+          </p>
+
+          {buyer.verified && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              backgroundColor: '#10b981',
+              color: 'white',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '1rem',
+              fontSize: '0.75rem',
+              marginTop: '0.75rem',
+              fontWeight: '500'
+            }}>
+              ✓ Verified Student
+            </span>
+          )}
+
+          {/* Stats */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '1rem',
+            width: '100%',
+            marginTop: '1.5rem'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+              borderRadius: '0.75rem',
+              transition: 'transform 0.2s'
+            }}>
+              <Package size={20} style={{ margin: '0 auto 0.5rem', color: '#3b82f6' }} />
+              <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{buyer.totalPurchases || 0}</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>Purchases</div>
+            </div>
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+              borderRadius: '0.75rem'
+            }}>
+              <DollarSign size={20} style={{ margin: '0 auto 0.5rem', color: '#10b981' }} />
+              <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>₹{buyer.totalSaved || 0}</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>Saved</div>
+            </div>
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+              borderRadius: '0.75rem'
+            }}>
+              <Heart size={20} style={{ margin: '0 auto 0.5rem', color: '#ef4444' }} />
+              <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{buyer.favoriteCategory || 'None'}</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>Favorite</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Personal Information */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem'
+          }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Personal Information</h3>
+            <button
+              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+              disabled={loading}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1
+              }}
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : isEditing ? <Save size={16} /> : <Edit3 size={16} />}
+              {loading ? 'Saving...' : isEditing ? 'Save' : 'Edit'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {[
+              { key: 'name', label: 'Name', icon: User, type: 'text' },
+              { key: 'email', label: 'Email', icon: Mail, type: 'email' },
+              { key: 'phone', label: 'Phone', icon: Phone, type: 'tel' },
+              { key: 'university', label: 'University', icon: BookOpen, type: 'text' },
+            ].map(({ key, label, icon: Icon, type }) => (
+              <div key={key}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.85rem',
+                  opacity: 0.7,
+                  marginBottom: '0.5rem',
+                  fontWeight: '500'
+                }}>
+                  <Icon size={16} />
+                  {label}
+                </label>
+                {isEditing ? (
+                  <input
+                    type={type}
+                    value={formData[key]}
+                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+                      border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`,
+                      borderRadius: '0.5rem',
+                      color: 'inherit',
+                      fontSize: '0.9rem'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    padding: '0.75rem',
+                    backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+                    borderRadius: '0.5rem',
+                    border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`
+                  }}>
+                    {buyer[key] || 'Not specified'}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Location and Year selects */}
+            <div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.85rem',
+                opacity: 0.7,
+                marginBottom: '0.5rem',
+                fontWeight: '500'
+              }}>
+                <MapPin size={16} />
+                Campus Location
+              </label>
+              {isEditing ? (
+                <select
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+                    border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`,
+                    borderRadius: '0.5rem',
+                    color: 'inherit',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <option value="">Select Location</option>
+                  <option value="North Campus">North Campus</option>
+                  <option value="South Campus">South Campus</option>
+                  <option value="East Campus">East Campus</option>
+                  <option value="West Campus">West Campus</option>
+                </select>
+              ) : (
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+                  borderRadius: '0.5rem',
+                  border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`
+                }}>
+                  {buyer.location || 'Not specified'}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.85rem',
+                opacity: 0.7,
+                marginBottom: '0.5rem',
+                fontWeight: '500'
+              }}>
+                <BookOpen size={16} />
+                Academic Year
+              </label>
+              {isEditing ? (
+                <select
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+                    border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`,
+                    borderRadius: '0.5rem',
+                    color: 'inherit',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <option value="">Select Year</option>
+                  <option value="Freshman">Freshman</option>
+                  <option value="Sophomore">Sophomore</option>
+                  <option value="Junior">Junior</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Graduate">Graduate</option>
+                </select>
+              ) : (
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+                  borderRadius: '0.5rem',
+                  border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`
+                }}>
+                  {buyer.year || 'Not specified'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          paddingTop: '1.5rem',
+          borderTop: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`
+        }}>
+          <button style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem',
+            backgroundColor: isDarkTheme ? '#334155' : '#f1f5f9',
+            border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`,
+            borderRadius: '0.5rem',
+            color: 'inherit',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}>
+            <Settings size={16} />
+            Settings
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem',
+              backgroundColor: '#ef4444',
+              border: 'none',
+              borderRadius: '0.5rem',
+              color: 'white',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BuyerDashboard = () => {
+  // State management
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [wishlist, setWishlist] = useState(new Set());
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
-  // Get cart context
-  const { 
-    totalItems, 
-    addToCart, 
-    isInCart, 
+  // Contexts
+  const {
+    totalItems,
+    addToCart,
+    isInCart,
     openCart,
-    isLoading: cartLoading 
+    isLoading: cartLoading,
+    isCartOpen
   } = useCart();
+  const { buyer, loading: buyerLoading, error: buyerError } = useBuyer();
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -63,6 +610,7 @@ const BuyerDashboard = () => {
     sortBy: 'newest'
   });
 
+  // Mouse position for animated background
   useEffect(() => {
     const handleMouseMove = (e) => {
       setMousePosition({
@@ -75,225 +623,7 @@ const BuyerDashboard = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Fetch all listings from API
-  const fetchAllListings = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('Fetching listings from API...');
-
-      const response = await fetch('/api/listings/public', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('API Response:', data);
-
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to fetch listings');
-      }
-
-      const listingsArray = data.listings || [];
-      console.log(`Found ${listingsArray.length} listings from API`);
-
-      if (listingsArray.length === 0) {
-        console.log('No listings found, using mock data');
-        setListings(getMockData());
-        return;
-      }
-
-      const transformedListings = listingsArray.map(listing => {
-        console.log('Processing listing:', listing.title || listing._id);
-        return {
-          id: listing._id || listing.id,
-          title: listing.title || 'Untitled Item',
-          price: parseFloat(listing.price) || 0,
-          originalPrice: listing.originalPrice ? parseFloat(listing.originalPrice) : (parseFloat(listing.price) || 0) * 1.5,
-          image: listing.images?.[0] || listing.image || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
-          seller: listing.seller?.[0]?.name || listing.seller?.name || listing.sellerName || 'Anonymous Seller',
-          rating: listing.seller?.[0]?.rating || listing.seller?.rating || 4.5,
-          location: listing.location || 'Campus',
-          timePosted: formatTimeAgo(listing.createdAt),
-          category: mapCategory(listing.category),
-          condition: listing.condition || 'Good',
-          description: listing.description || 'No description available',
-          views: listing.views || 0,
-          status: listing.status || 'active',
-          createdAt: listing.createdAt || new Date()
-        };
-      });
-
-      console.log('Transformed listings:', transformedListings.length);
-
-      const activeListings = transformedListings.filter(listing => {
-        const isActive = listing.status === 'active' || !listing.status;
-        console.log(`Listing ${listing.title}: status=${listing.status}, isActive=${isActive}`);
-        return isActive;
-      });
-
-      console.log('Active listings:', activeListings.length);
-      setListings(activeListings);
-
-    } catch (err) {
-      console.error('Error fetching listings:', err);
-      setError(`Failed to load listings: ${err.message}`);
-      console.log('Using mock data as fallback');
-      setListings(getMockData());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatTimeAgo = (dateString) => {
-    if (!dateString) return 'Recently';
-
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
-  };
-
-  const mapCategory = (backendCategory) => {
-    const categoryMap = {
-      'Books': 'textbooks',
-      'Textbooks': 'textbooks',
-      'Electronics': 'electronics',
-      'Clothing': 'clothing',
-      'Furniture': 'furniture',
-      'Food': 'food',
-      'Food & Drinks': 'food',
-      'Gaming': 'gaming',
-      'Other': 'all'
-    };
-
-    return categoryMap[backendCategory] || 'all';
-  };
-
-  const getMockData = () => [
-    {
-      id: 1,
-      title: 'Calculus Textbook - 12th Edition',
-      price: 89.99,
-      originalPrice: 299.99,
-      image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&h=300&fit=crop',
-      seller: 'Sarah M.',
-      rating: 4.8,
-      location: 'North Campus',
-      timePosted: '2 hours ago',
-      category: 'textbooks',
-      condition: 'Like New',
-      description: 'Barely used calculus textbook. Only a few pages highlighted.',
-      views: 24,
-      status: 'active',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
-    },
-    {
-      id: 2,
-      title: 'MacBook Pro 2021 - M1 Chip',
-      price: 1299.99,
-      originalPrice: 1999.99,
-      image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=300&h=300&fit=crop',
-      seller: 'Alex K.',
-      rating: 4.9,
-      location: 'South Campus',
-      timePosted: '1 day ago',
-      category: 'electronics',
-      condition: 'Excellent',
-      description: 'Perfect condition MacBook, comes with charger and case.',
-      views: 156,
-      status: 'active',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
-    },
-    {
-      id: 3,
-      title: 'iPhone 14 Pro - 256GB',
-      price: 899.99,
-      originalPrice: 1199.99,
-      image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop',
-      seller: 'Mike R.',
-      rating: 4.7,
-      location: 'East Campus',
-      timePosted: '3 hours ago',
-      category: 'electronics',
-      condition: 'Like New',
-      description: 'Barely used iPhone with all original accessories.',
-      views: 89,
-      status: 'active',
-      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000)
-    },
-    {
-      id: 4,
-      title: 'Chemistry Lab Manual',
-      price: 25.99,
-      originalPrice: 89.99,
-      image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=300&h=300&fit=crop',
-      seller: 'Emily S.',
-      rating: 4.6,
-      location: 'West Campus',
-      timePosted: '5 hours ago',
-      category: 'textbooks',
-      condition: 'Good',
-      description: 'Complete chemistry lab manual with all experiments.',
-      views: 43,
-      status: 'active',
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000)
-    },
-    {
-      id: 5,
-      title: 'Gaming Chair - RGB',
-      price: 149.99,
-      originalPrice: 299.99,
-      image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300&h=300&fit=crop',
-      seller: 'Jason T.',
-      rating: 4.8,
-      location: 'North Campus',
-      timePosted: '6 hours ago',
-      category: 'furniture',
-      condition: 'Excellent',
-      description: 'Comfortable gaming chair with RGB lighting.',
-      views: 67,
-      status: 'active',
-      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
-    },
-    {
-      id: 6,
-      title: 'Coffee Maker - Keurig',
-      price: 79.99,
-      originalPrice: 149.99,
-      image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&h=300&fit=crop',
-      seller: 'Lisa W.',
-      rating: 4.5,
-      location: 'South Campus',
-      timePosted: '8 hours ago',
-      category: 'food',
-      condition: 'Good',
-      description: 'Single-serve coffee maker, perfect for dorm rooms.',
-      views: 32,
-      status: 'active',
-      createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000)
-    }
-  ];
-
-  useEffect(() => {
-    fetchAllListings();
-  }, []);
-
+  // Categories
   const categories = [
     { id: 'all', name: 'All Items', icon: Grid3X3 },
     { id: 'textbooks', name: 'Textbooks', icon: BookOpen },
@@ -304,39 +634,165 @@ const BuyerDashboard = () => {
     { id: 'gaming', name: 'Gaming', icon: Gamepad2 },
   ];
 
-  const handlePriceRangeChange = (field, value) => {
-    setFilters(prev => ({
-      ...prev,
-      priceRange: {
-        ...prev.priceRange,
-        [field]: parseInt(value)
+  // Fetch listings from API
+  const fetchListings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      // Add authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
-    }));
+
+      const response = await fetch('/api/listings/public', {
+        method: 'GET',
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch listings: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setListings(data.data || data.listings || []);
+
+    } catch (err) {
+      console.error('Error fetching listings:', err);
+      setError(err.message);
+
+      // Fallback to mock data for development
+      const mockData = [
+        {
+          id: 1,
+          title: 'Calculus Textbook - 12th Edition',
+          price: 89.99,
+          originalPrice: 299.99,
+          image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&h=300&fit=crop',
+          seller: 'Sarah M.',
+          rating: 4.8,
+          location: 'North Campus',
+          timePosted: '2 hours ago',
+          category: 'textbooks',
+          condition: 'Like New',
+          description: 'Barely used calculus textbook. Only a few pages highlighted.',
+          views: 24,
+          status: 'active',
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+        },
+        {
+          id: 2,
+          title: 'MacBook Pro 2021 - M1 Chip',
+          price: 1299.99,
+          originalPrice: 1999.99,
+          image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=300&h=300&fit=crop',
+          seller: 'Alex K.',
+          rating: 4.9,
+          location: 'South Campus',
+          timePosted: '1 day ago',
+          category: 'electronics',
+          condition: 'Excellent',
+          description: 'Perfect condition MacBook, comes with charger and case.',
+          views: 156,
+          status: 'active',
+          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        },
+        {
+          id: 3,
+          title: 'iPhone 14 Pro - 256GB',
+          price: 899.99,
+          originalPrice: 1199.99,
+          image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop',
+          seller: 'Mike R.',
+          rating: 4.7,
+          location: 'East Campus',
+          timePosted: '3 hours ago',
+          category: 'electronics',
+          condition: 'Like New',
+          description: 'Barely used iPhone with all original accessories.',
+          views: 89,
+          status: 'active',
+          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000)
+        },
+        {
+          id: 4,
+          title: 'Gaming Chair - RGB',
+          price: 149.99,
+          originalPrice: 299.99,
+          image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300&h=300&fit=crop',
+          seller: 'Jason T.',
+          rating: 4.8,
+          location: 'North Campus',
+          timePosted: '6 hours ago',
+          category: 'furniture',
+          condition: 'Excellent',
+          description: 'Comfortable gaming chair with RGB lighting.',
+          views: 67,
+          status: 'active',
+          createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
+        }
+      ];
+      setListings(mockData);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleConditionChange = (condition, checked) => {
-    setFilters(prev => ({
-      ...prev,
-      conditions: checked 
-        ? [...prev.conditions, condition]
-        : prev.conditions.filter(c => c !== condition)
-    }));
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+    if (!token) {
+      // Optionally redirect to login if no token found
+      // window.location.href = '/buyer-login';
+      console.warn('No authentication token found');
+    }
+  }, []);
+
+  // Filter and sort products
+  const filteredProducts = listings.filter(product => {
+    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesPrice = product.price >= filters.priceRange.min && product.price <= filters.priceRange.max;
+    const matchesCondition = filters.conditions.length === 0 || filters.conditions.includes(product.condition);
+    const matchesLocation = filters.locations.length === 0 || filters.locations.includes(product.location);
+
+    return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesLocation;
+  }).sort((a, b) => {
+    switch (filters.sortBy) {
+      case 'newest': return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'oldest': return new Date(a.createdAt) - new Date(b.createdAt);
+      case 'price-low': return a.price - b.price;
+      case 'price-high': return b.price - a.price;
+      default: return 0;
+    }
+  });
+
+  // Helper functions
+  const toggleWishlist = (productId) => {
+    const newWishlist = new Set(wishlist);
+    if (newWishlist.has(productId)) {
+      newWishlist.delete(productId);
+    } else {
+      newWishlist.add(productId);
+    }
+    setWishlist(newWishlist);
   };
 
-  const handleLocationChange = (location, checked) => {
-    setFilters(prev => ({
-      ...prev,
-      locations: checked 
-        ? [...prev.locations, location]
-        : prev.locations.filter(l => l !== location)
-    }));
-  };
-
-  const handleSortChange = (sortBy) => {
-    setFilters(prev => ({
-      ...prev,
-      sortBy
-    }));
+  const handleAddToCart = async (product) => {
+    const success = await addToCart(product.id, 1);
+    if (success) {
+      console.log('Item added to cart successfully');
+    }
   };
 
   const clearAllFilters = () => {
@@ -350,87 +806,6 @@ const BuyerDashboard = () => {
     setSearchQuery('');
   };
 
-  const filteredProducts = listings.filter(product => {
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.seller.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-
-    const matchesPrice = product.price >= filters.priceRange.min && 
-                        product.price <= filters.priceRange.max;
-
-    const matchesCondition = filters.conditions.length === 0 || 
-                           filters.conditions.includes(product.condition);
-
-    const matchesLocation = filters.locations.length === 0 || 
-                          filters.locations.includes(product.location);
-
-    return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesLocation;
-  }).sort((a, b) => {
-    switch (filters.sortBy) {
-      case 'newest':
-        return new Date(b.createdAt || Date.now()) - new Date(a.createdAt || Date.now());
-      case 'oldest':
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-      case 'price-low':
-        return a.price - b.price;
-      case 'price-high':
-        return b.price - a.price;
-      default:
-        return 0;
-    }
-  });
-
-  const toggleWishlist = (productId) => {
-    const newWishlist = new Set(wishlist);
-    if (newWishlist.has(productId)) {
-      newWishlist.delete(productId);
-    } else {
-      newWishlist.add(productId);
-    }
-    setWishlist(newWishlist);
-  };
-
-  // Updated addToCart function to use cart context
-  const handleAddToCart = async (product) => {
-    try {
-      const success = await addToCart(product.id, 1);
-      if (success) {
-        console.log(`Added ${product.title} to cart`);
-      }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-    }
-  };
-
-  const toggleTheme = () => {
-    setIsDarkTheme(!isDarkTheme);
-  };
-
-  const contactSeller = (listing) => {
-    console.log('Contacting seller for:', listing.title);
-  };
-
-  const openProductModal = (productId) => {
-    setSelectedProductId(productId);
-    setIsProductModalOpen(true);
-  }
-
-  const closeProductModal = () => {
-    setSelectedProductId(null);
-    setIsProductModalOpen(false);
-  };
-
-  const handleProductClick = (product) => {
-    openProductModal(product.id);
-  }
-
-  const handleQuickView = (e, productId) => {
-    e.stopPropagation();
-    openProductModal(productId);
-  }
-
   const getActiveFilterCount = () => {
     let count = 0;
     if (filters.conditions.length > 0) count++;
@@ -441,13 +816,58 @@ const BuyerDashboard = () => {
     return count;
   };
 
+  // Filter handlers
+  const handlePriceRangeChange = (field, value) => {
+    setFilters(prev => ({
+      ...prev,
+      priceRange: { ...prev.priceRange, [field]: parseInt(value) }
+    }));
+  };
+
+  const handleConditionChange = (condition, checked) => {
+    setFilters(prev => ({
+      ...prev,
+      conditions: checked
+        ? [...prev.conditions, condition]
+        : prev.conditions.filter(c => c !== condition)
+    }));
+  };
+
+  const handleLocationChange = (location, checked) => {
+    setFilters(prev => ({
+      ...prev,
+      locations: checked
+        ? [...prev.locations, location]
+        : prev.locations.filter(l => l !== location)
+    }));
+  };
+
+  // Show loading state if buyer is still loading
+  if (buyerLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: isDarkTheme ? '#0a0b14' : '#f8fafc',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: '1rem',
+        color: isDarkTheme ? '#e2e8f0' : '#1a202c'
+      }}>
+        <Loader2 size={48} style={{ animation: 'spin 1s linear infinite' }} />
+        <p>Loading your profile...</p>
+      </div>
+    );
+  }
+
+  // Styles
   const styles = {
     dashboard: {
       minHeight: '100vh',
       backgroundColor: isDarkTheme ? '#0a0b14' : '#f8fafc',
       color: isDarkTheme ? '#e2e8f0' : '#1a202c',
       position: 'relative',
-      overflow: 'hidden',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     },
     animatedBackground: {
@@ -457,7 +877,7 @@ const BuyerDashboard = () => {
       right: 0,
       bottom: 0,
       zIndex: -1,
-      background: isDarkTheme 
+      background: isDarkTheme
         ? `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 35%, transparent 60%)`
         : `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 35%, transparent 60%)`,
       transition: 'all 0.3s ease'
@@ -478,24 +898,6 @@ const BuyerDashboard = () => {
       maxWidth: '1400px',
       margin: '0 auto'
     },
-    logoSection: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem'
-    },
-    menuToggle: {
-      display: 'none',
-      background: 'none',
-      border: 'none',
-      color: 'inherit',
-      cursor: 'pointer',
-      padding: '0.5rem',
-      borderRadius: '0.5rem',
-      transition: 'background-color 0.2s',
-      '@media (max-width: 768px)': {
-        display: 'block'
-      }
-    },
     logo: {
       display: 'flex',
       alignItems: 'center',
@@ -507,11 +909,6 @@ const BuyerDashboard = () => {
       WebkitTextFillColor: 'transparent',
       backgroundClip: 'text'
     },
-    searchSection: {
-      flex: 1,
-      maxWidth: '500px',
-      margin: '0 2rem'
-    },
     searchBar: {
       position: 'relative',
       display: 'flex',
@@ -520,7 +917,10 @@ const BuyerDashboard = () => {
       border: `2px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
       borderRadius: '1rem',
       padding: '0.75rem 1rem',
-      transition: 'all 0.3s ease'
+      transition: 'all 0.3s ease',
+      flex: 1,
+      maxWidth: '500px',
+      margin: '0 2rem'
     },
     searchInput: {
       flex: 1,
@@ -530,11 +930,6 @@ const BuyerDashboard = () => {
       color: 'inherit',
       fontSize: '1rem',
       marginLeft: '0.5rem'
-    },
-    headerActions: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem'
     },
     actionButton: {
       position: 'relative',
@@ -577,19 +972,7 @@ const BuyerDashboard = () => {
       height: 'fit-content',
       position: 'sticky',
       top: '120px',
-      border: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
-      '@media (max-width: 768px)': {
-        display: 'none'
-      }
-    },
-    categorySection: {
-      marginBottom: '2rem'
-    },
-    categoryList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-      marginTop: '1rem'
+      border: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`
     },
     categoryItem: {
       display: 'flex',
@@ -605,7 +988,8 @@ const BuyerDashboard = () => {
       fontWeight: '500',
       transition: 'all 0.2s',
       textAlign: 'left',
-      width: '100%'
+      width: '100%',
+      marginBottom: '0.5rem'
     },
     categoryItemActive: {
       backgroundColor: '#3b82f6',
@@ -621,9 +1005,6 @@ const BuyerDashboard = () => {
       marginBottom: '2rem',
       flexWrap: 'wrap',
       gap: '1rem'
-    },
-    resultsInfo: {
-      flex: 1
     },
     viewControls: {
       display: 'flex',
@@ -642,7 +1023,6 @@ const BuyerDashboard = () => {
       cursor: 'pointer',
       fontSize: '0.9rem',
       fontWeight: '500',
-      position: 'relative',
       transition: 'all 0.2s'
     },
     viewModeToggle: {
@@ -664,15 +1044,15 @@ const BuyerDashboard = () => {
       backgroundColor: '#3b82f6',
       color: '#ffffff'
     },
-    productsContainer: {
+    productsGrid: {
       display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
       gap: '1.5rem'
     },
-    gridView: {
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))'
-    },
-    listView: {
-      gridTemplateColumns: '1fr'
+    productsList: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1.5rem'
     },
     productCard: {
       backgroundColor: isDarkTheme ? '#1e293b' : '#ffffff',
@@ -680,44 +1060,17 @@ const BuyerDashboard = () => {
       overflow: 'hidden',
       border: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      position: 'relative'
+      transition: 'all 0.3s ease'
     },
     productImage: {
       position: 'relative',
-      height: '200px',
+      height: viewMode === 'grid' ? '200px' : '150px',
       overflow: 'hidden'
     },
     productImageImg: {
       width: '100%',
       height: '100%',
       objectFit: 'cover'
-    },
-    productOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      opacity: 0,
-      transition: 'opacity 0.3s'
-    },
-    quickViewButton: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.75rem 1rem',
-      backgroundColor: '#3b82f6',
-      color: 'white',
-      border: 'none',
-      borderRadius: '0.5rem',
-      cursor: 'pointer',
-      fontSize: '0.9rem',
-      fontWeight: '500'
     },
     wishlistButton: {
       position: 'absolute',
@@ -796,8 +1149,6 @@ const BuyerDashboard = () => {
       flexWrap: 'wrap'
     },
     currentPrice: {
-      display: 'flex',
-      alignItems: 'center',
       fontSize: '1.25rem',
       fontWeight: '700',
       color: '#10b981'
@@ -830,8 +1181,7 @@ const BuyerDashboard = () => {
       cursor: 'pointer',
       fontSize: '0.9rem',
       fontWeight: '500',
-      transition: 'background-color 0.2s',
-      disabled: cartLoading
+      transition: 'background-color 0.2s'
     },
     contactSellerButton: {
       flex: 1,
@@ -845,25 +1195,6 @@ const BuyerDashboard = () => {
       fontWeight: '500',
       transition: 'all 0.2s'
     },
-    filterTag: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.5rem 0.75rem',
-      backgroundColor: isDarkTheme ? '#334155' : '#e2e8f0',
-      borderRadius: '1rem',
-      fontSize: '0.8rem',
-      fontWeight: '500'
-    },
-    filterTagButton: {
-      background: 'none',
-      border: 'none',
-      color: 'inherit',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      lineHeight: 1,
-      marginLeft: '0.25rem'
-    },
     loadingContainer: {
       display: 'flex',
       flexDirection: 'column',
@@ -871,9 +1202,6 @@ const BuyerDashboard = () => {
       justifyContent: 'center',
       minHeight: '400px',
       gap: '1rem'
-    },
-    spinner: {
-      animation: 'spin 1s linear infinite'
     },
     errorContainer: {
       display: 'flex',
@@ -884,31 +1212,6 @@ const BuyerDashboard = () => {
       gap: '1rem',
       color: '#ef4444'
     },
-    tryAgainButton: {
-      padding: '0.5rem 1rem',
-      backgroundColor: '#3b82f6',
-      color: 'white',
-      border: 'none',
-      borderRadius: '0.375rem',
-      cursor: 'pointer'
-    },
-    noItemsContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '400px',
-      gap: '1rem',
-      opacity: 0.7
-    },
-    clearFiltersButton: {
-      padding: '0.5rem 1rem',
-      backgroundColor: '#ef4444',
-      color: 'white',
-      border: 'none',
-      borderRadius: '0.375rem',
-      cursor: 'pointer'
-    },
     filterGroup: {
       marginBottom: '1.5rem'
     },
@@ -917,24 +1220,6 @@ const BuyerDashboard = () => {
       fontSize: '0.9rem',
       fontWeight: '600',
       marginBottom: '0.5rem'
-    },
-    filterSelect: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '0.25rem',
-      border: '1px solid #ccc',
-      backgroundColor: isDarkTheme ? '#333' : '#fff',
-      color: isDarkTheme ? '#fff' : '#000'
-    },
-    priceRange: {
-      marginTop: '0.5rem'
-    },
-    priceLabels: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      fontSize: '0.8rem',
-      opacity: 0.7,
-      marginTop: '0.25rem'
     },
     checkboxGroup: {
       display: 'flex',
@@ -947,17 +1232,17 @@ const BuyerDashboard = () => {
       gap: '0.5rem',
       fontSize: '0.85rem',
       cursor: 'pointer'
-    },
-    sidebarOverlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 999,
-      display: 'none',
     }
+  };
+
+  const openProductModal = (productId) => {
+    setSelectedProductId(productId);
+    setIsProductModalOpen(true);
+  };
+
+  const closeProductModal = () => {
+    setSelectedProductId(null);
+    setIsProductModalOpen(false);
   };
 
   return (
@@ -968,9 +1253,17 @@ const BuyerDashboard = () => {
       {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerContent}>
-          <div style={styles.logoSection}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
-              style={styles.menuToggle}
+              style={{
+                display: 'none',
+                background: 'none',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                borderRadius: '0.5rem'
+              }}
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
               <Menu size={24} />
@@ -981,21 +1274,19 @@ const BuyerDashboard = () => {
             </div>
           </div>
 
-          <div style={styles.searchSection}>
-            <div style={styles.searchBar}>
-              <Search size={20} />
-              <input
-                style={styles.searchInput}
-                type="text"
-                placeholder="Search for textbooks, electronics, furniture..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+          <div style={styles.searchBar}>
+            <Search size={20} />
+            <input
+              style={styles.searchInput}
+              type="text"
+              placeholder="Search for textbooks, electronics, furniture..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          <div style={styles.headerActions}>
-            <button style={styles.actionButton} onClick={toggleTheme}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button style={styles.actionButton} onClick={() => setIsDarkTheme(!isDarkTheme)}>
               {isDarkTheme ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
@@ -1006,7 +1297,7 @@ const BuyerDashboard = () => {
 
             <button style={styles.actionButton}>
               <Heart size={20} />
-              <span style={styles.badge}>{wishlist.size}</span>
+              {wishlist.size > 0 && <span style={styles.badge}>{wishlist.size}</span>}
             </button>
 
             <button style={styles.actionButton} onClick={openCart}>
@@ -1014,27 +1305,65 @@ const BuyerDashboard = () => {
               {totalItems > 0 && <span style={styles.badge}>{totalItems}</span>}
             </button>
 
-            <div style={styles.actionButton}>
-              <User size={20} />
-            </div>
+            <button
+              style={styles.actionButton}
+              onClick={() => setIsProfileOpen(true)}
+            >
+              {buyer && (
+                <img
+                  src={buyer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(buyer.name)}&size=40&background=3b82f6&color=ffffff`}
+                  alt={buyer.name}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) || <User size={20} />}
+            </button>
           </div>
         </div>
       </header>
 
       <div style={styles.mainContent}>
         {/* Sidebar */}
-        <aside style={{...styles.sidebar, display: isSidebarOpen ? 'block' : styles.sidebar.display}}>
+        <aside style={{
+          ...styles.sidebar,
+          display: isSidebarOpen ? 'block' : 'block',
+          '@media (max-width: 768px)': {
+            display: isSidebarOpen ? 'block' : 'none',
+            position: 'fixed',
+            top: '80px',
+            left: '1rem',
+            zIndex: 1000,
+            maxHeight: 'calc(100vh - 100px)',
+            overflowY: 'auto'
+          }
+        }}>
           <div>
-            <button
-              style={{background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', float: 'right'}}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              <X size={20} />
-            </button>
+            {/* Welcome Message */}
+            {buyer && (
+              <div style={{
+                marginBottom: '2rem',
+                padding: '1rem',
+                backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
+                borderRadius: '0.75rem',
+                textAlign: 'center'
+              }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
+                  Welcome back, {buyer.name.split(' ')[0]}!
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.7 }}>
+                  {buyer.university} • {buyer.location}
+                </p>
+              </div>
+            )}
 
-            <div style={styles.categorySection}>
-              <h3>Categories</h3>
-              <div style={styles.categoryList}>
+            {/* Categories */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Categories</h3>
+              <div>
                 {categories.map(category => {
                   const IconComponent = category.icon;
                   return (
@@ -1045,6 +1374,16 @@ const BuyerDashboard = () => {
                         ...(selectedCategory === category.id ? styles.categoryItemActive : {})
                       }}
                       onClick={() => setSelectedCategory(category.id)}
+                      onMouseEnter={(e) => {
+                        if (selectedCategory !== category.id) {
+                          e.target.style.background = isDarkTheme ? '#334155' : '#f1f5f9';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedCategory !== category.id) {
+                          e.target.style.background = 'transparent';
+                        }
+                      }}
                     >
                       <IconComponent size={20} />
                       <span>{category.name}</span>
@@ -1054,18 +1393,20 @@ const BuyerDashboard = () => {
               </div>
             </div>
 
+            {/* Filters */}
             <div>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                <h3>Filters</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Filters</h3>
                 {getActiveFilterCount() > 0 && (
-                  <button 
+                  <button
                     onClick={clearAllFilters}
                     style={{
                       background: 'none',
                       border: 'none',
                       color: '#ef4444',
                       cursor: 'pointer',
-                      fontSize: '0.75rem'
+                      fontSize: '0.75rem',
+                      textDecoration: 'underline'
                     }}
                   >
                     Clear All ({getActiveFilterCount()})
@@ -1073,12 +1414,20 @@ const BuyerDashboard = () => {
                 )}
               </div>
 
+              {/* Sort By */}
               <div style={styles.filterGroup}>
                 <label style={styles.filterLabel}>Sort By</label>
-                <select 
+                <select
                   value={filters.sortBy}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  style={styles.filterSelect}
+                  onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '0.5rem',
+                    border: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`,
+                    backgroundColor: isDarkTheme ? '#334155' : '#fff',
+                    color: 'inherit'
+                  }}
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -1087,36 +1436,40 @@ const BuyerDashboard = () => {
                 </select>
               </div>
 
+              {/* Price Range */}
               <div style={styles.filterGroup}>
-                <label style={styles.filterLabel}>Price Range: ₹{filters.priceRange.min} - ₹{filters.priceRange.max}</label>
-                <div style={styles.priceRange}>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="10000" 
+                <label style={styles.filterLabel}>
+                  Price Range: ₹{filters.priceRange.min} - ₹{filters.priceRange.max}
+                </label>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
                     value={filters.priceRange.min}
                     onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                    style={{ width: '100%', marginBottom: '0.5rem' }}
                   />
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="10000" 
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
                     value={filters.priceRange.max}
                     onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                    style={{ width: '100%' }}
                   />
-                  <div style={styles.priceLabels}>
-                    <span>₹0</span>
-                    <span>₹10000+</span>
-                  </div>
                 </div>
               </div>
 
+              {/* Condition */}
               <div style={styles.filterGroup}>
-                <label style={styles.filterLabel}>Condition ({filters.conditions.length} selected)</label>
+                <label style={styles.filterLabel}>
+                  Condition ({filters.conditions.length} selected)
+                </label>
                 <div style={styles.checkboxGroup}>
                   {['Like New', 'Excellent', 'Good', 'Fair'].map(condition => (
                     <label key={condition} style={styles.checkboxLabel}>
-                      <input 
+                      <input
                         type="checkbox"
                         checked={filters.conditions.includes(condition)}
                         onChange={(e) => handleConditionChange(condition, e.target.checked)}
@@ -1127,12 +1480,15 @@ const BuyerDashboard = () => {
                 </div>
               </div>
 
+              {/* Location */}
               <div style={styles.filterGroup}>
-                <label style={styles.filterLabel}>Location ({filters.locations.length} selected)</label>
+                <label style={styles.filterLabel}>
+                  Location ({filters.locations.length} selected)
+                </label>
                 <div style={styles.checkboxGroup}>
                   {['North Campus', 'South Campus', 'East Campus', 'West Campus'].map(location => (
                     <label key={location} style={styles.checkboxLabel}>
-                      <input 
+                      <input
                         type="checkbox"
                         checked={filters.locations.includes(location)}
                         onChange={(e) => handleLocationChange(location, e.target.checked)}
@@ -1150,21 +1506,23 @@ const BuyerDashboard = () => {
         <main style={styles.contentArea}>
           {/* Content Header */}
           <div style={styles.contentHeader}>
-            <div style={styles.resultsInfo}>
-              <h2>Found {filteredProducts.length} items</h2>
-              <p>
-                {getActiveFilterCount() > 0 
-                  ? `${getActiveFilterCount()} filter${getActiveFilterCount() > 1 ? 's' : ''} applied` 
+            <div>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '0 0 0.5rem 0' }}>
+                Found {filteredProducts.length} items
+              </h2>
+              <p style={{ margin: 0, opacity: 0.7 }}>
+                {getActiveFilterCount() > 0
+                  ? `${getActiveFilterCount()} filter${getActiveFilterCount() > 1 ? 's' : ''} applied`
                   : 'Best deals for students'
                 }
               </p>
             </div>
 
             <div style={styles.viewControls}>
-              <button 
+              <button
                 style={{
                   ...styles.filterToggle,
-                  ...(getActiveFilterCount() > 0 ? {backgroundColor: '#3b82f6', color: 'white'} : {})
+                  ...(getActiveFilterCount() > 0 ? { backgroundColor: '#3b82f6', color: 'white' } : {})
                 }}
                 onClick={() => setIsSidebarOpen(true)}
               >
@@ -1206,111 +1564,79 @@ const BuyerDashboard = () => {
             </div>
           </div>
 
-          {/* Active Filters Display */}
-          {getActiveFilterCount() > 0 && (
+          {/* Error Banner */}
+          {(error || buyerError) && (
             <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '0.5rem',
+              backgroundColor: '#fee2e2',
+              border: '1px solid #fecaca',
+              color: '#dc2626',
+              padding: '1rem',
+              borderRadius: '0.5rem',
               marginBottom: '1rem',
-              padding: '0.75rem',
-              backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-              borderRadius: '0.5rem'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
             }}>
-              {selectedCategory !== 'all' && (
-                <span style={styles.filterTag}>
-                  Category: {categories.find(c => c.id === selectedCategory)?.name}
-                  <button style={styles.filterTagButton} onClick={() => setSelectedCategory('all')}>×</button>
-                </span>
-              )}
-              {searchQuery && (
-                <span style={styles.filterTag}>
-                  Search: "{searchQuery}"
-                  <button style={styles.filterTagButton} onClick={() => setSearchQuery('')}>×</button>
-                </span>
-              )}
-              {filters.conditions.map(condition => (
-                <span key={condition} style={styles.filterTag}>
-                  {condition}
-                  <button style={styles.filterTagButton} onClick={() => handleConditionChange(condition, false)}>×</button>
-                </span>
-              ))}
-              {filters.locations.map(location => (
-                <span key={location} style={styles.filterTag}>
-                  {location}
-                  <button style={styles.filterTagButton} onClick={() => handleLocationChange(location, false)}>×</button>
-                </span>
-              ))}
+              <AlertCircle size={20} />
+              <span>
+                {error && `Listings: ${error}`}
+                {error && buyerError && ' | '}
+                {buyerError && `Profile: ${buyerError}`}
+              </span>
             </div>
           )}
 
-          {/* Loading and Error States */}
+          {/* Loading State */}
           {loading && (
             <div style={styles.loadingContainer}>
-              <Loader2 size={48} style={styles.spinner} />
+              <Loader2 size={48} style={{ animation: 'spin 1s linear infinite' }} />
               <p>Loading amazing deals...</p>
             </div>
           )}
 
-          {error && (
-            <div style={styles.errorContainer}>
-              <AlertCircle size={48} />
-              <h3>Oops! Something went wrong</h3>
-              <p>{error}</p>
-              <button style={styles.tryAgainButton} onClick={fetchAllListings}>
-                Try Again
-              </button>
-            </div>
-          )}
-
           {/* Products Container */}
-          {!loading && !error && (
-            <div style={{
-              ...styles.productsContainer,
-              ...(viewMode === 'grid' ? styles.gridView : styles.listView)
-            }}>
+          {!loading && (
+            <div style={viewMode === 'grid' ? styles.productsGrid : styles.productsList}>
               {filteredProducts.length === 0 ? (
-                <div style={styles.noItemsContainer}>
+                <div style={styles.loadingContainer}>
                   <Search size={64} />
                   <h3>No items found</h3>
                   <p>Try adjusting your search or filters</p>
                   {getActiveFilterCount() > 0 && (
-                    <button style={styles.clearFiltersButton} onClick={clearAllFilters}>
+                    <button
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer'
+                      }}
+                      onClick={clearAllFilters}
+                    >
                       Clear All Filters
                     </button>
                   )}
                 </div>
               ) : (
                 filteredProducts.map(product => (
-                  <div key={product.id}
-                    onClick={() => handleProductClick(product)}
+                  <div
+                    key={product.id}
                     style={styles.productCard}
+                    onClick={() => openProductModal(product.id)}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-4px)';
-                      e.currentTarget.style.boxShadow = isDarkTheme 
-                        ? '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
-                        : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-                      const overlay = e.currentTarget.querySelector('[data-overlay]');
-                      if (overlay) overlay.style.opacity = '1';
+                      e.currentTarget.style.boxShadow = isDarkTheme
+                        ? '0 20px 25px -5px rgba(0, 0, 0, 0.3)'
+                        : '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
                       e.currentTarget.style.boxShadow = 'none';
-                      const overlay = e.currentTarget.querySelector('[data-overlay]');
-                      if (overlay) overlay.style.opacity = '0';
                     }}
                   >
                     <div style={styles.productImage}>
                       <img style={styles.productImageImg} src={product.image} alt={product.title} />
-                      <div data-overlay style={styles.productOverlay}>
-                        <button 
-                          style={styles.quickViewButton}
-                          onClick={(e) => handleQuickView(e, product.id)}
-                        >
-                          <Eye size={18} />
-                          Quick View
-                        </button>
-                      </div>
                       <button
                         style={{
                           ...styles.wishlistButton,
@@ -1359,8 +1685,7 @@ const BuyerDashboard = () => {
 
                       <div style={styles.priceSection}>
                         <div style={styles.currentPrice}>
-                          <DollarSign size={20} />
-                          {product.price}
+                          ₹{product.price}
                         </div>
                         {product.originalPrice > product.price && (
                           <>
@@ -1396,7 +1721,8 @@ const BuyerDashboard = () => {
                           style={styles.contactSellerButton}
                           onClick={(e) => {
                             e.stopPropagation();
-                            contactSeller(product);
+                            // Handle contact seller - could open a modal or navigate to chat
+                            console.log('Contact seller for product:', product.id);
                           }}
                         >
                           Contact Seller
@@ -1411,19 +1737,35 @@ const BuyerDashboard = () => {
         </main>
       </div>
 
-      {/* Sidebar Overlay for Mobile */}
-      {isSidebarOpen && <div style={styles.sidebarOverlay} onClick={() => setIsSidebarOpen(false)} />}
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        isDarkTheme={isDarkTheme}
+      />
 
-      {/* Product Modal */}
-      {selectedProductId && (
-        <ProductViewModal
-          productId={selectedProductId}
-          isOpen={isProductModalOpen}
-          onClose={closeProductModal}
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 999,
+            display: window.innerWidth <= 768 ? 'block' : 'none'
+          }}
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Cart Drawer */}
+      <ProductViewModal
+        productId={selectedProductId}
+        isOpen={isProductModalOpen}
+        onClose={isProductModalOpen ? () => setIsProductModalOpen(false) : null}
+      />
       <CartDrawer />
     </div>
   );
