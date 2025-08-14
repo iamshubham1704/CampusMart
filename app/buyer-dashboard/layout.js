@@ -1,11 +1,17 @@
-'use client';
+import { WishlistProvider } from '../../components/contexts/WishlistContext';
+import { CartProvider } from '../../components/contexts/CartContext'; // Assuming you have this
 
-import { CartProvider } from '@/components/contexts/CartContext';
-
-export default function BuyerDashboardLayout({ children }) {
+export default function RootLayout({ children }) {
   return (
-    <CartProvider>
-      {children}
-    </CartProvider>
+    <html lang="en">
+      <body>
+        {/* Wrap everything with your providers */}
+        <WishlistProvider>
+          <CartProvider>
+             {children}
+          </CartProvider>
+        </WishlistProvider>
+      </body>
+    </html>
   );
 }
