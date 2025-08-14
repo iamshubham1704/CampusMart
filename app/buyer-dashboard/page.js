@@ -159,7 +159,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
     email: '',
     phone: '',
     location: '',
-    university: '',
+    College: '',
     year: ''
   });
 
@@ -388,7 +388,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
               { key: 'name', label: 'Name', icon: User, type: 'text' },
               { key: 'email', label: 'Email', icon: Mail, type: 'email' },
               { key: 'phone', label: 'Phone', icon: Phone, type: 'tel' },
-              { key: 'university', label: 'University', icon: BookOpen, type: 'text' },
+              { key: 'College', label: 'College', icon: BookOpen, type: 'text' },
             ].map(({ key, label, icon: Icon, type }) => (
               <div key={key}>
                 <label style={{
@@ -460,10 +460,10 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
                   }}
                 >
                   <option value="">Select Location</option>
-                  <option value="North Campus">North Campus</option>
-                  <option value="South Campus">South Campus</option>
-                  <option value="East Campus">East Campus</option>
-                  <option value="West Campus">West Campus</option>
+                  <option value="North Campus">MAIN CANTEEN</option>
+                  <option value="South Campus">GROUND</option>
+                  <option value="East Campus">LIBRARY</option>
+                  <option value="West Campus">OTHER</option>
                 </select>
               ) : (
                 <div style={{
@@ -505,11 +505,11 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
                   }}
                 >
                   <option value="">Select Year</option>
-                  <option value="Freshman">Freshman</option>
-                  <option value="Sophomore">Sophomore</option>
-                  <option value="Junior">Junior</option>
-                  <option value="Senior">Senior</option>
-                  <option value="Graduate">Graduate</option>
+                  <option value="Freshman">1</option>
+                  <option value="Sophomore">2</option>
+                  <option value="Junior">3</option>
+                  <option value="Senior">4</option>
+                  <option value="Graduate">Graduated</option>
                 </select>
               ) : (
                 <div style={{
