@@ -1,4 +1,4 @@
-// ProductViewModal.js - Enhanced version with CSS classes
+// ProductViewModal.js - Enhanced version with original frontend design
 "use client";
 import React, { useState, useEffect } from 'react';
 import {
@@ -32,6 +32,8 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
+  const [selectedPayment, setSelectedPayment] = useState('upi');
+  const [selectedColor, setSelectedColor] = useState('black');
 
   const { addToCart, isInCart, cartLoading } = useCart();
 
@@ -102,7 +104,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
       // Fallback to mock data for development
       const mockProduct = {
         id: productId,
-        title: 'Premium Noise-Canceling Headphones',
+        title: 'Noise-Canceling Over-Ear Headphones',
         price: 4999,
         originalPrice: 6999,
         images: [
@@ -112,7 +114,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
         ],
         condition: 'Like New',
         category: 'electronics',
-        description: 'Excellent condition noise-canceling headphones with premium sound quality. Perfect for study sessions and music. Comes with original box and all accessories. These headphones feature advanced noise cancellation technology that blocks out up to 35 dB of ambient noise, making them perfect for focused work sessions or immersive music listening.',
+        description: 'Experience unparalleled audio quality with our premium Noise-Canceling Over-Ear Headphones. Engineered for audiophiles and everyday users alike, these headphones deliver exceptional sound reproduction while blocking out the world around you. The advanced noise cancellation technology uses multiple microphones to detect and neutralize ambient noise, creating a peaceful listening environment whether you\'re commuting, working, or relaxing at home.',
         features: [
           'Advanced noise cancellation up to 35 dB',
           '35-hour battery life with full charge',
@@ -132,7 +134,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
           university: 'State University',
           joinedDate: '2023-09-15'
         },
-        location: 'North Campus',
+        location: 'Chennai district',
         timePosted: '2 hours ago',
         views: 124,
         createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
@@ -166,13 +168,13 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
         similarItems: [
           {
             id: 101,
-            title: 'Sony Wireless Headphones',
+            title: 'Wireless Earbuds Water-Shock Resistant',
             price: 3999,
             image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop'
           },
           {
             id: 102,
-            title: 'Beats Studio Pro',
+            title: 'Sony Bluetooth Speaker Music',
             price: 5999,
             image: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=200&h=200&fit=crop'
           }
@@ -234,24 +236,41 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
     return ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0);
   };
 
+  const colors = [
+    { name: 'black', label: 'Midnight Black', hex: '#1a1a1a' },
+    { name: 'white', label: 'Pearl White', hex: '#f8f9fa' },
+    { name: 'silver', label: 'Space Silver', hex: '#c0c0c0' }
+  ];
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'description':
         return (
-          <div>
-            <p className="product-description">
+          <div className="description-content">
+            <h3>Product Description</h3>
+            <p>
               {product.description}
             </p>
             {product.features && (
-              <div className="features-section">
+              <div className="key-features">
                 <h4>Key Features:</h4>
                 <ul className="features-list">
                   {product.features.map((feature, index) => (
-                    <li key={index}>{feature}</li>
+                    <li key={index}>✓ {feature}</li>
                   ))}
                 </ul>
               </div>
             )}
+            
+            <h4>What's in the Box</h4>
+            <ul>
+              <li>Noise-Canceling Over-Ear Headphones</li>
+              <li>USB-C Charging Cable</li>
+              <li>3.5mm Audio Cable</li>
+              <li>Premium Carrying Case</li>
+              <li>Quick Start Guide</li>
+              <li>Warranty Information</li>
+            </ul>
           </div>
         );
       case 'specifications':
@@ -276,9 +295,9 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                       <span className="reviewer-name">{review.buyer}</span>
                       {review.verified && <span className="verified-badge">✓ Verified</span>}
                     </div>
-                    <div className="review-rating">
+                    <div className="review-stars">
                       {[...Array(review.rating)].map((_, i) => (
-                        <Star key={i} size={14} fill="#fbbf24" color="#fbbf24" />
+                        <span key={i}>★</span>
                       ))}
                     </div>
                   </div>
@@ -289,6 +308,12 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
             ) : (
               <p>No reviews yet. Be the first to review this product!</p>
             )}
+            
+            <div className="add-review">
+              <h4>Add a review</h4>
+              <textarea placeholder="Share your experience (review optional)"></textarea>
+              <button className="submit-review">Submit Review</button>
+            </div>
           </div>
         );
       default:
@@ -329,47 +354,68 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
 
           {/* Product Content */}
           {product && (
-            <>
-              {/* Product Grid */}
-              <div className="product-grid">
-                {/* Product Images */}
-                <div className="product-images">
-                  <div className="main-image-container">
-                    <img
-                      src={product.images?.[selectedImageIndex] || product.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop'}
-                      alt={product.title}
-                      className="main-product-image"
-                    />
+            <div className="product-page">
+              {/* Breadcrumb */}
+              <div className="breadcrumb">
+                <span>Home</span>
+                <span className="separator">›</span>
+                <span>Products</span>
+              </div>
 
-                    {/* Condition Badge */}
-                    <div className="condition-badge">
-                      {product.condition}
-                    </div>
+              {/* Product Header */}
+              <div className="product-header">
+                <h1>{product.title}</h1>
+                <p className="product-subtitle">
+                  Premium over-ear headphones with active noise cancellation. 20+ features with all premium 
+                  — perfect for study sessions.
+                </p>
+              </div>
 
-                    {/* Image Navigation */}
-                    {product.images && product.images.length > 1 && (
+              <div className="product-container">
+                {/* Left Side - Product Image */}
+                <div className="product-image-section">
+                  <div className="main-product-image">
+                    {product.images && product.images.length > 0 ? (
                       <>
-                        <button
-                          onClick={() => setSelectedImageIndex(Math.max(0, selectedImageIndex - 1))}
-                          disabled={selectedImageIndex === 0}
-                          className="image-nav-btn prev"
-                        >
-                          <ChevronLeft size={20} />
-                        </button>
-                        <button
-                          onClick={() => setSelectedImageIndex(Math.min(product.images.length - 1, selectedImageIndex + 1))}
-                          disabled={selectedImageIndex === product.images.length - 1}
-                          className="image-nav-btn next"
-                        >
-                          <ChevronRight size={20} />
-                        </button>
+                        <img
+                          src={product.images[selectedImageIndex]}
+                          alt={product.title}
+                          className="product-image"
+                        />
+                        {/* Image Navigation */}
+                        {product.images.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => setSelectedImageIndex(Math.max(0, selectedImageIndex - 1))}
+                              disabled={selectedImageIndex === 0}
+                              className="image-nav-btn prev"
+                            >
+                              <ChevronLeft size={20} />
+                            </button>
+                            <button
+                              onClick={() => setSelectedImageIndex(Math.min(product.images.length - 1, selectedImageIndex + 1))}
+                              disabled={selectedImageIndex === product.images.length - 1}
+                              className="image-nav-btn next"
+                            >
+                              <ChevronRight size={20} />
+                            </button>
+                          </>
+                        )}
                       </>
+                    ) : (
+                      <div className="image-placeholder">
+                        <div className="headphone-visual">🎧</div>
+                      </div>
                     )}
+                    <div className="image-tags">
+                      <span className="tag">Hot Selling</span>
+                      <span className="tag verified">✓ Verified</span>
+                    </div>
                   </div>
 
                   {/* Image Thumbnails */}
                   {product.images && product.images.length > 1 && (
-                    <div className="image-thumbnails">
+                    <div className="thumbnail-images">
                       {product.images.map((image, index) => (
                         <button
                           key={index}
@@ -387,175 +433,210 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                   )}
                 </div>
 
-                {/* Product Details */}
-                <div className="product-details">
-                  <div>
-                    {/* Tags */}
-                    <div className="product-tags">
-                      {product.tags && product.tags.map(tag => (
-                        <span key={tag} className="product-tag">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Title */}
-                    <h1 className="product-title">{product.title}</h1>
-                  </div>
-
-                  {/* Price Section */}
+                {/* Right Side - Product Details */}
+                <div className="product-details-section">
                   <div className="price-section">
-                    <div className="price-container">
-                      <span className="current-price">₹{product.price}</span>
-                      {product.originalPrice && (
-                        <span className="original-price">₹{product.originalPrice}</span>
-                      )}
-                      {product.originalPrice && (
-                        <span className="discount-badge">
-                          {calculateSavings()}% OFF
-                        </span>
-                      )}
-                    </div>
+                    <div className="price">₹ {product.price}</div>
                     {product.originalPrice && (
-                      <p className="savings-text">
-                        You save ₹{product.originalPrice - product.price}!
-                      </p>
+                      <>
+                        <div className="original-price">₹{product.originalPrice}</div>
+                        <div className="discount">save {calculateSavings()}%</div>
+                      </>
                     )}
                   </div>
 
-                  {/* Quick Info */}
-                  <div className="quick-info">
-                    <div className="info-item">
-                      <MapPin size={16} className="info-icon" />
-                      <span className="info-text">{product.location}</span>
-                    </div>
-                    <div className="info-item">
-                      <Clock size={16} className="info-icon" />
-                      <span className="info-text">{product.timePosted}</span>
-                    </div>
-                    <div className="info-item">
-                      <Eye size={16} className="info-icon" />
-                      <span className="info-text">{product.views} views</span>
-                    </div>
-                    <div className="info-item">
-                      <Zap size={16} className="info-icon quick-delivery" />
-                      <span className="info-text quick-delivery">Quick delivery</span>
-                    </div>
-                  </div>
-
-                  {/* Quantity Selector */}
                   <div className="quantity-section">
-                    <label className="quantity-label">Quantity</label>
+                    <label>Quantity</label>
                     <div className="quantity-controls">
-                      <button
+                      <button 
+                        className="qty-btn" 
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                         disabled={quantity <= 1}
-                        className="qty-btn"
                       >
                         -
                       </button>
                       <span className="quantity-display">{quantity}</span>
-                      <button
+                      <button 
+                        className="qty-btn" 
                         onClick={() => setQuantity(quantity + 1)}
-                        className="qty-btn"
                       >
                         +
                       </button>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  <div className="payment-section">
+                    <label>Payment Method</label>
+                    <div className="payment-options">
+                      <div className={`payment-option ${selectedPayment === 'upi' ? 'selected' : ''}`}>
+                        <input 
+                          type="radio" 
+                          name="payment" 
+                          value="upi"
+                          checked={selectedPayment === 'upi'}
+                          onChange={(e) => setSelectedPayment(e.target.value)}
+                        />
+                        <span className="payment-icon">📱</span>
+                        <span>UPI</span>
+                      </div>
+                      <div className={`payment-option ${selectedPayment === 'card' ? 'selected' : ''}`}>
+                        <input 
+                          type="radio" 
+                          name="payment" 
+                          value="card"
+                          checked={selectedPayment === 'card'}
+                          onChange={(e) => setSelectedPayment(e.target.value)}
+                        />
+                        <span className="payment-icon">💳</span>
+                        <span>Card</span>
+                      </div>
+                      <div className={`payment-option ${selectedPayment === 'cash' ? 'selected' : ''}`}>
+                        <input 
+                          type="radio" 
+                          name="payment" 
+                          value="cash"
+                          checked={selectedPayment === 'cash'}
+                          onChange={(e) => setSelectedPayment(e.target.value)}
+                        />
+                        <span className="payment-icon">💵</span>
+                        <span>Cash</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="delivery-section">
+                    <div className="delivery-info">
+                      <strong>Delivery / Pickup</strong>
+                      <div className="delivery-option">
+                        <span>🎯</span>
+                        <span>Same as Current address</span>
+                        <span className="change-link">📍 Need at {product.location}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="action-buttons">
-                    <button
+                    <button className="buy-now-btn">Buy Now</button>
+                    <button 
                       onClick={handleAddToCart}
                       disabled={cartLoading || isInCart(product.id)}
-                      className={`primary-btn ${isInCart(product.id) ? 'in-cart' : ''}`}
+                      className={`add-cart-btn ${isInCart(product.id) ? 'in-cart' : ''}`}
                     >
                       {cartLoading ? (
                         <Loader2 size={20} className="spinner" />
                       ) : (
-                        <ShoppingCart size={20} />
+                        <>🛒 {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}</>
                       )}
-                      {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}
-                    </button>
-                    <button
-                      onClick={handleWishlistToggle}
-                      className={`icon-btn ${isWishlisted ? 'wishlist-active' : ''}`}
-                    >
-                      <Heart size={20} />
-                    </button>
-                    <button className="icon-btn">
-                      <Share2 size={20} />
                     </button>
                   </div>
 
-                  {/* Seller Info */}
+                  <div className="additional-info">
+                    <span>📞 Get product assistance from expert</span>
+                  </div>
+
                   {product.seller && (
                     <div className="seller-info">
-                      <div className="seller-container">
-                        <div className="seller-profile">
-                          <img
-                            src={product.seller.avatar}
-                            alt={product.seller.name}
-                            className="seller-avatar"
-                          />
-                          <div className="seller-details">
-                            <h4>
-                              {product.seller.name}
-                              {product.seller.verified && (
-                                <span className="verified-badge">✓ Verified</span>
-                              )}
-                            </h4>
-                            <div className="seller-stats">
-                              <div className="rating">
-                                <Star size={14} fill="#fbbf24" />
-                                <span>{product.seller.rating}</span>
-                              </div>
-                              <span>{product.seller.totalSales} sales</span>
-                              <span>Responds in {product.seller.responseTime}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <button onClick={handleContactSeller} className="message-seller-btn">
-                          <MessageCircle size={16} />
-                          Message
-                        </button>
+                      <div className="seller-avatar">
+                        <img src={product.seller.avatar} alt={product.seller.name} />
                       </div>
+                      <div className="seller-details">
+                        <div className="seller-name">
+                          <span>{product.seller.name}</span>
+                          {product.seller.verified && <span className="verified-badge">Verified</span>}
+                        </div>
+                        <div className="seller-rating">★★★★★</div>
+                      </div>
+                      <button onClick={handleContactSeller} className="message-seller">
+                        💬 Message seller
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Product Tabs */}
-              <div className="product-tabs">
-                <div className="tab-headers">
-                  <div className="tab-nav">
-                    <button
-                      onClick={() => setActiveTab('description')}
-                      className={`tab-btn ${activeTab === 'description' ? 'active' : ''}`}
-                    >
-                      Description
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('specifications')}
-                      className={`tab-btn ${activeTab === 'specifications' ? 'active' : ''}`}
-                    >
-                      Specifications
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('reviews')}
-                      className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
-                    >
-                      Reviews ({product.reviews?.length || 0})
-                    </button>
+              {/* Product Details Section */}
+              <div className="details-section">
+                <div className="details-left">
+                  <h3>Details</h3>
+                  <p>
+                    {product.description}
+                  </p>
+
+                  <div className="product-specs">
+                    <div className="spec-item">
+                      <span className="spec-icon">🎵</span>
+                      <span>Excellent audio quality</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-icon">📱</span>
+                      <span>Good for smartphones</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-icon">⭐</span>
+                      <span>Used as favorites</span>
+                    </div>
+                  </div>
+
+                  {/* Reviews Section */}
+                  <div className="reviews-section">
+                    <div className="reviews-header">
+                      <div className="review-stars">★★★★★</div>
+                      <span>4.8 • {product.reviews?.length || 0} reviews</span>
+                      <button className="view-reviews">View reviews</button>
+                    </div>
+
+                    {product.reviews && product.reviews.map((review) => (
+                      <div key={review.id} className="review-item">
+                        <div className="review-header">
+                          <div className="reviewer-info">
+                            <span className="reviewer-name">{review.buyer}</span>
+                            <div className="review-stars">★★★★★</div>
+                          </div>
+                        </div>
+                        <p className="review-text">{review.comment}</p>
+                      </div>
+                    ))}
+
+                    <div className="add-review">
+                      <h4>Add a review</h4>
+                      <textarea placeholder="Share your experience (review optional)"></textarea>
+                      <button className="submit-review">Submit Review</button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="tab-content">
-                  {renderTabContent()}
+                <div className="details-right">
+                  <div className="similar-products">
+                    <h4>More from this Seller</h4>
+                    <div className="similar-grid">
+                      {product.similarItems && product.similarItems.map((item) => (
+                        <div key={item.id} className="similar-item">
+                          <div className="similar-image">🎧</div>
+                          <p>{item.title}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <h4>Similar Items You May Like</h4>
+                    <div className="similar-grid">
+                      <div className="similar-item">
+                        <div className="similar-image">🎧</div>
+                        <p>Beats Over-Ear Headphones Wireless</p>
+                      </div>
+                      <div className="similar-item">
+                        <div className="similar-image">🎧</div>
+                        <p>Boat ANC Headphones Wireless</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="footer-actions">
+                    <button className="footer-btn">📋 Upload Order Policy</button>
+                    <button className="footer-btn">📄 Report</button>
+                  </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
