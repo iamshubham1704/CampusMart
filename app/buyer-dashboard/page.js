@@ -462,10 +462,10 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
                   }}
                 >
                   <option value="">Select Location</option>
-                  <option value="North Campus">MAIN CANTEEN</option>
-                  <option value="South Campus">GROUND</option>
-                  <option value="East Campus">LIBRARY</option>
-                  <option value="West Campus">OTHER</option>
+                  <option value="MAIN CANTEEN">MAIN CANTEEN</option>
+                  <option value="GROUND">GROUND</option>
+                  <option value="LIBRARY">LIBRARY</option>
+                  <option value="OTHER">OTHER</option>
                 </select>
               ) : (
                 <div style={{
@@ -507,10 +507,10 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
                   }}
                 >
                   <option value="">Select Year</option>
-                  <option value="Freshman">1</option>
-                  <option value="Sophomore">2</option>
-                  <option value="Junior">3</option>
-                  <option value="Senior">4</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
                   <option value="Graduate">Graduated</option>
                 </select>
               ) : (
@@ -1454,7 +1454,7 @@ const BuyerDashboard = () => {
                   Location ({filters.locations.length} selected)
                 </label>
                 <div style={styles.checkboxGroup}>
-                  {['North Campus', 'South Campus', 'East Campus', 'West Campus'].map(location => (
+                  {['MAIN CANTEEN', 'GROUND', 'LIBRARY', 'OTHER'].map(location => (
                     <label key={location} style={styles.checkboxLabel}>
                       <input
                         type="checkbox"
