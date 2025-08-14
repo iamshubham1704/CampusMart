@@ -1,3 +1,4 @@
+// app/api/auth/[...nextauth]/route.js
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { MongoClient } from 'mongodb';
@@ -5,7 +6,7 @@ import { MongoClient } from 'mongodb';
 const client = new MongoClient(process.env.MONGODB_URI);
 const clientPromise = client.connect();
 
-const authOptions = {
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,

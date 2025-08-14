@@ -1,4 +1,4 @@
-import { verifyToken } from '../../../../lib/auth'
+import { verifyToken } from '../../../../lib/auth';
 import clientPromise from '@/lib/mongo';
 import { ObjectId } from 'mongodb';
 
