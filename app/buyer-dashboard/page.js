@@ -40,6 +40,8 @@ import {
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
 import ProductViewModal from './quick-view/page';
+import { useWishlist } from '../../components/contexts/WishlistContext';
+import WishlistModal from './wishlist/page';
 
 // Updated useBuyer hook with real API integration
 const useBuyer = () => {
@@ -534,7 +536,8 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
         }}>
           <button
             onClick={() => {
-              setIsSettingsOpen(true);  // Open settings modal
+              // Handle settings - you can add settings functionality here
+              console.log('Settings clicked');
             }} style={{
               flex: 1,
               display: 'flex',
@@ -585,7 +588,12 @@ const BuyerDashboard = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [wishlist, setWishlist] = useState(new Set());
+  const {
+    isInWishlist,
+    getWishlistCount,
+    toggleWishlist,
+    loading: wishlistLoading
+  } = useWishlist();
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -594,8 +602,6 @@ const BuyerDashboard = () => {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  // Contexts
   const {
     totalItems,
     addToCart,
@@ -605,14 +611,54 @@ const BuyerDashboard = () => {
     isCartOpen
   } = useCart();
   const { buyer, loading: buyerLoading, error: buyerError } = useBuyer();
-
-  // Filter states
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 10000 },
     conditions: [],
     locations: [],
     sortBy: 'newest'
   });
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+
+  // Mock data for development
+  useEffect(() => {
+    if (listings.length === 0) {
+      setListings([
+        {
+          id: '1',
+          title: 'Advanced Physics Textbook',
+          description: 'Complete textbook for physics course',
+          price: 500,
+          originalPrice: 800,
+          category: 'textbooks',
+          condition: 'Like New',
+          location: 'North Campus',
+          seller: 'Alice Johnson',
+          rating: 4.8,
+          timePosted: '2 hours ago',
+          views: 23,
+          image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop',
+          createdAt: '2023-12-01T10:00:00Z'
+        },
+        {
+          id: '2',
+          title: 'MacBook Pro 13"',
+          description: 'Excellent condition laptop perfect for students',
+          price: 45000,
+          originalPrice: 65000,
+          category: 'electronics',
+          condition: 'Excellent',
+          location: 'South Campus',
+          seller: 'Bob Smith',
+          rating: 4.9,
+          timePosted: '5 hours ago',
+          views: 45,
+          image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop',
+          createdAt: '2023-12-01T07:00:00Z'
+        }
+      ]);
+      setLoading(false);
+    }
+  }, [listings.length]);
 
   // Mouse position for animated background
   useEffect(() => {
@@ -710,14 +756,12 @@ const BuyerDashboard = () => {
   });
 
   // Helper functions
-  const toggleWishlist = (productId) => {
-    const newWishlist = new Set(wishlist);
-    if (newWishlist.has(productId)) {
-      newWishlist.delete(productId);
-    } else {
-      newWishlist.add(productId);
+  const handleWishlistToggle = async (productId, event) => {
+    event.stopPropagation();
+    const success = await toggleWishlist(productId);
+    if (success) {
+      console.log('Wishlist updated successfully');
     }
-    setWishlist(newWishlist);
   };
 
   const handleAddToCart = async (product) => {
@@ -1228,8 +1272,9 @@ const BuyerDashboard = () => {
             </button>
 
             <button style={styles.actionButton}>
-              <Heart size={20} />
-              {wishlist.size > 0 && <span style={styles.badge}>{wishlist.size}</span>}
+              <Heart size={20}
+                onClick={() => setIsWishlistOpen(true)} />
+              {getWishlistCount() > 0 && <span style={styles.badge}>{getWishlistCount()}</span>}
             </button>
 
             <button style={styles.actionButton} onClick={openCart}>
@@ -1263,15 +1308,6 @@ const BuyerDashboard = () => {
         <aside style={{
           ...styles.sidebar,
           display: isSidebarOpen ? 'block' : 'block',
-          '@media (max-width: 768px)': {
-            display: isSidebarOpen ? 'block' : 'none',
-            position: 'fixed',
-            top: '80px',
-            left: '1rem',
-            zIndex: 1000,
-            maxHeight: 'calc(100vh - 100px)',
-            overflowY: 'auto'
-          }
         }}>
           <div>
             {/* Welcome Message */}
@@ -1572,11 +1608,11 @@ const BuyerDashboard = () => {
                       <button
                         style={{
                           ...styles.wishlistButton,
-                          ...(wishlist.has(product.id) ? styles.wishlistButtonActive : {})
+                          ...(isInWishlist(product.id) ? styles.wishlistButtonActive : {})
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleWishlist(product.id);
+                          toggleWishlist(product);
                         }}
                       >
                         <Heart size={18} />
@@ -1697,6 +1733,11 @@ const BuyerDashboard = () => {
         productId={selectedProductId}
         isOpen={isProductModalOpen}
         onClose={isProductModalOpen ? () => setIsProductModalOpen(false) : null}
+      />
+      <WishlistModal
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        isDarkTheme={isDarkTheme}
       />
 
       <CartDrawer />
