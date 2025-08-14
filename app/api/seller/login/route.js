@@ -131,7 +131,13 @@ export async function POST(req) {
       // Don't fail the login for this
     }
 
-    // Return success response with token
+    // Create response headers with cookie
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'Set-Cookie': `auth-token=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}` // 7 days
+    });
+
+    // Return success response with token and cookie
     return new Response(
       JSON.stringify({ 
         success: true,
@@ -147,7 +153,7 @@ export async function POST(req) {
       }), 
       { 
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers
       }
     );
 

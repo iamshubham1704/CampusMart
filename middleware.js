@@ -28,9 +28,7 @@ export function middleware(request) {
         loginUrl = new URL('/buyer-login', request.url)
       }
       
-      // Add redirect parameter to return user to original destination after login
       if (loginUrl) {
-        loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
         return NextResponse.redirect(loginUrl)
       }
     }
