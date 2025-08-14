@@ -224,7 +224,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
   };
 
-  
+
   return (
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
@@ -532,20 +532,23 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
           paddingTop: '1.5rem',
           borderTop: `1px solid ${isDarkTheme ? '#334155' : '#e2e8f0'}`
         }}>
-          <button style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            padding: '0.75rem',
-            backgroundColor: isDarkTheme ? '#334155' : '#f1f5f9',
-            border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`,
-            borderRadius: '0.5rem',
-            color: 'inherit',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s'
-          }}>
+          <button
+            onClick={() => {
+              setIsSettingsOpen(true);  // Open settings modal
+            }} style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem',
+              backgroundColor: isDarkTheme ? '#334155' : '#f1f5f9',
+              border: `1px solid ${isDarkTheme ? '#475569' : '#e2e8f0'}`,
+              borderRadius: '0.5rem',
+              color: 'inherit',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}>
             <Settings size={16} />
             Settings
           </button>
@@ -590,6 +593,7 @@ const BuyerDashboard = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Contexts
   const {
@@ -1766,6 +1770,7 @@ const BuyerDashboard = () => {
         isOpen={isProductModalOpen}
         onClose={isProductModalOpen ? () => setIsProductModalOpen(false) : null}
       />
+      
       <CartDrawer />
     </div>
   );
