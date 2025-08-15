@@ -479,12 +479,12 @@ const CampusMart = () => {
                     <Star key={i} size={16} fill="currentColor" />
                   ))}
                 </div>
-                <p>"Saved over $300 on textbooks this semester! Super easy to use and everyone's been honest."</p>
+                <p>"Sold my old engineering drawing kit in just 2 days! Didn't have to put up random posters on hostel notice boards anymore. The buyer was from my own campus so delivery was super easy."</p>
                 <div className="testimonial-author">
                   <div className="author-avatar">JD</div>
                   <div className="author-info">
-                    <div className="author-name">Jessica Davis</div>
-                    <div className="author-school">Stanford University</div>
+                    <div className="author-name">Harsh Raana</div>
+                    <div className="author-school">MAIT</div>
                   </div>
                 </div>
               </div>
@@ -495,12 +495,12 @@ const CampusMart = () => {
                     <Star key={i} size={16} fill="currentColor" />
                   ))}
                 </div>
-                <p>"Perfect for moving out! Sold my furniture quickly to students who actually needed them."</p>
+                <p>"Managed to get my lab coat and a couple of reference books all in one go from seniors. Everything was in great condition and way cheaper than the campus shop."</p>
                 <div className="testimonial-author">
                   <div className="author-avatar">RM</div>
                   <div className="author-info">
-                    <div className="author-name">Ryan Mitchell</div>
-                    <div className="author-school">UC Berkeley</div>
+                    <div className="author-name">Suteekshn Manchanda</div>
+                    <div className="author-school">MAIT</div>
                   </div>
                 </div>
               </div>
@@ -511,12 +511,12 @@ const CampusMart = () => {
                     <Star key={i} size={16} fill="currentColor" />
                   ))}
                 </div>
-                <p>"The verification system makes me feel safe. Great way to find affordable campus items!"</p>
+                <p>"Posted my old textbooks here before summer break and made enough money to cover my mess bill for the month. Best part - I didn't even have to step outside campus."</p>
                 <div className="testimonial-author">
                   <div className="author-avatar">AL</div>
                   <div className="author-info">
-                    <div className="author-name">Amy Liu</div>
-                    <div className="author-school">MIT</div>
+                    <div className="author-name">Abhay Singh</div>
+                    <div className="author-school">MAIT</div>
                   </div>
                 </div>
               </div>
