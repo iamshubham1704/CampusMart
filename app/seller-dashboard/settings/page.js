@@ -124,7 +124,7 @@ const SettingsPage = () => {
             setSecuritySettings(prev => ({ ...prev, ...settings.security }));
           }
         } catch (error) {
-          console.log('Settings not available, using defaults');
+          ('Settings not available, using defaults');
         }
         
       } catch (error) {

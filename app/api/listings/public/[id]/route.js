@@ -58,7 +58,7 @@ export async function GET(request, context) {
     });
 
   } catch (error) {
-    console.error('Error fetching public listing:', error);
+
     return NextResponse.json(
       { success: false, message: 'Failed to fetch listing' },
       { status: 500 }

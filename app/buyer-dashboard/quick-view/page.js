@@ -52,7 +52,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Fetching product details for ID:', productId);
+      ('🔍 Fetching product details for ID:', productId);
 
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
       const headers = {
@@ -61,20 +61,20 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
 
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('🔑 Using auth token');
+        ('🔑 Using auth token');
       } else {
-        console.log('⚠️ No auth token found');
+        ('⚠️ No auth token found');
       }
 
-      console.log('📡 Making request to:', `/api/listings/public/${productId}`);
+      ('📡 Making request to:', `/api/listings/public/${productId}`);
 
       const response = await fetch(`/api/listings/public/${productId}`, {
         method: 'GET',
         headers
       });
 
-      console.log('📨 Response status:', response.status);
-      console.log('📨 Response ok:', response.ok);
+      ('📨 Response status:', response.status);
+      ('📨 Response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -87,17 +87,17 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       }
 
       const data = await response.json();
-      console.log('✅ Received data:', data);
+      ('✅ Received data:', data);
 
       // Your API returns data in 'listing' field, not 'data'
       const productData = data.listing || data.data || data;
-      console.log('📦 Product data:', productData);
+      ('📦 Product data:', productData);
 
       setProduct(productData);
 
       // Update view count using public endpoint (optional)
       if (productData) {
-        console.log('👀 View already tracked by API');
+        ('👀 View already tracked by API');
       }
 
     } catch (err) {
@@ -209,12 +209,12 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       return;
     }
 
-    console.log('🛒 Adding to cart with ID:', listingId, 'quantity:', quantity);
+    ('🛒 Adding to cart with ID:', listingId, 'quantity:', quantity);
 
     try {
       const success = await addToCart(listingId, quantity);
       if (success) {
-        console.log('✅ Added to cart successfully');
+        ('✅ Added to cart successfully');
       } else {
         console.error('❌ Failed to add to cart');
       }
@@ -257,12 +257,12 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
 
     if (!sellerId) {
       console.error('Cannot contact seller: Seller ID not found in product data.');
-      console.log('Product structure:', product);
+      ('Product structure:', product);
       alert('Seller information is unavailable. Please try again later.');
       return;
     }
 
-    console.log('Attempting to contact seller:', product.seller?.name || 'Unknown', 'Seller ID:', sellerId);
+    ('Attempting to contact seller:', product.seller?.name || 'Unknown', 'Seller ID:', sellerId);
 
     try {
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
@@ -280,7 +280,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
         productId: product._id || product.id
       };
 
-      console.log('Sending conversation request:', requestBody);
+      ('Sending conversation request:', requestBody);
 
       const response = await fetch('/api/conversations', {
         method: 'POST',
@@ -298,7 +298,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       }
 
       const data = await response.json();
-      console.log('Conversation response:', data);
+      ('Conversation response:', data);
 
       onClose(); // Close the product modal
 

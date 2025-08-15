@@ -36,7 +36,7 @@ export async function POST(req) {
 
     return new Response(JSON.stringify({ message: 'Password reset link sent to your email.' }), { status: 200 });
   } catch (error) {
-    console.error('Forgot password error:', error);
+
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
   }
 }

@@ -38,7 +38,6 @@ export async function GET(request) {
       averageRating: Math.round(result.averageRating * 10) / 10
     });
   } catch (error) {
-    console.error('Error fetching reviews count:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

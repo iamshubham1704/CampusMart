@@ -544,7 +544,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // 
           <button
             onClick={() => {
               // Handle settings - you can add settings functionality here
-              console.log('Settings clicked');
+              ('Settings clicked');
             }} style={{
               flex: 1,
               display: 'flex',
@@ -787,7 +787,7 @@ const BuyerDashboard = () => {
     const productIdToToggle = product.id || product._id;
     const success = await toggleWishlist(productIdToToggle);
     if (success) {
-      console.log('Wishlist updated successfully');
+      ('Wishlist updated successfully');
     }
   };
 
@@ -796,7 +796,7 @@ const BuyerDashboard = () => {
     const productIdToAdd = product.id || product._id;
     const success = await addToCart(productIdToAdd, 1);
     if (success) {
-      console.log('Item added to cart successfully');
+      ('Item added to cart successfully');
     }
   };
 

@@ -7,11 +7,11 @@ const getUserId = (decoded) => {
   const possibleIds = ['userId', 'sellerId', 'id', 'user_id', 'sub'];
   for (const field of possibleIds) {
     if (decoded[field]) {
-      console.log(`Found user ID in field: ${field}, value: ${decoded[field]}`);
+
       return decoded[field];
     }
   }
-  console.log('No user ID found in token fields:', Object.keys(decoded));
+
   return null;
 };
 
@@ -25,15 +25,14 @@ const toObjectId = (id) => {
 
 // GET - Fetch user profile
 export async function GET(request) {
-  console.log('=== USER PROFILE API GET REQUEST ===');
+
   
   try {
     // Extract token from Authorization header
     const authHeader = request.headers.get('authorization');
-    console.log('Auth header present:', !!authHeader);
+
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Invalid authorization header format');
       return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid authorization header format' 
@@ -50,7 +49,6 @@ export async function GET(request) {
 
     const token = authHeader.substring(7);
     if (!token) {
-      console.log('No token found after Bearer');
       return new Response(JSON.stringify({ 
         success: false,
         message: 'No token provided' 
@@ -65,14 +63,13 @@ export async function GET(request) {
       });
     }
 
-    console.log('Token extracted, length:', token.length);
+
 
     // Verify the token with error handling
     let decoded;
     try {
       decoded = verifyToken(token);
     } catch (tokenError) {
-      console.error('Token verification error:', tokenError);
       return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid or expired token',
@@ -89,7 +86,6 @@ export async function GET(request) {
     }
 
     if (!decoded) {
-      console.log('Token verification failed');
       return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid or expired token' 
@@ -104,9 +100,6 @@ export async function GET(request) {
       });
     }
 
-    console.log('Token verification successful. Decoded token:', JSON.stringify(decoded, null, 2));
-
-    // Connect to database with timeout
     let client;
     try {
       client = await Promise.race([
@@ -116,7 +109,6 @@ export async function GET(request) {
         )
       ]);
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
       return new Response(JSON.stringify({
         success: false,
         message: 'Database connection failed',
@@ -133,12 +125,12 @@ export async function GET(request) {
     }
 
     const db = client.db('campusmart');
-    console.log('Database connection established');
+
 
     // Get user ID from token
     const userId = getUserId(decoded);
     if (!userId) {
-      console.error('No valid user ID found in token');
+
       return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid token: no user ID found' 
@@ -154,7 +146,7 @@ export async function GET(request) {
     }
 
     const objectId = toObjectId(userId);
-    console.log('Looking for user with ID:', userId, 'as ObjectId:', objectId);
+
 
     // Try multiple collections to find the user
     let user = null;
@@ -162,7 +154,6 @@ export async function GET(request) {
 
     for (const collectionName of collections) {
       try {
-        console.log(`Checking collection: ${collectionName}`);
         user = await db.collection(collectionName).findOne(
           { _id: objectId },
           {
@@ -174,18 +165,15 @@ export async function GET(request) {
         );
         
         if (user) {
-          console.log(`User found in collection: ${collectionName}`);
           break;
         }
       } catch (findError) {
-        console.error(`Error finding user in ${collectionName}:`, findError);
         continue;
       }
     }
 
     // If not found by ObjectId, try finding by string ID or email
     if (!user) {
-      console.log('User not found by ObjectId, trying alternative searches...');
       
       for (const collectionName of collections) {
         try {
@@ -196,7 +184,6 @@ export async function GET(request) {
           );
           
           if (user) {
-            console.log(`User found by string ID in collection: ${collectionName}`);
             break;
           }
           
@@ -208,19 +195,16 @@ export async function GET(request) {
             );
             
             if (user) {
-              console.log(`User found by email in collection: ${collectionName}`);
               break;
             }
           }
         } catch (findError) {
-          console.error(`Error in alternative search for ${collectionName}:`, findError);
           continue;
         }
       }
     }
 
     if (!user) {
-      console.log('User not found in any collection');
       return new Response(JSON.stringify({ 
         success: false,
         message: 'User not found' 
@@ -235,9 +219,6 @@ export async function GET(request) {
       });
     }
 
-    console.log('User found:', user.name || user.email);
-
-    // Initialize seller statistics
     let sellerStats = {
       totalSales: 0,
       totalEarnings: 0,
@@ -249,7 +230,6 @@ export async function GET(request) {
 
     // Fetch seller statistics if user is a seller
     if (user.isSeller || user.accountType === 'seller') {
-      console.log('Fetching seller statistics...');
 
       try {
         // Fetch sales data with timeout
@@ -332,11 +312,9 @@ export async function GET(request) {
         }
 
         sellerStats.accountType = user.accountType || 'Seller';
-        console.log('Seller stats calculated:', sellerStats);
 
       } catch (statsError) {
-        console.error('Error calculating seller stats:', statsError);
-        // Continue with default stats if calculation fails
+
       }
     }
 
@@ -358,8 +336,6 @@ export async function GET(request) {
       ...sellerStats
     };
 
-    console.log('Profile data prepared successfully');
-
     return new Response(JSON.stringify({
       success: true,
       data: profileData
@@ -374,10 +350,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('=== USER PROFILE API ERROR ===');
-    console.error('Error details:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+
     
     return new Response(JSON.stringify({
       success: false,
@@ -400,7 +373,7 @@ export async function GET(request) {
 
 // PUT - Update user profile
 export async function PUT(request) {
-  console.log('=== USER PROFILE API PUT REQUEST ===');
+
 
   try {
     // Extract and verify token
@@ -425,7 +398,6 @@ export async function PUT(request) {
     try {
       decoded = verifyToken(token);
     } catch (tokenError) {
-      console.error('Token verification error:', tokenError);
       return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid or expired token',
@@ -456,14 +428,10 @@ export async function PUT(request) {
       });
     }
 
-    console.log('Token verified for update request:', decoded.userId || decoded.id);
-
-    // Get update data with validation
     let updateData;
     try {
       updateData = await request.json();
     } catch (jsonError) {
-      console.error('JSON parsing error:', jsonError);
       return new Response(JSON.stringify({
         success: false,
         message: 'Invalid JSON data'
@@ -478,9 +446,7 @@ export async function PUT(request) {
       });
     }
 
-    console.log('Update data received:', Object.keys(updateData));
 
-    // Define allowed fields for security
     const allowedFields = [
       'name', 'phone', 'location', 'bio',
       'college', 'year', 'profileImage'
@@ -496,9 +462,6 @@ export async function PUT(request) {
     // Add update timestamp
     filteredData.updatedAt = new Date();
 
-    console.log('Filtered update data:', Object.keys(filteredData));
-
-    // Connect to database with timeout
     let client;
     try {
       client = await Promise.race([
@@ -508,7 +471,6 @@ export async function PUT(request) {
         )
       ]);
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
       return new Response(JSON.stringify({
         success: false,
         message: 'Database connection failed',
@@ -558,11 +520,9 @@ export async function PUT(request) {
 
         if (result.matchedCount > 0) {
           updateResult = result;
-          console.log(`Profile updated in collection: ${collectionName}, modified: ${result.modifiedCount}`);
           break;
         }
       } catch (updateError) {
-        console.error(`Error updating in ${collectionName}:`, updateError);
         continue;
       }
     }
@@ -578,11 +538,9 @@ export async function PUT(request) {
 
           if (result.matchedCount > 0) {
             updateResult = result;
-            console.log(`Profile updated by string ID in collection: ${collectionName}`);
             break;
           }
         } catch (updateError) {
-          console.error(`Error updating by string ID in ${collectionName}:`, updateError);
           continue;
         }
       }
@@ -622,7 +580,6 @@ export async function PUT(request) {
         
         if (updatedUser) break;
       } catch (fetchError) {
-        console.error(`Error fetching updated user from ${collectionName}:`, fetchError);
         continue;
       }
     }
@@ -642,8 +599,7 @@ export async function PUT(request) {
     });
 
   } catch (error) {
-    console.error('=== USER PROFILE UPDATE ERROR ===');
-    console.error('Error:', error);
+
     
     return new Response(JSON.stringify({
       success: false,

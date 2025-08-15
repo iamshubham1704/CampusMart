@@ -77,7 +77,6 @@ export async function GET(request) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error('Error fetching settings:', error);
     return Response.json({
       success: false,
       message: 'Internal server error'

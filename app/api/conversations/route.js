@@ -125,7 +125,6 @@ export async function GET(request) {
 
     return NextResponse.json({ conversations });
   } catch (error) {
-    console.error("Error fetching conversations:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -188,7 +187,6 @@ export async function POST(request) {
       conversation: conversationWithId,
     });
   } catch (error) {
-    console.error("Error creating conversation:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

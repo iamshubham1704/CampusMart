@@ -32,7 +32,7 @@ export async function GET(request) {
       count
     });
   } catch (error) {
-    console.error('Error fetching chats count:', error);
+
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

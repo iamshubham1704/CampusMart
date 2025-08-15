@@ -38,7 +38,7 @@ const CartDrawer = () => {
 
   const handleCheckout = () => {
     // Implement checkout logic
-    console.log('Proceeding to checkout with items:', cartItems);
+    ('Proceeding to checkout with items:', cartItems);
     // You can navigate to checkout page or open checkout modal
   };
 

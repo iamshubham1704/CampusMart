@@ -135,7 +135,7 @@ const SellerDashboard = () => {
         return;
       }
 
-      console.log('Making API calls with valid token...');
+      ('Making API calls with valid token...');
 
       // Temporarily disable stats and activity APIs for debugging
       const useRealAPIs = false; // Set to true when backend is ready
@@ -176,7 +176,7 @@ const SellerDashboard = () => {
       // Handle listings response
       if (listingsResponse.success) {
         setMyListings(listingsResponse.listings || []);
-        console.log('Listings fetched successfully:', listingsResponse.listings.length);
+        ('Listings fetched successfully:', listingsResponse.listings.length);
       } else {
         console.warn('Error fetching listings:', listingsResponse.message);
         setMyListings([]);
@@ -194,7 +194,7 @@ const SellerDashboard = () => {
       
       if (statsResponse.success && statsResponse.stats) {
         sellerStats = statsResponse.stats;
-        console.log('Stats fetched successfully');
+        ('Stats fetched successfully');
       } else {
         console.warn('Stats API failed:', {
           success: statsResponse.success,
@@ -253,7 +253,7 @@ const SellerDashboard = () => {
       // Handle activity response
       if (activityResponse.success) {
         setRecentActivity(activityResponse.activities || []);
-        console.log('Activity fetched successfully');
+        ('Activity fetched successfully');
       } else {
         console.warn('Error fetching activity:', activityResponse.message);
         

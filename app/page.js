@@ -216,8 +216,7 @@ const CampusMart = () => {
               
               <ul className="mobile-nav-menu">
                 <li><a href="#" className="mobile-nav-link active"><Home size={20} /><span>Home</span></a></li>
-                <li><a href="#" className="mobile-nav-link"><ShoppingBag size={20} /><span>Marketplace</span></a></li>
-                <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
+                <li><a href="#" className="mobile-nav-link"><ShoppingBag size={20} /><span>Policy</span></a></li>
                 <li><a href="#" className="mobile-nav-link"><Info size={20} /><span>About</span></a></li>
               </ul>
               

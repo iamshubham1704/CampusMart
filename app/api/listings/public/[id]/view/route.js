@@ -26,7 +26,7 @@ export async function POST(request, context) {
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error updating view count:', error);
+
     return NextResponse.json(
       { success: false, message: 'Failed to update views' },
       { status: 500 }

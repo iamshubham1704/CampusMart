@@ -208,16 +208,16 @@ const CreateListing = () => {
       });
 
       // Debug: Log what we're sending
-      console.log('Submitting form data:');
+      ('Submitting form data:');
       for (let [key, value] of submitData.entries()) {
-        console.log(key, value);
+        (key, value);
       }
 
       let result;
       try {
         result = await listingsAPI.createListing(submitData);
       } catch (formDataError) {
-        console.log('FormData failed, trying JSON approach:', formDataError);
+        ('FormData failed, trying JSON approach:', formDataError);
         
         // Approach 2: JSON (if your API expects JSON)
         const jsonData = {
@@ -235,7 +235,7 @@ const CreateListing = () => {
           images: formData.images.map(img => img.preview) // temporary - you'll need proper image handling
         };
         
-        console.log('Submitting JSON data:', jsonData);
+        ('Submitting JSON data:', jsonData);
         result = await listingsAPI.createListing(jsonData);
       }
       

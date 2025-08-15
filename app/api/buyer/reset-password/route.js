@@ -33,7 +33,7 @@ export async function POST(req) {
 
     return new Response(JSON.stringify({ message: 'Password reset successful' }), { status: 200 });
   } catch (error) {
-    console.error('Reset password error:', error);
+
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
   }
 }

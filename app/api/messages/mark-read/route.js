@@ -10,7 +10,7 @@ export async function POST(request) {
     try {
       body = await request.json();
     } catch (parseError) {
-      console.error('Error parsing request body:', parseError);
+
       return NextResponse.json(
         { error: 'Invalid JSON in request body' },
         { status: 400 }
@@ -19,12 +19,6 @@ export async function POST(request) {
 
     const { conversationId, userId } = body;
 
-    console.log('POST /api/messages/mark-read - Body:', {
-      conversationId,
-      userId
-    });
-
-    // Validate required fields
     if (!conversationId) {
       return NextResponse.json(
         { error: 'Missing conversationId field' },
@@ -41,7 +35,6 @@ export async function POST(request) {
 
     // Validate ObjectId formats
     if (!ObjectId.isValid(conversationId)) {
-      console.error('Invalid conversationId format:', conversationId);
       return NextResponse.json(
         { error: 'Invalid conversationId format' },
         { status: 400 }
@@ -49,7 +42,7 @@ export async function POST(request) {
     }
 
     if (!ObjectId.isValid(userId)) {
-      console.error('Invalid userId format:', userId);
+
       return NextResponse.json(
         { error: 'Invalid userId format' },
         { status: 400 }
@@ -86,8 +79,6 @@ export async function POST(request) {
       }
     );
 
-    console.log(`Marked ${result.modifiedCount} messages as read for user ${userId} in conversation ${conversationId}`);
-
     return NextResponse.json({ 
       success: true, 
       modifiedCount: result.modifiedCount,
@@ -95,7 +86,6 @@ export async function POST(request) {
       userId
     });
   } catch (error) {
-    console.error('Error marking messages as read:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

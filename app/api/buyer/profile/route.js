@@ -42,7 +42,6 @@ export async function GET(request) {
         }, { status: 200 });
 
     } catch (error) {
-        console.error('Error fetching buyer details:', error);
         return Response.json(
             { message: 'Internal server error' },
             { status: 500 }
@@ -127,9 +126,7 @@ export async function PUT(request) {
         }, { status: 200 });
 
     } catch (error) {
-        console.error('Error updating buyer details:', error);
-        
-        // Handle JSON parsing errors
+
         if (error instanceof SyntaxError) {
             return Response.json(
                 { message: 'Invalid JSON in request body' },

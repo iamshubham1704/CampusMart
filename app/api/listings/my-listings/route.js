@@ -52,7 +52,6 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('Error fetching listings:', error);
     return NextResponse.json({ 
       success: false, 
       message: 'Failed to fetch listings' 

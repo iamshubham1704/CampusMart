@@ -21,9 +21,7 @@ export async function GET(request) {
     const condition = searchParams.get('condition');
     const location = searchParams.get('location');
     
-    console.log('Fetching public listings...');
-    
-    // Build filter object - only show active listings
+
     let filter = { status: { $in: ['active', null] } }; // Include null for backward compatibility
     
     // Add category filter
@@ -55,10 +53,7 @@ export async function GET(request) {
     if (location) {
       filter.location = new RegExp(location, 'i');
     }
-    
-    console.log('Applied filter:', filter);
-    
-    // Fetch filtered listings with seller information
+  
     const listings = await db.collection('listings')
       .aggregate([
         { $match: filter },
@@ -83,9 +78,6 @@ export async function GET(request) {
       ])
       .toArray();
     
-    console.log('Listings found:', listings.length);
-    
-    // Transform listings for frontend
     const transformedListings = listings.map(listing => {
       const seller = listing.sellerInfo && listing.sellerInfo[0];
       
@@ -119,7 +111,7 @@ export async function GET(request) {
     });
     
   } catch (error) {
-    console.error('Error fetching public listings:', error);
+
     return NextResponse.json(
       { 
         success: false, 

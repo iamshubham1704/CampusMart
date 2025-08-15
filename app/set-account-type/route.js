@@ -14,7 +14,7 @@ export async function POST(request) {
     if (!accountType || !['buyer', 'seller'].includes(accountType)) {
       return Response.json({ error: "Invalid account type" }, { status: 400 });
     }
-    console.log(`Setting account type to: ${accountType} for user: ${session.user.email}`);
+    (`Setting account type to: ${accountType} for user: ${session.user.email}`);
     
     return Response.json({ 
       success: true, 

@@ -8,7 +8,7 @@ const dbName = 'campusmart';
 export async function POST(req) {
   try {
     const body = await req.json();
-    console.log('Request body parsed:', body);
+
 
     const { name, email, phone, password } = body;
 
@@ -17,7 +17,7 @@ export async function POST(req) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('Password hashed successfully');
+
 
     await client.connect();
     const db = client.db(dbName);
@@ -37,14 +37,10 @@ export async function POST(req) {
     };
 
     const result = await sellers.insertOne(sellerData); // ✅ Fixed: removed invalid writeConcern
-    console.log('Seller created with ID:', result.insertedId);
+
 
     return Response.json({ message: 'Seller registered successfully', sellerId: result.insertedId }, { status: 201 });
   } catch (err) {
-    console.error('=== REGISTRATION ERROR ===');
-    console.error('Error name:', err.name);
-    console.error('Error message:', err.message);
-    console.error('Error stack:', err.stack);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

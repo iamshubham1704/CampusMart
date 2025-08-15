@@ -8,10 +8,8 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get("conversationId");
 
-    console.log("GET /api/messages - conversationId:", conversationId);
-
     if (!conversationId) {
-      console.error("Missing conversationId parameter");
+
       return NextResponse.json(
         { error: "Missing conversationId parameter" },
         { status: 400 }
@@ -20,7 +18,7 @@ export async function GET(request) {
 
     // Validate ObjectId format
     if (!ObjectId.isValid(conversationId)) {
-      console.error("Invalid conversationId format:", conversationId);
+
       return NextResponse.json(
         { error: "Invalid conversationId format" },
         { status: 400 }
@@ -36,7 +34,7 @@ export async function GET(request) {
     });
 
     if (!conversationExists) {
-      console.error("Conversation not found:", conversationId);
+ 
       return NextResponse.json(
         { error: "Conversation not found" },
         { status: 404 }
@@ -95,13 +93,8 @@ export async function GET(request) {
       .aggregate(pipeline)
       .toArray();
 
-    console.log(
-      `Found ${messages.length} messages for conversation ${conversationId}`
-    );
-
     return NextResponse.json({ messages });
   } catch (error) {
-    console.error("Error fetching messages:", error);
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }
@@ -116,7 +109,7 @@ export async function POST(request) {
     try {
       body = await request.json();
     } catch (parseError) {
-      console.error("Error parsing request body:", parseError);
+
       return NextResponse.json(
         { error: "Invalid JSON in request body" },
         { status: 400 }
@@ -125,14 +118,6 @@ export async function POST(request) {
 
     const { conversationId, senderId, senderType, message } = body;
 
-    console.log("POST /api/messages - Body:", {
-      conversationId,
-      senderId,
-      senderType,
-      messageLength: message?.length,
-    });
-
-    // Validate required fields
     if (!conversationId) {
       return NextResponse.json(
         { error: "Missing conversationId field" },
@@ -247,11 +232,9 @@ export async function POST(request) {
       sender_name: user.name || "Unknown User",
     };
 
-    console.log("Message created successfully:", result.insertedId);
-
     return NextResponse.json({ message: responseMessage });
   } catch (error) {
-    console.error("Error sending message:", error);
+
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }

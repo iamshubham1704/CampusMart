@@ -67,7 +67,6 @@ export async function POST(request) {
     
     return NextResponse.json({ message: 'User type updated successfully' });
   } catch (error) {
-    console.error('Switch user type error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -30,7 +30,7 @@ export const CartProvider = ({ children }) => {
   const fetchCart = async () => {
     const token = getAuthToken();
     if (!token) {
-      console.log('No auth token found, skipping cart fetch');
+      ('No auth token found, skipping cart fetch');
       return;
     }
 

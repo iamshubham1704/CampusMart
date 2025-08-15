@@ -48,7 +48,7 @@ export async function GET(request, { params }) {
     });
 
   } catch (error) {
-    console.error('Error fetching listing:', error);
+
     return NextResponse.json({ success: false, message: 'Failed to fetch listing' }, { status: 500 });
   }
 }
@@ -104,7 +104,7 @@ export async function PUT(request, { params }) {
     });
 
   } catch (error) {
-    console.error('Error updating listing:', error);
+
     return NextResponse.json({ success: false, message: 'Failed to update listing' }, { status: 500 });
   }
 }
@@ -171,7 +171,6 @@ export async function DELETE(request, { params }) {
     });
 
   } catch (error) {
-    console.error('Error deleting listing:', error);
     return NextResponse.json({ success: false, message: 'Failed to delete listing' }, { status: 500 });
   }
 }

@@ -55,7 +55,6 @@ export const authOptions = {
           
           return true;
         } catch (error) {
-          console.error('Error saving user to database:', error);
           return false;
         }
       }
@@ -87,7 +86,6 @@ export const authOptions = {
             }
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
         }
       }
       return token;

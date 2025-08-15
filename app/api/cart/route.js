@@ -74,7 +74,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('Error fetching cart:', error);
+
     return NextResponse.json(
       { success: false, message: 'Failed to fetch cart', error: error.message },
       { status: 500 }
@@ -173,7 +173,6 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error adding to cart:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to add item to cart', error: error.message },
       { status: 500 }
@@ -246,7 +245,7 @@ export async function PUT(request) {
     });
 
   } catch (error) {
-    console.error('Error updating cart:', error);
+ 
     return NextResponse.json(
       { success: false, message: 'Failed to update cart', error: error.message },
       { status: 500 }
@@ -312,7 +311,6 @@ export async function DELETE(request) {
     });
 
   } catch (error) {
-    console.error('Error removing from cart:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to remove item from cart', error: error.message },
       { status: 500 }

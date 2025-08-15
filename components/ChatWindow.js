@@ -10,12 +10,12 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
-  console.log("=== ChatWindow Debug ===");
-  console.log("currentUser:", currentUser);
-  console.log("currentUser.id:", currentUser?.id);
-  console.log("userType:", userType);
-  console.log("conversation:", conversation);
-  console.log("========================");
+  ("=== ChatWindow Debug ===");
+  ("currentUser:", currentUser);
+  ("currentUser.id:", currentUser?.id);
+  ("userType:", userType);
+  ("conversation:", conversation);
+  ("========================");
 
   useEffect(() => {
     if (conversation) {

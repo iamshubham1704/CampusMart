@@ -10,7 +10,6 @@ export async function POST(req) {
   
   try {
     const body = await req.json();
-    console.log('Request body parsed:', body);
 
     const { name, email, phone, password, college, year, course, branch } = body;
 
@@ -32,13 +31,10 @@ export async function POST(req) {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('Password hashed successfully');
 
-    // Connect to database
     await client.connect();
     isConnected = true;
-    console.log('Database connected successfully');
-    
+
     const db = client.db(dbName);
     const buyersCollection = db.collection('buyers');
 
@@ -75,9 +71,7 @@ export async function POST(req) {
 
     // Insert buyer into database
     const result = await buyersCollection.insertOne(buyerData); 
-    console.log('Buyer created with ID:', result.insertedId);
 
-    // Return success response without sensitive data
     return Response.json({ 
       message: 'Buyer registered successfully', 
       buyerId: result.insertedId,
@@ -94,12 +88,7 @@ export async function POST(req) {
     }, { status: 201 });
 
   } catch (err) {
-    console.error('=== REGISTRATION ERROR ===');
-    console.error('Error name:', err.name);
-    console.error('Error message:', err.message);
-    console.error('Error stack:', err.stack);
-    
-    // Handle specific MongoDB errors
+
     if (err.code === 11000) {
       const duplicateField = Object.keys(err.keyPattern)[0];
       return Response.json({ 
@@ -129,9 +118,9 @@ export async function POST(req) {
     if (isConnected) {
       try {
         await client.close();
-        console.log('Database connection closed');
+
       } catch (closeErr) {
-        console.error('Error closing database connection:', closeErr);
+
       }
     }
   }

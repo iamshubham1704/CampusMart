@@ -62,27 +62,27 @@ const ProfileSection = () => {
 
   // Debug authentication state
   useEffect(() => {
-    console.log('=== PROFILE SECTION DEBUG ===');
-    console.log('User data:', userData ? 'Present' : 'None');
-    console.log('Loading:', loading);
-    console.log('Error:', error);
-    console.log('Is authenticated:', isAuthenticated);
-    console.log('Has error:', hasError);
+    ('=== PROFILE SECTION DEBUG ===');
+    ('User data:', userData ? 'Present' : 'None');
+    ('Loading:', loading);
+    ('Error:', error);
+    ('Is authenticated:', isAuthenticated);
+    ('Has error:', hasError);
     
     // Check token in storage
     const token = localStorage.getItem('token') || 
                   localStorage.getItem('authToken') ||
                   sessionStorage.getItem('token') ||
                   sessionStorage.getItem('authToken');
-    console.log('Token in storage:', token ? 'Present' : 'None');
+    ('Token in storage:', token ? 'Present' : 'None');
     
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('Token expiry:', new Date(payload.exp * 1000));
-        console.log('Token expired:', payload.exp < Date.now() / 1000);
+        ('Token expiry:', new Date(payload.exp * 1000));
+        ('Token expired:', payload.exp < Date.now() / 1000);
       } catch (e) {
-        console.log('Invalid token format');
+        ('Invalid token format');
       }
     }
   }, [userData, loading, error, isAuthenticated, hasError]);
@@ -169,7 +169,7 @@ const ProfileSection = () => {
       if (result.success) {
         setIsEditing(false);
         showNotification(result.message || 'Profile updated successfully!', 'success');
-        console.log('Profile updated successfully');
+        ('Profile updated successfully');
       } else {
         showNotification(result.error || 'Failed to update profile', 'error');
         console.error('Failed to update profile:', result.error);
@@ -228,7 +228,7 @@ const ProfileSection = () => {
     }
     
     // Here you would make an API call to update the password
-    console.log('Updating password...');
+    ('Updating password...');
     showNotification('Password updated successfully!', 'success');
     setPasswords({
       currentPassword: '',

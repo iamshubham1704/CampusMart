@@ -22,7 +22,7 @@ const getAuthToken = () => {
   for (const key of tokenKeys) {
     const token = localStorage.getItem(key);
     if (token) {
-      console.log(`Token found in localStorage.${key}`);
+      (`Token found in localStorage.${key}`);
       return token;
     }
   }
@@ -31,12 +31,12 @@ const getAuthToken = () => {
   for (const key of tokenKeys) {
     const token = sessionStorage.getItem(key);
     if (token) {
-      console.log(`Token found in sessionStorage.${key}`);
+      (`Token found in sessionStorage.${key}`);
       return token;
     }
   }
 
-  console.log('No token found in storage');
+  ('No token found in storage');
   return null;
 };
 
@@ -63,8 +63,8 @@ const validateToken = (token) => {
       return { valid: false, error: 'Token has expired' };
     }
 
-    console.log('Token validation successful');
-    console.log('Token expires:', new Date(payload.exp * 1000));
+    ('Token validation successful');
+    ('Token expires:', new Date(payload.exp * 1000));
 
     return { valid: true, payload };
 
@@ -76,9 +76,9 @@ const validateToken = (token) => {
 
 // Fetch user profile from API
 export const fetchUserProfile = async () => {
-  console.log('=== FETCH USER PROFILE START ===');
-  console.log('API_BASE_URL:', API_BASE_URL);
-  console.log('Current domain:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
+  ('=== FETCH USER PROFILE START ===');
+  ('API_BASE_URL:', API_BASE_URL);
+  ('Current domain:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
 
   try {
     const token = getAuthToken();
@@ -93,7 +93,7 @@ export const fetchUserProfile = async () => {
     }
 
     const fullUrl = `${API_BASE_URL}/api/user/profile`;
-    console.log('Making request to:', fullUrl);
+    ('Making request to:', fullUrl);
 
     const response = await fetch(fullUrl, {
       method: 'GET',
@@ -104,11 +104,11 @@ export const fetchUserProfile = async () => {
       },
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    ('Response status:', response.status);
+    ('Response headers:', Object.fromEntries(response.headers.entries()));
 
     const data = await response.json();
-    console.log('Response data success:', data.success);
+    ('Response data success:', data.success);
 
     if (!response.ok) {
       // Handle specific error cases
@@ -128,7 +128,7 @@ export const fetchUserProfile = async () => {
       throw new Error(data.message || 'Failed to fetch user profile');
     }
 
-    console.log('Profile fetched successfully');
+    ('Profile fetched successfully');
     return {
       success: true,
       data: data.data
@@ -149,8 +149,8 @@ export const fetchUserProfile = async () => {
 
 // Update user profile
 export const updateUserProfile = async (profileData) => {
-  console.log('=== UPDATE USER PROFILE START ===');
-  console.log('Update data:', Object.keys(profileData));
+  ('=== UPDATE USER PROFILE START ===');
+  ('Update data:', Object.keys(profileData));
 
   try {
     const token = getAuthToken();
@@ -177,7 +177,7 @@ export const updateUserProfile = async (profileData) => {
       }
     });
 
-    console.log('Sanitized update data:', Object.keys(sanitizedData));
+    ('Sanitized update data:', Object.keys(sanitizedData));
 
     const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
       method: 'PUT',
@@ -189,7 +189,7 @@ export const updateUserProfile = async (profileData) => {
     });
 
     const data = await response.json();
-    console.log('Update response status:', response.status);
+    ('Update response status:', response.status);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -205,7 +205,7 @@ export const updateUserProfile = async (profileData) => {
       throw new Error(data.message || 'Update operation failed');
     }
 
-    console.log('Profile updated successfully');
+    ('Profile updated successfully');
     return {
       success: true,
       data: data.data,
@@ -231,7 +231,7 @@ export const useUserProfile = () => {
 
   // Load user profile with better error handling
   const loadUserProfile = useCallback(async () => {
-    console.log('Loading user profile...');
+    ('Loading user profile...');
     setLoading(true);
     setError(null);
 
@@ -246,7 +246,7 @@ export const useUserProfile = () => {
     const result = await fetchUserProfile();
 
     if (result.success) {
-      console.log('Profile loaded successfully');
+      ('Profile loaded successfully');
       setUserData(result.data);
     } else {
       console.error('Failed to load profile:', result.error);
@@ -258,7 +258,7 @@ export const useUserProfile = () => {
 
   // Update profile with optimistic updates
   const updateProfile = useCallback(async (profileData) => {
-    console.log('Updating profile...');
+    ('Updating profile...');
     setError(null);
 
     const token = getAuthToken();

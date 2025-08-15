@@ -133,7 +133,7 @@ const UnifiedBuyerRegistration = () => {
         router.push('/buyer-login');
       }, 1500);
     } catch (err) {
-      console.log(err);
+      (err);
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
