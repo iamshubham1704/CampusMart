@@ -289,9 +289,6 @@ const SellerDashboard = () => {
           alt={listing.title}
           className={styles.listingImage}
         />
-        <button className={styles.favoriteButton}>
-          <Heart size={16} color="white" />
-        </button>
         <div className={`${styles.conditionBadge} ${listing.condition === 'Like New' ? styles.conditionLikeNew :
           listing.condition === 'Excellent' ? styles.conditionExcellent :
             styles.conditionGood

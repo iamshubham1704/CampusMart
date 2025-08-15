@@ -15,10 +15,6 @@ const UnifiedSellerRegistration = () => {
     confirmPassword: '',
     college: '',
     customCollege: '',
-    businessType: '',
-    customBusinessType: '',
-    businessName: '',
-    description: '',
   });
 
   const [error, setError] = useState('');
@@ -646,98 +642,6 @@ const UnifiedSellerRegistration = () => {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Business Information */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Business Information</h3>
-            
-            {/* Business Name */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Business/Shop Name *</label>
-              <div style={styles.inputWrapper}>
-                <Briefcase style={styles.icon} />
-                <input
-                  type="text"
-                  name="businessName"
-                  placeholder="Enter your business or shop name"
-                  value={form.businessName}
-                  onChange={handleChange}
-                  style={{
-                    ...styles.input,
-                    ...(loading ? styles.inputDisabled : {}),
-                  }}
-                  required 
-                  disabled={loading}
-                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                  onBlur={(e) => e.target.style.borderColor = '#4b5563'}
-                />
-              </div>
-            </div>
-
-            {/* Business Type */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Business Type *</label>
-              <select
-                name="businessType"
-                value={form.businessType}
-                onChange={handleChange}
-                style={{
-                  ...styles.select,
-                  ...(loading ? styles.inputDisabled : {}),
-                }}
-                disabled={loading}
-                onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                onBlur={(e) => e.target.style.borderColor = '#4b5563'}
-              >
-                <option value="">Select your business type</option>
-                {businessTypes.map((type) => (
-                  <option key={type} value={type === 'Other' ? 'other' : type.toLowerCase()}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Custom Business Type Input */}
-            {form.businessType === 'other' && (
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Enter Your Business Type *</label>
-                <input
-                  type="text"
-                  name="customBusinessType"
-                  value={form.customBusinessType}
-                  onChange={handleChange}
-                  style={{
-                    ...styles.select,
-                    ...(loading ? styles.inputDisabled : {}),
-                  }}
-                  placeholder="Enter your business type"
-                  disabled={loading}
-                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                  onBlur={(e) => e.target.style.borderColor = '#4b5563'}
-                />
-              </div>
-            )}
-
-            {/* Business Description */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Business Description</label>
-              <textarea
-                name="description"
-                placeholder="Tell us about your business, products, or services..."
-                value={form.description}
-                onChange={handleChange}
-                style={{
-                  ...styles.textarea,
-                  ...(loading ? styles.inputDisabled : {}),
-                }}
-                disabled={loading}
-                onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                onBlur={(e) => e.target.style.borderColor = '#4b5563'}
-              />
-              <p style={styles.helpText}>Optional: Describe what you sell or services you offer</p>
-            </div>
           </div>
 
           {/* Submit Button */}

@@ -1,18 +1,32 @@
 'use client'
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   User, Edit3, Camera, Mail, Phone, MapPin, Calendar,
   Save, X, Eye, EyeOff, Shield, Star, Package, MessageSquare,
-  Heart, Award, TrendingUp, Clock, Loader2, AlertCircle
+  Heart, Award, TrendingUp, Clock, Loader2, AlertCircle,
+  RefreshCw, LogIn, Home
 } from 'lucide-react';
 import { useUserProfile } from '../../utils/userService'; // Adjust path as needed
 import styles from './ProfileSection.module.css';
 
 const ProfileSection = () => {
-  const { userData, loading, error, updateProfile } = useUserProfile();
+  const { 
+    userData, 
+    loading, 
+    error, 
+    updateProfile, 
+    refreshProfile, 
+    clearProfile,
+    isAuthenticated,
+    hasError 
+  } = useUserProfile();
+
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+  
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -37,6 +51,41 @@ const ProfileSection = () => {
   });
   
   const fileInputRef = useRef(null);
+
+  // Show notification helper
+  const showNotification = useCallback((message, type = 'info') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 5000);
+  }, []);
+
+  // Debug authentication state
+  useEffect(() => {
+    console.log('=== PROFILE SECTION DEBUG ===');
+    console.log('User data:', userData ? 'Present' : 'None');
+    console.log('Loading:', loading);
+    console.log('Error:', error);
+    console.log('Is authenticated:', isAuthenticated);
+    console.log('Has error:', hasError);
+    
+    // Check token in storage
+    const token = localStorage.getItem('token') || 
+                  localStorage.getItem('authToken') ||
+                  sessionStorage.getItem('token') ||
+                  sessionStorage.getItem('authToken');
+    console.log('Token in storage:', token ? 'Present' : 'None');
+    
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Token expiry:', new Date(payload.exp * 1000));
+        console.log('Token expired:', payload.exp < Date.now() / 1000);
+      } catch (e) {
+        console.log('Invalid token format');
+      }
+    }
+  }, [userData, loading, error, isAuthenticated, hasError]);
 
   // Update profileData when userData changes
   useEffect(() => {
@@ -78,12 +127,27 @@ const ProfileSection = () => {
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showNotification('Image size should be less than 5MB', 'error');
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showNotification('Please select a valid image file', 'error');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfileData(prev => ({
           ...prev,
           profileImage: e.target.result
         }));
+      };
+      reader.onerror = () => {
+        showNotification('Error reading image file', 'error');
       };
       reader.readAsDataURL(file);
     }
@@ -93,18 +157,26 @@ const ProfileSection = () => {
     setUpdating(true);
     
     try {
+      // Validate required fields
+      if (!profileData.name.trim()) {
+        showNotification('Name is required', 'error');
+        setUpdating(false);
+        return;
+      }
+
       const result = await updateProfile(profileData);
       
       if (result.success) {
         setIsEditing(false);
-        // You could show a success message here
+        showNotification(result.message || 'Profile updated successfully!', 'success');
         console.log('Profile updated successfully');
       } else {
+        showNotification(result.error || 'Failed to update profile', 'error');
         console.error('Failed to update profile:', result.error);
-        // You could show an error message here
       }
     } catch (error) {
       console.error('Error updating profile:', error);
+      showNotification('An unexpected error occurred', 'error');
     } finally {
       setUpdating(false);
     }
@@ -127,20 +199,55 @@ const ProfileSection = () => {
     setIsEditing(false);
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshProfile();
+      showNotification('Profile refreshed successfully', 'success');
+    } catch (error) {
+      showNotification('Failed to refresh profile', 'error');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handlePasswordUpdate = () => {
+    if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
+      showNotification('All password fields are required', 'error');
+      return;
+    }
+
+    if (passwords.newPassword.length < 6) {
+      showNotification('New password must be at least 6 characters long', 'error');
+      return;
+    }
+    
     if (passwords.newPassword !== passwords.confirmPassword) {
-      alert('New passwords do not match');
+      showNotification('New passwords do not match', 'error');
       return;
     }
     
     // Here you would make an API call to update the password
     console.log('Updating password...');
+    showNotification('Password updated successfully!', 'success');
     setPasswords({
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
     });
     setShowPasswordChange(false);
+  };
+
+  const handleLogin = () => {
+    // Redirect to login page or show login modal
+    window.location.href = '/login';
+  };
+
+  const handleLogout = () => {
+    clearProfile();
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/';
   };
 
   const generateUserAvatar = (name, profileImage) => {
@@ -161,8 +268,31 @@ const ProfileSection = () => {
     </div>
   );
 
+  // Notification Component
+  const Notification = ({ show, message, type }) => {
+    if (!show) return null;
+    
+    const getNotificationColor = (type) => {
+      switch (type) {
+        case 'success': return '#10b981';
+        case 'error': return '#ef4444';
+        case 'warning': return '#f59e0b';
+        default: return '#3b82f6';
+      }
+    };
+
+    return (
+      <div 
+        className={styles.notification}
+        style={{ backgroundColor: getNotificationColor(type) }}
+      >
+        {message}
+      </div>
+    );
+  };
+
   // Loading state
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <div className={styles.loadingContainer}>
         <Loader2 className={styles.spinner} size={48} />
@@ -171,36 +301,71 @@ const ProfileSection = () => {
     );
   }
 
-  // Error state
+if (error && (error.includes('Authentication failed') || error.includes('Please log in')))  {
+    return (
+      <div className={styles.errorContainer}>
+        <AlertCircle size={48} className={styles.errorIcon} />
+        <h2>Authentication Required</h2>
+        <p>You need to be logged in to view your profile.</p>
+        <div className={styles.errorActions}>
+          <button className={styles.primaryButton} onClick={handleLogin}>
+            <LogIn size={16} />
+            Log In
+          </button>
+          <button className={styles.secondaryButton} onClick={() => window.location.href = '/'}>
+            <Home size={16} />
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // General error state
   if (error) {
     return (
       <div className={styles.errorContainer}>
         <AlertCircle size={48} className={styles.errorIcon} />
         <h2>Error Loading Profile</h2>
         <p>{error}</p>
-        <button 
-          className={styles.retryButton} 
-          onClick={() => window.location.reload()}
-        >
-          Try Again
-        </button>
+        <div className={styles.errorActions}>
+          <button className={styles.primaryButton} onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? <Loader2 className={styles.spinner} size={16} /> : <RefreshCw size={16} />}
+            {refreshing ? 'Refreshing...' : 'Try Again'}
+          </button>
+          <button className={styles.secondaryButton} onClick={handleLogout}>
+            Log Out
+          </button>
+        </div>
       </div>
     );
   }
 
   // No data state
-  if (!userData) {
+  if (!userData && !loading) {
     return (
       <div className={styles.noDataContainer}>
         <User size={48} className={styles.noDataIcon} />
         <h2>No Profile Data</h2>
         <p>Unable to load your profile information.</p>
+        <div className={styles.errorActions}>
+          <button className={styles.primaryButton} onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? <Loader2 className={styles.spinner} size={16} /> : <RefreshCw size={16} />}
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button className={styles.secondaryButton} onClick={handleLogin}>
+            <LogIn size={16} />
+            Log In Again
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={styles.profileContainer}>
+      <Notification {...notification} />
+      
       {/* Profile Header */}
       <div className={styles.profileHeader}>
         <div className={styles.profileImageSection}>
@@ -214,6 +379,7 @@ const ProfileSection = () => {
               <button 
                 className={styles.imageUploadButton}
                 onClick={() => fileInputRef.current?.click()}
+                title="Upload new profile picture"
               >
                 <Camera size={16} />
               </button>
@@ -224,7 +390,7 @@ const ProfileSection = () => {
             type="file"
             ref={fileInputRef}
             onChange={handleImageUpload}
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             style={{ display: 'none' }}
           />
         </div>
@@ -238,6 +404,7 @@ const ProfileSection = () => {
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className={styles.nameInput}
                 placeholder="Your name"
+                required
               />
               <div className={styles.editActions}>
                 <button 
@@ -260,7 +427,17 @@ const ProfileSection = () => {
             </div>
           ) : (
             <div className={styles.displayHeader}>
-              <h1 className={styles.profileName}>{profileData.name}</h1>
+              <div className={styles.nameSection}>
+                <h1 className={styles.profileName}>{profileData.name}</h1>
+                <button 
+                  className={styles.refreshButton}
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh profile data"
+                >
+                  {refreshing ? <Loader2 size={16} className={styles.spinner} /> : <RefreshCw size={16} />}
+                </button>
+              </div>
               <button 
                 className={styles.editButton}
                 onClick={() => setIsEditing(true)}
@@ -326,7 +503,7 @@ const ProfileSection = () => {
           
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Full Name</label>
+              <label className={styles.formLabel}>Full Name *</label>
               {isEditing ? (
                 <input
                   type="text"
@@ -334,6 +511,7 @@ const ProfileSection = () => {
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   className={styles.formInput}
                   placeholder="Enter your full name"
+                  required
                 />
               ) : (
                 <div className={styles.formValue}>{profileData.name || 'Not provided'}</div>
@@ -421,9 +599,15 @@ const ProfileSection = () => {
                   className={styles.formTextarea}
                   placeholder="Tell others about yourself"
                   rows={4}
+                  maxLength={500}
                 />
               ) : (
                 <div className={styles.formValue}>{profileData.bio || 'No bio provided'}</div>
+              )}
+              {isEditing && (
+                <small className={styles.formHint}>
+                  {profileData.bio.length}/500 characters
+                </small>
               )}
             </div>
           </div>
@@ -454,7 +638,7 @@ const ProfileSection = () => {
               <div className={styles.passwordChangeForm}>
                 <div className={styles.passwordGrid}>
                   <div className={styles.passwordGroup}>
-                    <label className={styles.formLabel}>Current Password</label>
+                    <label className={styles.formLabel}>Current Password *</label>
                     <div className={styles.passwordInput}>
                       <input
                         type={showPasswords.current ? "text" : "password"}
@@ -462,6 +646,7 @@ const ProfileSection = () => {
                         onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
                         className={styles.formInput}
                         placeholder="Enter current password"
+                        required
                       />
                       <button
                         type="button"
@@ -474,7 +659,7 @@ const ProfileSection = () => {
                   </div>
 
                   <div className={styles.passwordGroup}>
-                    <label className={styles.formLabel}>New Password</label>
+                    <label className={styles.formLabel}>New Password *</label>
                     <div className={styles.passwordInput}>
                       <input
                         type={showPasswords.new ? "text" : "password"}
@@ -482,6 +667,8 @@ const ProfileSection = () => {
                         onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
                         className={styles.formInput}
                         placeholder="Enter new password"
+                        minLength={6}
+                        required
                       />
                       <button
                         type="button"
@@ -491,10 +678,11 @@ const ProfileSection = () => {
                         {showPasswords.new ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
+                    <small className={styles.formHint}>Minimum 6 characters</small>
                   </div>
 
                   <div className={styles.passwordGroup}>
-                    <label className={styles.formLabel}>Confirm New Password</label>
+                    <label className={styles.formLabel}>Confirm New Password *</label>
                     <div className={styles.passwordInput}>
                       <input
                         type={showPasswords.confirm ? "text" : "password"}
@@ -502,6 +690,7 @@ const ProfileSection = () => {
                         onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
                         className={styles.formInput}
                         placeholder="Confirm new password"
+                        required
                       />
                       <button
                         type="button"
@@ -537,6 +726,19 @@ const ProfileSection = () => {
                 </div>
               </div>
             )}
+
+            <div className={styles.securityItem}>
+              <div className={styles.securityInfo}>
+                <h3>Account Actions</h3>
+                <p>Manage your account</p>
+              </div>
+              <button
+                className={styles.logoutButton}
+                onClick={handleLogout}
+              >
+                Log Out
+              </button>
+            </div>
           </div>
         </div>
       </div>
