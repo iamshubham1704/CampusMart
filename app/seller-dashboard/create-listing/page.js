@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import { listingsAPI } from '../../utils/api';
@@ -9,6 +9,7 @@ const CreateListing = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ const CreateListing = () => {
     subcategory: '',
     location: '',
     college: '',
-    images: [],
+    images: [], // Will store File objects and preview URLs
     tags: []
   });
 
@@ -47,10 +48,25 @@ const CreateListing = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [name]: value
-    }));
+    };
+    
+    setFormData(newFormData);
+    
+    // Check if all required fields are now filled and clear error
+    const requiredFieldsFilled = 
+      newFormData.title?.trim() &&
+      newFormData.description?.trim() &&
+      newFormData.price &&
+      newFormData.condition &&
+      newFormData.category &&
+      newFormData.location?.trim();
+    
+    if (requiredFieldsFilled && error) {
+      setError('');
+    }
   };
 
   const handleAddTag = () => {
@@ -71,20 +87,61 @@ const CreateListing = () => {
   };
 
   const handleImageAdd = () => {
-    // For now, we'll add placeholder images
-    // Later you can implement actual image upload
-    const placeholderImages = [
-      'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=300&fit=crop',
-      'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop'
-    ];
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
     
-    const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
+    if (!files.length) return;
+
+    // Validate file types
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
     
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, randomImage]
-    }));
+    if (invalidFiles.length > 0) {
+      setError('Please select only image files (JPEG, JPG, PNG, WebP)');
+      return;
+    }
+
+    // Check if adding these files would exceed the limit
+    const totalImages = formData.images.length + files.length;
+    if (totalImages > 5) {
+      setError(`You can only add ${5 - formData.images.length} more image(s). Maximum 5 images allowed.`);
+      return;
+    }
+
+    // Validate file sizes (e.g., max 5MB each)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = files.filter(file => file.size > maxSize);
+    
+    if (oversizedFiles.length > 0) {
+      setError('Each image must be smaller than 5MB');
+      return;
+    }
+
+    setError(''); // Clear any previous errors
+
+    // Create preview URLs and add files to state
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = {
+          file: file,
+          preview: e.target.result,
+          name: file.name
+        };
+        
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, imageData]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset file input
+    e.target.value = '';
   };
 
   const handleImageRemove = (indexToRemove) => {
@@ -97,10 +154,27 @@ const CreateListing = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Basic validation
-    if (!formData.title || !formData.description || !formData.price || 
-        !formData.condition || !formData.category || !formData.location) {
-      setError('Please fill in all required fields');
+    // Basic validation - check for empty or whitespace-only strings
+    const requiredFields = {
+      title: formData.title?.trim(),
+      description: formData.description?.trim(),
+      price: formData.price,
+      condition: formData.condition,
+      category: formData.category,
+      location: formData.location?.trim()
+    };
+    
+    const missingFields = Object.entries(requiredFields)
+      .filter(([key, value]) => !value || value === '')
+      .map(([key]) => key);
+    
+    if (missingFields.length > 0) {
+      setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    if (formData.images.length === 0) {
+      setError('Please add at least one image of your item');
       return;
     }
 
@@ -108,7 +182,62 @@ const CreateListing = () => {
     setError('');
 
     try {
-      const result = await listingsAPI.createListing(formData);
+      // Check if API expects FormData or JSON
+      // For now, let's try both approaches
+      
+      // Approach 1: FormData (for APIs that handle multipart/form-data)
+      const submitData = new FormData();
+      
+      // Add text fields with explicit values
+      submitData.append('title', formData.title.trim());
+      submitData.append('description', formData.description.trim());
+      submitData.append('price', formData.price);
+      submitData.append('originalPrice', formData.originalPrice || '');
+      submitData.append('condition', formData.condition);
+      submitData.append('category', formData.category);
+      submitData.append('subcategory', formData.subcategory || '');
+      submitData.append('location', formData.location.trim());
+      submitData.append('college', formData.college || '');
+      
+      // Add tags as JSON string
+      submitData.append('tags', JSON.stringify(formData.tags));
+      
+      // Add image files
+      formData.images.forEach((imageData, index) => {
+        submitData.append('images', imageData.file);
+      });
+
+      // Debug: Log what we're sending
+      console.log('Submitting form data:');
+      for (let [key, value] of submitData.entries()) {
+        console.log(key, value);
+      }
+
+      let result;
+      try {
+        result = await listingsAPI.createListing(submitData);
+      } catch (formDataError) {
+        console.log('FormData failed, trying JSON approach:', formDataError);
+        
+        // Approach 2: JSON (if your API expects JSON)
+        const jsonData = {
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          price: parseFloat(formData.price),
+          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+          condition: formData.condition,
+          category: formData.category,
+          subcategory: formData.subcategory || '',
+          location: formData.location.trim(),
+          college: formData.college || '',
+          tags: formData.tags,
+          // For JSON approach, you might need to convert images to base64 or handle separately
+          images: formData.images.map(img => img.preview) // temporary - you'll need proper image handling
+        };
+        
+        console.log('Submitting JSON data:', jsonData);
+        result = await listingsAPI.createListing(jsonData);
+      }
       
       if (result.success) {
         // Redirect back to dashboard
@@ -185,6 +314,7 @@ const CreateListing = () => {
                 className={styles.input}
                 required
                 min="0"
+                step="0.01"
               />
             </div>
 
@@ -198,6 +328,7 @@ const CreateListing = () => {
                 placeholder="Optional"
                 className={styles.input}
                 min="0"
+                step="0.01"
               />
             </div>
           </div>
@@ -276,13 +407,29 @@ const CreateListing = () => {
 
         {/* Images */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Images</h2>
-          <p className={styles.sectionSubtitle}>Add up to 5 photos of your item</p>
+          <h2 className={styles.sectionTitle}>Images *</h2>
+          <p className={styles.sectionSubtitle}>
+            Add up to 5 photos of your item (JPEG, JPG, PNG, WebP - Max 5MB each)
+          </p>
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            multiple
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+          />
           
           <div className={styles.imageGrid}>
-            {formData.images.map((image, index) => (
+            {formData.images.map((imageData, index) => (
               <div key={index} className={styles.imageContainer}>
-                <img src={image} alt={`Item ${index + 1}`} className={styles.image} />
+                <img 
+                  src={imageData.preview} 
+                  alt={`Item ${index + 1}`} 
+                  className={styles.image} 
+                />
                 <button
                   type="button"
                   onClick={() => handleImageRemove(index)}
@@ -290,6 +437,9 @@ const CreateListing = () => {
                 >
                   <X size={16} />
                 </button>
+                <div className={styles.imageName}>
+                  {imageData.name}
+                </div>
               </div>
             ))}
             
@@ -304,6 +454,12 @@ const CreateListing = () => {
               </button>
             )}
           </div>
+          
+          {formData.images.length === 0 && (
+            <p className={styles.noImagesText}>
+              📷 No images added yet. Click "Add Photo" to select images from your device.
+            </p>
+          )}
         </div>
 
         {/* Tags */}
