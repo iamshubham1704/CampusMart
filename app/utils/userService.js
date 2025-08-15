@@ -1,17 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 
-  (typeof window !== 'undefined' ? window.location.origin : 'https://campusmart.store');
+const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ||
+  (typeof window !== 'undefined' ?
+    (window.location.hostname === 'localhost' ?
+      window.location.origin :
+      `${window.location.protocol}//${window.location.host}`
+    ) :
+    'https://campusmart.store'
+  );
 
 // Helper function to get auth token from various storage locations
 const getAuthToken = () => {
   if (typeof window === 'undefined') return null;
-  
+
   const tokenKeys = [
     'authToken', 'token', 'accessToken', 'jwt'
   ];
-  
+
   // Check localStorage first
   for (const key of tokenKeys) {
     const token = localStorage.getItem(key);
@@ -20,7 +26,7 @@ const getAuthToken = () => {
       return token;
     }
   }
-  
+
   // Check sessionStorage as fallback
   for (const key of tokenKeys) {
     const token = sessionStorage.getItem(key);
@@ -29,7 +35,7 @@ const getAuthToken = () => {
       return token;
     }
   }
-  
+
   console.log('No token found in storage');
   return null;
 };
@@ -37,7 +43,7 @@ const getAuthToken = () => {
 // Validate JWT token format and expiration
 const validateToken = (token) => {
   if (!token) return { valid: false, error: 'No token provided' };
-  
+
   try {
     const tokenParts = token.split('.');
     if (tokenParts.length !== 3) {
@@ -47,7 +53,7 @@ const validateToken = (token) => {
     // Decode and check expiration
     const payload = JSON.parse(atob(tokenParts[1]));
     const isExpired = payload.exp && payload.exp < Date.now() / 1000;
-    
+
     if (isExpired) {
       // Clean up expired token
       localStorage.removeItem('token');
@@ -59,9 +65,9 @@ const validateToken = (token) => {
 
     console.log('Token validation successful');
     console.log('Token expires:', new Date(payload.exp * 1000));
-    
+
     return { valid: true, payload };
-    
+
   } catch (error) {
     console.error('Token validation error:', error);
     return { valid: false, error: 'Invalid token format' };
@@ -73,7 +79,7 @@ export const fetchUserProfile = async () => {
   console.log('=== FETCH USER PROFILE START ===');
   console.log('API_BASE_URL:', API_BASE_URL);
   console.log('Current domain:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
-  
+
   try {
     const token = getAuthToken();
     if (!token) {
@@ -88,7 +94,7 @@ export const fetchUserProfile = async () => {
 
     const fullUrl = `${API_BASE_URL}/api/user/profile`;
     console.log('Making request to:', fullUrl);
-    
+
     const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
@@ -114,7 +120,7 @@ export const fetchUserProfile = async () => {
         sessionStorage.removeItem('authToken');
         throw new Error('Authentication failed. Please log in again.');
       }
-      
+
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
@@ -160,7 +166,7 @@ export const updateUserProfile = async (profileData) => {
 
     // Validate and sanitize profile data
     const allowedFields = [
-      'name', 'phone', 'location', 'bio', 
+      'name', 'phone', 'location', 'bio',
       'college', 'year', 'profileImage'
     ];
 
@@ -191,7 +197,7 @@ export const updateUserProfile = async (profileData) => {
         localStorage.removeItem('authToken');
         throw new Error('Authentication failed. Please log in again.');
       }
-      
+
       throw new Error(data.message || 'Failed to update user profile');
     }
 
@@ -209,7 +215,7 @@ export const updateUserProfile = async (profileData) => {
   } catch (error) {
     console.error('=== UPDATE USER PROFILE ERROR ===');
     console.error('Error:', error.message);
-    
+
     return {
       success: false,
       error: error.message
@@ -238,7 +244,7 @@ export const useUserProfile = () => {
     }
 
     const result = await fetchUserProfile();
-    
+
     if (result.success) {
       console.log('Profile loaded successfully');
       setUserData(result.data);
