@@ -58,8 +58,6 @@ const CampusMart = () => {
     const handleScroll = () => {
       const scrolled = window.pageYOffset;
       const parallax = scrolled * 0.3;
-      
-      // Update CSS custom properties for scroll-based parallax
       document.documentElement.style.setProperty('--scroll-y', `${parallax}px`);
     };
 
@@ -160,13 +158,7 @@ const CampusMart = () => {
                 <li className="nav-item">
                   <a href="#" className="nav-link">
                     <ShoppingBag size={18} />
-                    <span>Marketplace</span>
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a href="#" className="nav-link">
-                    <Users size={18} />
-                    <span>Community</span>
+                    <span>Policy</span>
                   </a>
                 </li>
                 <li className="nav-item">
@@ -216,7 +208,8 @@ const CampusMart = () => {
               
               <ul className="mobile-nav-menu">
                 <li><a href="#" className="mobile-nav-link active"><Home size={20} /><span>Home</span></a></li>
-                <li><a href="#" className="mobile-nav-link"><ShoppingBag size={20} /><span>Policy</span></a></li>
+                <li><a href="#" className="mobile-nav-link"><ShoppingBag size={20} /><span>Marketplace</span></a></li>
+                <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
                 <li><a href="#" className="mobile-nav-link"><Info size={20} /><span>About</span></a></li>
               </ul>
               
@@ -334,7 +327,7 @@ const CampusMart = () => {
                 </div>
                 <div className="step-content">
                   <h3>Create Account</h3>
-                  <p>Sign up with your university email to join your campus community and start buying or selling.</p>
+                  <p>Sign up with your email and register as buyer or seller and start buying or selling.</p>
                 </div>
               </div>
               
@@ -356,7 +349,7 @@ const CampusMart = () => {
                 </div>
                 <div className="step-content">
                   <h3>Connect & Trade</h3>
-                  <p>Message sellers, negotiate prices, and arrange safe meetups on campus.</p>
+                  <p>Message sellers after payment and arrange safe meetups on campus.</p>
                 </div>
               </div>
               
@@ -391,12 +384,12 @@ const CampusMart = () => {
           
           <div className="products-grid">
             {[
-              { emoji: '📚', name: 'Engineering Textbook', price: '$45', originalPrice: '$120', seller: 'Alex M.', rating: 5, location: 'North Campus', badge: 'Hot Deal' },
-              { emoji: '💻', name: 'MacBook Pro 2019', price: '$899', originalPrice: '$1299', seller: 'Sarah K.', rating: 5, location: 'South Dorm', badge: 'Featured' },
-              { emoji: '🪑', name: 'Study Desk & Chair', price: '$75', originalPrice: '$150', seller: 'Mike R.', rating: 4, location: 'West Campus', badge: 'New' },
-              { emoji: '🎧', name: 'Noise-Canceling Headphones', price: '$120', originalPrice: '$200', seller: 'Emma L.', rating: 5, location: 'East Hall', badge: 'Popular' },
-              { emoji: '📱', name: 'iPhone 12', price: '$450', originalPrice: '$699', seller: 'Josh T.', rating: 4, location: 'Central Campus', badge: 'Hot Deal' },
-              { emoji: '🛏️', name: 'Twin Mattress', price: '$80', originalPrice: '$200', seller: 'Lisa W.', rating: 5, location: 'Graduate Housing', badge: 'Featured' }
+              { emoji: '📚', name: 'Engineering Textbook', price: '₹45', originalPrice: '₹120', seller: 'Alex M.', rating: 5, location: 'North Campus', badge: 'Hot Deal' },
+              { emoji: '💻', name: 'MacBook Pro 2019', price: '₹899', originalPrice: '₹1299', seller: 'Sarah K.', rating: 5, location: 'South Dorm', badge: 'Featured' },
+              { emoji: '🪑', name: 'Study Desk & Chair', price: '₹75', originalPrice: '₹150', seller: 'Mike R.', rating: 4, location: 'West Campus', badge: 'New' },
+              { emoji: '🎧', name: 'Noise-Canceling Headphones', price: '₹120', originalPrice: '₹200', seller: 'Emma L.', rating: 5, location: 'East Hall', badge: 'Popular' },
+              { emoji: '📱', name: 'iPhone 12', price: '₹450', originalPrice: '₹699', seller: 'Josh T.', rating: 4, location: 'Central Campus', badge: 'Hot Deal' },
+              { emoji: '🛏', name: 'Twin Mattress', price: '₹80', originalPrice: '₹200', seller: 'Lisa W.', rating: 5, location: 'Graduate Housing', badge: 'Featured' }
             ].map((product, index) => (
               <div key={index} className="product-card">
                 <div className="product-image">
@@ -446,27 +439,27 @@ const CampusMart = () => {
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-icon">👥</div>
-              <h3>10K+</h3>
-              <p>Active Students</p>
-              <span>Across 50+ universities</span>
+              <h3>100+</h3>
+              <p>Registered Students</p>
+              <span>Across 20+ colleges</span>
             </div>
             <div className="stat-card">
               <div className="stat-icon">📦</div>
-              <h3>25K+</h3>
+              <h3>50+</h3>
               <p>Items Sold</p>
               <span>This semester alone</span>
             </div>
             <div className="stat-card">
               <div className="stat-icon">⭐</div>
-              <h3>4.8★</h3>
+              <h3>4.5★</h3>
               <p>Average Rating</p>
               <span>From user reviews</span>
             </div>
             <div className="stat-card">
               <div className="stat-icon">💰</div>
-              <h3>$2M+</h3>
-              <p>Money Saved</p>
-              <span>By our community</span>
+              <h3>₹10,000+</h3>
+              <p>Transactions</p>
+              <span>By users</span>
             </div>
           </div>
 
@@ -481,9 +474,9 @@ const CampusMart = () => {
                 </div>
                 <p>"Sold my old engineering drawing kit in just 2 days! Didn't have to put up random posters on hostel notice boards anymore. The buyer was from my own campus so delivery was super easy."</p>
                 <div className="testimonial-author">
-                  <div className="author-avatar">JD</div>
+                  <div className="author-avatar">HR</div>
                   <div className="author-info">
-                    <div className="author-name">Harsh Raana</div>
+                    <div className="author-name">Harsh Rana</div>
                     <div className="author-school">MAIT</div>
                   </div>
                 </div>
@@ -497,7 +490,7 @@ const CampusMart = () => {
                 </div>
                 <p>"Managed to get my lab coat and a couple of reference books all in one go from seniors. Everything was in great condition and way cheaper than the campus shop."</p>
                 <div className="testimonial-author">
-                  <div className="author-avatar">RM</div>
+                  <div className="author-avatar">SM</div>
                   <div className="author-info">
                     <div className="author-name">Suteekshn Manchanda</div>
                     <div className="author-school">MAIT</div>
@@ -513,7 +506,7 @@ const CampusMart = () => {
                 </div>
                 <p>"Posted my old textbooks here before summer break and made enough money to cover my mess bill for the month. Best part - I didn't even have to step outside campus."</p>
                 <div className="testimonial-author">
-                  <div className="author-avatar">AL</div>
+                  <div className="author-avatar">AS</div>
                   <div className="author-info">
                     <div className="author-name">Abhay Singh</div>
                     <div className="author-school">MAIT</div>
@@ -545,7 +538,7 @@ const CampusMart = () => {
               </div>
               <div className="trust-content">
                 <h4>University Verified</h4>
-                <p>Every user is verified through their official university email address.</p>
+                <p>Verifying college users at the time of registrations .</p>
               </div>
             </div>
             
@@ -555,7 +548,7 @@ const CampusMart = () => {
               </div>
               <div className="trust-content">
                 <h4>Campus Community</h4>
-                <p>Trade only with verified students from your university for maximum trust.</p>
+                <p>Trade only with verified students from your college for maximum trust.</p>
               </div>
             </div>
             
@@ -575,4 +568,4 @@ const CampusMart = () => {
   );
 };
 
-export default CampusMart;
+export default CampusMart;
