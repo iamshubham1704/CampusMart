@@ -1,6 +1,7 @@
 // ProductViewModal.js - Enhanced version with original frontend design
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter for navigation
 import {
   X,
   Heart,
@@ -24,7 +25,8 @@ import {
 import { useCart } from '../../../components/contexts/CartContext';
 import './ProductPage.css';
 
-const ProductViewModal = ({ productId, isOpen, onClose }) => {
+// Accept currentUser and currentUserLoading as props
+const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUserLoading }) => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -36,6 +38,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   const [selectedColor, setSelectedColor] = useState('black');
 
   const { addToCart, isInCart, cartLoading } = useCart();
+  const router = useRouter(); // Initialize router
 
   // Fetch product details when modal opens
   useEffect(() => {
@@ -101,86 +104,93 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
       console.error('❌ Error fetching product:', err);
       setError(err.message);
 
-      // Fallback to mock data for development
-      const mockProduct = {
-        id: productId,
-        title: 'Noise-Canceling Over-Ear Headphones',
-        price: 4999,
-        originalPrice: 6999,
-        images: [
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
-          'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500&h=500&fit=crop',
-          'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&h=500&fit=crop'
-        ],
-        condition: 'Like New',
-        category: 'electronics',
-        description: 'Experience unparalleled audio quality with our premium Noise-Canceling Over-Ear Headphones. Engineered for audiophiles and everyday users alike, these headphones deliver exceptional sound reproduction while blocking out the world around you. The advanced noise cancellation technology uses multiple microphones to detect and neutralize ambient noise, creating a peaceful listening environment whether you\'re commuting, working, or relaxing at home.',
-        features: [
-          'Advanced noise cancellation up to 35 dB',
-          '35-hour battery life with full charge',
-          'Foldable and portable design for easy travel',
-          'Bluetooth 5.0 support with 30-foot range',
-          'Premium sound quality with deep bass',
-          '1-year warranty included with purchase'
-        ],
-        seller: {
-          id: 'seller1',
-          name: 'Aarav Patel',
-          avatar: 'https://ui-avatars.com/api/?name=Aarav+Patel&size=100&background=3b82f6&color=ffffff',
-          rating: 4.8,
-          verified: true,
-          totalSales: 47,
-          responseTime: '2 hours',
-          university: 'State University',
-          joinedDate: '2023-09-15'
-        },
-        location: 'Chennai district',
-        timePosted: '2 hours ago',
-        views: 124,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        tags: ['electronics', 'headphones', 'bluetooth', 'noise-canceling'],
-        specifications: {
-          'Brand': 'Bose',
-          'Model': 'QC45',
-          'Color': 'Black',
-          'Connectivity': 'Bluetooth 5.0',
-          'Battery Life': '35 hours',
-          'Weight': '240g'
-        },
-        reviews: [
-          {
-            id: 1,
-            buyer: 'Radha Sharma',
-            rating: 5,
-            comment: 'Excellent Bluetooth works seamlessly. Great clarity and the battery is good!',
-            date: '2024-01-10',
-            verified: true
+      // Fallback to mock data for development - ONLY FOR DEV, REMOVE IN PRODUCTION
+      if (process.env.NODE_ENV === 'development') {
+        const mockProduct = {
+          id: productId,
+          _id: productId, // Add both id and _id
+          title: 'Noise-Canceling Over-Ear Headphones',
+          price: 4999,
+          originalPrice: 6999,
+          images: [
+            'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
+            'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500&h=500&fit=crop',
+            'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&h=500&fit=crop'
+          ],
+          condition: 'Like New',
+          category: 'electronics',
+          description: 'Experience unparalleled audio quality with our premium Noise-Canceling Over-Ear Headphones. Engineered for audiophiles and everyday users alike, these headphones deliver exceptional sound reproduction while blocking out the world around you. The advanced noise cancellation technology uses multiple microphones to detect and neutralize ambient noise, creating a peaceful listening environment whether you\'re commuting, working, or relaxing at home.',
+          features: [
+            'Advanced noise cancellation up to 35 dB',
+            '35-hour battery life with full charge',
+            'Foldable and portable design for easy travel',
+            'Bluetooth 5.0 support with 30-foot range',
+            'Premium sound quality with deep bass',
+            '1-year warranty included with purchase'
+          ],
+          // FIXED: Ensure seller structure matches what we expect
+          seller: {
+            _id: '654321098765432109876544', // Use _id instead of id
+            id: '654321098765432109876544', // Keep both for compatibility
+            name: 'Aarav Patel',
+            avatar: 'https://ui-avatars.com/api/?name=Aarav+Patel&size=100&background=3b82f6&color=ffffff',
+            rating: 4.8,
+            verified: true,
+            totalSales: 47,
+            responseTime: '2 hours',
+            university: 'State University',
+            joinedDate: '2023-09-15'
           },
-          {
-            id: 2,
-            buyer: 'Rahul Singh',
-            rating: 5,
-            comment: 'Sound clarity really solid for treble dynamics and music',
-            date: '2024-01-08',
-            verified: true
-          }
-        ],
-        similarItems: [
-          {
-            id: 101,
-            title: 'Wireless Earbuds Water-Shock Resistant',
-            price: 3999,
-            image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop'
+          location: 'Chennai district',
+          timePosted: '2 hours ago',
+          views: 124,
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          tags: ['electronics', 'headphones', 'bluetooth', 'noise-canceling'],
+          specifications: {
+            'Brand': 'Bose',
+            'Model': 'QC45',
+            'Color': 'Black',
+            'Connectivity': 'Bluetooth 5.0',
+            'Battery Life': '35 hours',
+            'Weight': '240g'
           },
-          {
-            id: 102,
-            title: 'Sony Bluetooth Speaker Music',
-            price: 5999,
-            image: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=200&h=200&fit=crop'
-          }
-        ]
-      };
-      setProduct(mockProduct);
+          reviews: [
+            {
+              id: 1,
+              buyer: 'Radha Sharma',
+              rating: 5,
+              comment: 'Excellent Bluetooth works seamlessly. Great clarity and the battery is good!',
+              date: '2024-01-10',
+              verified: true
+            },
+            {
+              id: 2,
+              buyer: 'Rahul Singh',
+              rating: 5,
+              comment: 'Sound clarity really solid for treble dynamics and music',
+              date: '2024-01-08',
+              verified: true
+            }
+          ],
+          similarItems: [
+            {
+              id: 101,
+              title: 'Wireless Earbuds Water-Shock Resistant',
+              price: 3999,
+              image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop'
+            },
+            {
+              id: 102,
+              title: 'Sony Bluetooth Speaker Music',
+              price: 5999,
+              image: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=200&h=200&fit=crop'
+            }
+          ]
+        };
+        setProduct(mockProduct);
+      } else {
+        setProduct(null); // Clear product if fetching failed and not in dev mode
+      }
     } finally {
       setLoading(false);
     }
@@ -192,25 +202,17 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
       return;
     }
 
-    // Debug: Log the entire product object to see available fields
-    console.log('🔍 Product object:', product);
-    console.log('🔍 Product ID:', product.id);
-    console.log('🔍 Product _id:', product._id);
-    console.log('🔍 Product listingId:', product.listingId);
+    const listingId = product.id || product._id || product.listingId;
 
-    // Try different possible ID fields
-    const productId = product.id || product._id || product.listingId || productId;
-
-    if (!productId) {
-      console.error('❌ No valid product ID found');
-      console.error('Available fields:', Object.keys(product));
+    if (!listingId) {
+      console.error('❌ No valid product ID found for cart');
       return;
     }
 
-    console.log('🛒 Adding to cart with ID:', productId, 'quantity:', quantity);
+    console.log('🛒 Adding to cart with ID:', listingId, 'quantity:', quantity);
 
     try {
-      const success = await addToCart(productId, quantity);
+      const success = await addToCart(listingId, quantity);
       if (success) {
         console.log('✅ Added to cart successfully');
       } else {
@@ -221,11 +223,102 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
     }
   };
 
-  const handleContactSeller = () => {
-    // Open chat/contact modal or navigate to chat page
-    console.log('Opening chat with seller:', product?.seller?.id);
-  };
+  const handleContactSeller = async () => {
+    // Check if user is loading
+    if (currentUserLoading) {
+      alert('Your profile is still loading. Please wait a moment and try again.');
+      return;
+    }
 
+    // Check if user is logged in
+    if (!currentUser || !currentUser._id) {
+      alert('Please log in to contact the seller.');
+      router.push('/buyer-login');
+      return;
+    }
+
+    // Check if product exists
+    if (!product) {
+      console.error('Cannot contact seller: Product info missing.');
+      alert('Product information is unavailable. Please try again later.');
+      return;
+    }
+
+    // Get seller ID from product
+    let sellerId = null;
+
+    if (product.seller && (product.seller._id || product.seller.id)) {
+      sellerId = product.seller._id || product.seller.id;
+    } else if (product.sellerId || product.seller_id) {
+      sellerId = product.sellerId || product.seller_id;
+    } else if (product.userId || product.user_id) {
+      sellerId = product.userId || product.user_id;
+    }
+
+    if (!sellerId) {
+      console.error('Cannot contact seller: Seller ID not found in product data.');
+      console.log('Product structure:', product);
+      alert('Seller information is unavailable. Please try again later.');
+      return;
+    }
+
+    console.log('Attempting to contact seller:', product.seller?.name || 'Unknown', 'Seller ID:', sellerId);
+
+    try {
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+
+      if (!token) {
+        alert('Please log in to contact the seller.');
+        router.push('/buyer-login');
+        return;
+      }
+
+      // FIXED: Send exactly what your API expects
+      const requestBody = {
+        buyerId: currentUser._id,
+        sellerId: sellerId,
+        productId: product._id || product.id
+      };
+
+      console.log('Sending conversation request:', requestBody);
+
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to initiate conversation');
+      }
+
+      const data = await response.json();
+      console.log('Conversation response:', data);
+
+      onClose(); // Close the product modal
+
+      // Get conversation ID from response (your API returns conversationId field)
+      const conversationId = data.conversationId || data.conversation?._id || data.conversation?.id;
+
+      if (!conversationId) {
+        console.error('No conversation ID returned:', data);
+        alert('Conversation created but navigation failed. Please check your messages.');
+        return;
+      }
+
+      // Redirect to the buyer's messages page with the conversation ID
+      router.push(`/buyer-dashboard/messages?chatId=${conversationId}`);
+
+    } catch (error) {
+      console.error('Error initiating conversation:', error);
+      alert(`Could not start conversation: ${error.message}`);
+    }
+  };
   const handleWishlistToggle = () => {
     setIsWishlisted(!isWishlisted);
     // API call to update wishlist
@@ -243,6 +336,8 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
   ];
 
   const renderTabContent = () => {
+    if (!product) return null; // Ensure product is loaded before rendering tab content
+
     switch (activeTab) {
       case 'description':
         return (
@@ -261,7 +356,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                 </ul>
               </div>
             )}
-            
+
             <h4>What's in the Box</h4>
             <ul>
               <li>Noise-Canceling Over-Ear Headphones</li>
@@ -308,7 +403,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
             ) : (
               <p>No reviews yet. Be the first to review this product!</p>
             )}
-            
+
             <div className="add-review">
               <h4>Add a review</h4>
               <textarea placeholder="Share your experience (review optional)"></textarea>
@@ -366,7 +461,7 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
               <div className="product-header">
                 <h1>{product.title}</h1>
                 <p className="product-subtitle">
-                  Premium over-ear headphones with active noise cancellation. 20+ features with all premium 
+                  Premium over-ear headphones with active noise cancellation. 20+ features with all premium
                   — perfect for study sessions.
                 </p>
               </div>
@@ -448,16 +543,16 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                   <div className="quantity-section">
                     <label>Quantity</label>
                     <div className="quantity-controls">
-                      <button 
-                        className="qty-btn" 
+                      <button
+                        className="qty-btn"
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                         disabled={quantity <= 1}
                       >
                         -
                       </button>
                       <span className="quantity-display">{quantity}</span>
-                      <button 
-                        className="qty-btn" 
+                      <button
+                        className="qty-btn"
                         onClick={() => setQuantity(quantity + 1)}
                       >
                         +
@@ -469,9 +564,9 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                     <label>Payment Method</label>
                     <div className="payment-options">
                       <div className={`payment-option ${selectedPayment === 'upi' ? 'selected' : ''}`}>
-                        <input 
-                          type="radio" 
-                          name="payment" 
+                        <input
+                          type="radio"
+                          name="payment"
                           value="upi"
                           checked={selectedPayment === 'upi'}
                           onChange={(e) => setSelectedPayment(e.target.value)}
@@ -480,9 +575,9 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                         <span>UPI</span>
                       </div>
                       <div className={`payment-option ${selectedPayment === 'card' ? 'selected' : ''}`}>
-                        <input 
-                          type="radio" 
-                          name="payment" 
+                        <input
+                          type="radio"
+                          name="payment"
                           value="card"
                           checked={selectedPayment === 'card'}
                           onChange={(e) => setSelectedPayment(e.target.value)}
@@ -491,9 +586,9 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
                         <span>Card</span>
                       </div>
                       <div className={`payment-option ${selectedPayment === 'cash' ? 'selected' : ''}`}>
-                        <input 
-                          type="radio" 
-                          name="payment" 
+                        <input
+                          type="radio"
+                          name="payment"
                           value="cash"
                           checked={selectedPayment === 'cash'}
                           onChange={(e) => setSelectedPayment(e.target.value)}
@@ -517,15 +612,15 @@ const ProductViewModal = ({ productId, isOpen, onClose }) => {
 
                   <div className="action-buttons">
                     <button className="buy-now-btn">Buy Now</button>
-                    <button 
+                    <button
                       onClick={handleAddToCart}
-                      disabled={cartLoading || isInCart(product.id)}
-                      className={`add-cart-btn ${isInCart(product.id) ? 'in-cart' : ''}`}
+                      disabled={cartLoading || isInCart(product.id || product._id)}
+                      className={`add-cart-btn ${isInCart(product.id || product._id) ? 'in-cart' : ''}`}
                     >
                       {cartLoading ? (
                         <Loader2 size={20} className="spinner" />
                       ) : (
-                        <>🛒 {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}</>
+                        <>🛒 {isInCart(product.id || product._id) ? 'In Cart' : 'Add to Cart'}</>
                       )}
                     </button>
                   </div>

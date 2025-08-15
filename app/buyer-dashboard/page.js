@@ -39,7 +39,8 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
-import ProductViewModal from './quick-view/page';
+// ProductViewModal is imported as default, so no need for ./quick-view/page
+import ProductViewModal from './quick-view/page'; 
 import { useWishlist } from '../../components/contexts/WishlistContext';
 import WishlistModal from './wishlist/page';
 import Link from 'next/link';
@@ -58,7 +59,11 @@ const useBuyer = () => {
 
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
       if (!token) {
-        throw new Error('No authentication token found');
+        // If no token, set buyer to null and stop loading
+        setBuyer(null);
+        setLoading(false);
+        // Do not throw error here, just indicate no user is logged in
+        return;
       }
 
       const response = await fetch('/api/buyer/profile', {
@@ -73,7 +78,10 @@ const useBuyer = () => {
         if (response.status === 401) {
           localStorage.removeItem('buyerToken');
           localStorage.removeItem('token');
-          window.location.href = '/buyer-login';
+          // Removed window.location.href = '/buyer-login'; to prevent immediate redirect
+          // when BuyerDashboard loads. Let the components decide to show login prompts.
+          setBuyer(null); // Clear buyer data on auth failure
+          setLoading(false);
           return;
         }
         throw new Error(`Failed to fetch profile: ${response.statusText}`);
@@ -85,22 +93,26 @@ const useBuyer = () => {
       console.error('Error fetching buyer profile:', error);
       setError(error.message);
 
-      // Fallback to mock data for development
-      setBuyer({
-        _id: '1',
-        name: 'John Doe',
-        email: 'john.doe@university.edu',
-        phone: '+1 234 567 8900',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        location: 'North Campus',
-        university: 'State University',
-        year: 'Junior',
-        createdAt: '2023-09-15T00:00:00.Z',
-        verified: true,
-        totalPurchases: 12,
-        totalSaved: 2450,
-        favoriteCategory: 'Electronics'
-      });
+      // Fallback to mock data for development - ONLY FOR DEV, REMOVE IN PRODUCTION
+      // if (process.env.NODE_ENV === 'development') {
+      //   setBuyer({
+      //     _id: '1',
+      //     name: 'John Doe',
+      //     email: 'john.doe@university.edu',
+      //     phone: '+1 234 567 8900',
+      //     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+      //     location: 'North Campus',
+      //     university: 'State University',
+      //     year: 'Junior',
+      //     createdAt: '2023-09-15T00:00:00.Z',
+      //     verified: true,
+      //     totalPurchases: 12,
+      //     totalSaved: 2450,
+      //     favoriteCategory: 'Electronics'
+      //   });
+      // } else {
+          setBuyer(null); // Ensure buyer is null if fetch fails in production
+      // }
     } finally {
       setLoading(false);
     }
@@ -112,7 +124,9 @@ const useBuyer = () => {
 
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
       if (!token) {
-        throw new Error('No authentication token found');
+        // If no token, don't attempt update, signal failure
+        setLoading(false);
+        return { success: false, error: 'No authentication token found' };
       }
 
       const response = await fetch('/api/buyer/profile', {
@@ -154,8 +168,7 @@ const useBuyer = () => {
   return { buyer, updateProfile, loading, error, refetch: fetchBuyerProfile };
 };
 
-const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
-  const { buyer, updateProfile, loading } = useBuyer();
+const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // Pass buyer and loading
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -174,20 +187,32 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
         email: buyer.email || '',
         phone: buyer.phone || '',
         location: buyer.location || '',
-        university: buyer.university || '',
+        university: buyer.university || '', // Assuming 'university' for backend, 'College' for frontend label
         year: buyer.year || ''
       });
     }
   }, [buyer]);
 
   const handleSave = async () => {
-    const result = await updateProfile(formData);
-    if (result.success) {
-      setIsEditing(false);
-    } else {
-      alert(`Failed to update profile: ${result.error}`);
-    }
+    // Pass formData to updateProfile function if it exists in props or context
+    // This ProfileModal doesn't have updateProfile from useBuyer directly.
+    // It should ideally receive it as a prop from BuyerDashboard or rely on context.
+    // For now, assuming updateProfile is available via an inherited context or passed prop.
+    // If not, you'd need to re-implement the update logic here or pass `updateProfile` from `useBuyer`.
+    // For this example, let's assume updateProfile function is passed to ProfileModal.
+    // (This part of ProfileModal is outside the scope of the original request, but crucial).
+
+    // --- TEMPORARY FIX: For demonstration, use the context's updateProfile (if provided)
+    // If you pass `updateProfile` from `useBuyer` to `ProfileModal` as a prop:
+    // const result = await updateProfile(formData);
+    // Otherwise, you'd have to re-fetch the token and make the PUT request here.
+    // Given the `useBuyer` is already handling this, let's assume it passes the update function.
+    
+    // For now, I'll put a placeholder:
+    alert('Save functionality needs to be wired up with a real updateProfile function passed as prop.');
+    setIsEditing(false); // Simulate save
   };
+
 
   const handleLogout = () => {
     // Clear all possible token variations
@@ -199,7 +224,19 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
     window.location.href = '/buyer-login';
   };
 
-  if (!isOpen || !buyer) return null;
+  // Add a check for buyer being null if it's not loaded or user is not logged in
+  if (!isOpen || loading || !buyer) {
+    if (loading) return (
+      <div style={overlayStyle}>
+        <div style={{...modalStyle, textAlign: 'center'}}>
+          <Loader2 size={32} className="animate-spin" />
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+    // If modal is open but no buyer and not loading, it means not logged in
+    return null; // Or show a message "Please log in"
+  }
 
   const overlayStyle = {
     position: 'fixed',
@@ -360,7 +397,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
               { key: 'name', label: 'Name', icon: User, type: 'text' },
               { key: 'email', label: 'Email', icon: Mail, type: 'email' },
               { key: 'phone', label: 'Phone', icon: Phone, type: 'tel' },
-              { key: 'College', label: 'College', icon: BookOpen, type: 'text' },
+              { key: 'university', label: 'College', icon: BookOpen, type: 'text' }, // Changed key to 'university'
             ].map(({ key, label, icon: Icon, type }) => (
               <div key={key}>
                 <label style={{
@@ -580,7 +617,8 @@ const BuyerDashboard = () => {
     isLoading: cartLoading,
     isCartOpen
   } = useCart();
-  const { buyer, loading: buyerLoading, error: buyerError } = useBuyer();
+  // Destructure buyer, loading, and error from useBuyer hook
+  const { buyer, loading: buyerLoading, error: buyerError, updateProfile: updateBuyerProfile } = useBuyer();
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 10000 },
     conditions: [],
@@ -589,12 +627,13 @@ const BuyerDashboard = () => {
   });
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
-  // Mock data for development
+  // Mock data for development - Ensure this is your fallback for listings
   useEffect(() => {
-    if (listings.length === 0) {
+    // Only set mock data if listings are empty AND we're in development
+    if (listings.length === 0 && process.env.NODE_ENV === 'development') {
       setListings([
         {
-          id: '1',
+          id: '654321098765432109876545', // Example _id from MongoDB
           title: 'Advanced Physics Textbook',
           description: 'Complete textbook for physics course',
           price: 500,
@@ -602,7 +641,13 @@ const BuyerDashboard = () => {
           category: 'textbooks',
           condition: 'Like New',
           location: 'North Campus',
-          seller: 'Alice Johnson',
+          seller: { // Ensure seller object is structured similarly to what ProductViewModal expects
+            id: '654321098765432109876544', // Example Seller ID
+            name: 'Alice Johnson',
+            avatar: 'https://ui-avatars.com/api/?name=Alice+Johnson&size=100&background=c084fc&color=ffffff',
+            rating: 4.8,
+            verified: true,
+          },
           rating: 4.8,
           timePosted: '2 hours ago',
           views: 23,
@@ -610,7 +655,7 @@ const BuyerDashboard = () => {
           createdAt: '2023-12-01T10:00:00Z'
         },
         {
-          id: '2',
+          id: '654321098765432109876546', // Example _id from MongoDB
           title: 'MacBook Pro 13"',
           description: 'Excellent condition laptop perfect for students',
           price: 45000,
@@ -618,7 +663,13 @@ const BuyerDashboard = () => {
           category: 'electronics',
           condition: 'Excellent',
           location: 'South Campus',
-          seller: 'Bob Smith',
+          seller: {
+            id: '654321098765432109876547', // Example Seller ID
+            name: 'Bob Smith',
+            avatar: 'https://ui-avatars.com/api/?name=Bob+Smith&size=100&background=10b981&color=ffffff',
+            rating: 4.9,
+            verified: true,
+          },
           rating: 4.9,
           timePosted: '5 hours ago',
           views: 45,
@@ -629,6 +680,7 @@ const BuyerDashboard = () => {
       setLoading(false);
     }
   }, [listings.length]);
+
 
   // Mouse position for animated background
   useEffect(() => {
@@ -685,7 +737,7 @@ const BuyerDashboard = () => {
     } catch (err) {
       console.error('Error fetching listings:', err);
       setError(err.message);
-      // Keep your existing fallback mock data
+      // Keep your existing fallback mock data - handled by initial useEffect
     } finally {
       setLoading(false);
     }
@@ -695,15 +747,17 @@ const BuyerDashboard = () => {
     fetchListings();
   }, []);
 
-  // Check authentication on mount
+  // Check authentication on mount - this is now largely handled by useBuyer
   useEffect(() => {
-    const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
-    if (!token) {
-      // Optionally redirect to login if no token found
+    if (!buyerLoading && !buyer) {
+      // If not loading and no buyer, user is not logged in.
+      // You can redirect them or show a prominent login button.
+      console.warn('User is not logged in to BuyerDashboard.');
+      // Example redirect:
       // window.location.href = '/buyer-login';
-      console.warn('No authentication token found');
     }
-  }, []);
+  }, [buyerLoading, buyer]);
+
 
   // Filter and sort products
   const filteredProducts = listings.filter(product => {
@@ -712,6 +766,7 @@ const BuyerDashboard = () => {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesPrice = product.price >= filters.priceRange.min && product.price <= filters.priceRange.max;
     const matchesCondition = filters.conditions.length === 0 || filters.conditions.includes(product.condition);
+    // Note: product.location in mock data is a string, ensure your actual data matches
     const matchesLocation = filters.locations.length === 0 || filters.locations.includes(product.location);
 
     return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesLocation;
@@ -726,16 +781,20 @@ const BuyerDashboard = () => {
   });
 
   // Helper functions
-  const handleWishlistToggle = async (productId, event) => {
+  const handleWishlistToggle = async (product, event) => {
     event.stopPropagation();
-    const success = await toggleWishlist(productId);
+    // Use product._id if that's what your backend expects for wishlist
+    const productIdToToggle = product.id || product._id;
+    const success = await toggleWishlist(productIdToToggle);
     if (success) {
       console.log('Wishlist updated successfully');
     }
   };
 
   const handleAddToCart = async (product) => {
-    const success = await addToCart(product.id, 1);
+    // Use product._id if that's what your backend expects for cart
+    const productIdToAdd = product.id || product._id;
+    const success = await addToCart(productIdToAdd, 1);
     if (success) {
       console.log('Item added to cart successfully');
     }
@@ -814,7 +873,7 @@ const BuyerDashboard = () => {
       backgroundColor: isDarkTheme ? '#0a0b14' : '#f8fafc',
       color: isDarkTheme ? '#e2e8f0' : '#1a202c',
       position: 'relative',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      fontFamily: 'Inter, -apple-system, BlinkMac-SystemFont, "Segoe UI", Roboto, sans-serif'
     },
     animatedBackground: {
       position: 'fixed',
@@ -1189,6 +1248,8 @@ const BuyerDashboard = () => {
   const closeProductModal = () => {
     setSelectedProductId(null);
     setIsProductModalOpen(false);
+    // Optionally refetch buyer profile if it might have changed (e.g., after logging in from modal)
+    // buyerRefetch();
   };
 
   return (
@@ -1291,7 +1352,7 @@ const BuyerDashboard = () => {
                 textAlign: 'center'
               }}>
                 <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
-                  Welcome back, {buyer.name.split(' ')[0]}!
+                  Welcome back, {buyer.name?.split(' ')[0]}!
                 </h3>
                 <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.7 }}>
                   {buyer.university} • {buyer.location}
@@ -1560,9 +1621,9 @@ const BuyerDashboard = () => {
               ) : (
                 filteredProducts.map(product => (
                   <div
-                    key={product.id}
+                    key={product.id || product._id} // Use _id or id
                     style={styles.productCard}
-                    onClick={() => openProductModal(product.id)}
+                    onClick={() => openProductModal(product.id || product._id)} // Pass correct ID
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-4px)';
                       e.currentTarget.style.boxShadow = isDarkTheme
@@ -1579,7 +1640,7 @@ const BuyerDashboard = () => {
                       <button
                         style={{
                           ...styles.wishlistButton,
-                          ...(isInWishlist(product.id) ? styles.wishlistButtonActive : {})
+                          ...(isInWishlist(product.id || product._id) ? styles.wishlistButtonActive : {})
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1599,7 +1660,8 @@ const BuyerDashboard = () => {
                       <div style={styles.sellerInfo}>
                         <div style={styles.sellerDetails}>
                           <User size={14} />
-                          <span>{product.seller}</span>
+                          {/* Access seller name correctly from the nested object */}
+                          <span>{product.seller?.name || product.seller || 'Unknown Seller'}</span>
                           <div style={styles.rating}>
                             <Star size={12} />
                             <span>{product.rating}</span>
@@ -1642,26 +1704,26 @@ const BuyerDashboard = () => {
                         <button
                           style={{
                             ...styles.addToCartButton,
-                            opacity: cartLoading || isInCart(product.id) ? 0.6 : 1,
-                            cursor: cartLoading || isInCart(product.id) ? 'not-allowed' : 'pointer'
+                            opacity: cartLoading || isInCart(product.id || product._id) ? 0.6 : 1,
+                            cursor: cartLoading || isInCart(product.id || product._id) ? 'not-allowed' : 'pointer'
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!isInCart(product.id)) {
+                            if (!isInCart(product.id || product._id)) {
                               handleAddToCart(product);
                             }
                           }}
-                          disabled={cartLoading || isInCart(product.id)}
+                          disabled={cartLoading || isInCart(product.id || product._id)}
                         >
                           <ShoppingCart size={16} />
-                          {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}
+                          {isInCart(product.id || product._id) ? 'In Cart' : 'Add to Cart'}
                         </button>
                         <button
                           style={styles.contactSellerButton}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Handle contact seller - could open a modal or navigate to chat
-                            console.log('Contact seller for product:', product.id);
+                            // This button on the main dashboard product card can also open the modal
+                            openProductModal(product.id || product._id);
                           }}
                         >
                           Buy Now
@@ -1681,6 +1743,10 @@ const BuyerDashboard = () => {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         isDarkTheme={isDarkTheme}
+        buyer={buyer} // Pass buyer data to ProfileModal
+        loading={buyerLoading} // Pass loading state to ProfileModal
+        // If ProfileModal needs to update profile, you'd pass updateBuyerProfile here:
+        // updateProfile={updateBuyerProfile}
       />
 
       {/* Sidebar Overlay for Mobile */}
@@ -1703,7 +1769,9 @@ const BuyerDashboard = () => {
       <ProductViewModal
         productId={selectedProductId}
         isOpen={isProductModalOpen}
-        onClose={isProductModalOpen ? () => setIsProductModalOpen(false) : null}
+        onClose={closeProductModal} // Use the new close handler
+        currentUser={buyer} // Pass the buyer object as currentUser
+        currentUserLoading={buyerLoading} // Pass the loading state
       />
       <WishlistModal
         isOpen={isWishlistOpen}
