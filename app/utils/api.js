@@ -1,253 +1,189 @@
-// utils/api.js - Complete clean version with proper token validation
+// utils/api.js - Enhanced version with settings APIs
 
-// Enhanced auth headers with token validation
 const getAuthHeaders = () => {
-  if (typeof window === 'undefined') {
-    return { 'Content-Type': 'application/json' };
-  }
-
   const token = localStorage.getItem('token');
-  if (!token) {
-    console.warn('No token found in localStorage');
-    return { 'Content-Type': 'application/json' };
-  }
-
-  // Validate token format
-  const parts = token.split('.');
-  if (parts.length !== 3) {
-    console.error('Invalid token format - removing from localStorage');
-    localStorage.removeItem('token');
-    return { 'Content-Type': 'application/json' };
-  }
-
-  try {
-    // Check if token is expired
-    const payload = JSON.parse(atob(parts[1]));
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      console.error('Token has expired - removing from localStorage');
-      localStorage.removeItem('token');
-      return { 'Content-Type': 'application/json' };
-    }
-
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-  } catch (error) {
-    console.error('Error validating token:', error);
-    localStorage.removeItem('token');
-    return { 'Content-Type': 'application/json' };
-  }
-};
-
-// Generic API request handler with better error handling
-const makeApiRequest = async (url, options = {}) => {
-  try {
-    console.log(`Making API request to: ${url}`);
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers
-      }
-    });
-
-    console.log(`API Response status for ${url}: ${response.status}`);
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error(`API Error for ${url}:`, data);
-      
-      // Handle authentication errors
-      if (response.status === 401 || response.status === 403) {
-        console.error('Authentication error - removing token');
-        localStorage.removeItem('token');
-        throw new Error(data.message || 'Authentication failed');
-      }
-      
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
-    }
-
-    console.log(`API Success for ${url}:`, data);
-    return data;
-  } catch (error) {
-    console.error(`API request failed for ${url}:`, error);
-    throw error;
-  }
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` })
+  };
 };
 
 export const listingsAPI = {
   // Get current user's listings
   getMyListings: async () => {
     try {
-      const data = await makeApiRequest('/api/listings/my-listings');
-      return {
-        success: true,
-        listings: data.listings || data.data || data || []
-      };
+      const response = await fetch('/api/listings/my-listings', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        listings: []
-      };
+      console.error('Error fetching listings:', error);
+      throw error;
     }
   },
 
   // Create new listing
   createListing: async (listingData) => {
     try {
-      const data = await makeApiRequest('/api/listings/create', {
+      const response = await fetch('/api/listings/create', {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: JSON.stringify(listingData)
       });
-      return {
-        success: true,
-        listing: data.listing || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create listing');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error creating listing:', error);
+      throw error;
     }
   },
 
   // Get single listing by ID
   getListing: async (id) => {
     try {
-      const data = await makeApiRequest(`/api/listings/${id}`);
-      return {
-        success: true,
-        listing: data.listing || data.data || data
-      };
+      const response = await fetch(`/api/listings/${id}`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error fetching listing:', error);
+      throw error;
     }
   },
 
   // Update listing
   updateListing: async (id, listingData) => {
     try {
-      const data = await makeApiRequest(`/api/listings/${id}`, {
+      const response = await fetch(`/api/listings/${id}`, {
         method: 'PUT',
+        headers: getAuthHeaders(),
         body: JSON.stringify(listingData)
       });
-      return {
-        success: true,
-        listing: data.listing || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update listing');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error updating listing:', error);
+      throw error;
     }
   },
 
   // Delete listing
   deleteListing: async (id) => {
     try {
-      const data = await makeApiRequest(`/api/listings/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/listings/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
-      return {
-        success: true,
-        message: data.message || 'Listing deleted successfully'
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete listing');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error deleting listing:', error);
+      throw error;
     }
   },
 
   // Mark listing as sold
   markAsSold: async (id) => {
     try {
-      const data = await makeApiRequest(`/api/listings/${id}`, {
+      const response = await fetch(`/api/listings/${id}`, {
         method: 'PUT',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status: 'sold' })
       });
-      return {
-        success: true,
-        listing: data.listing || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to mark as sold');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error marking as sold:', error);
+      throw error;
     }
   },
 
   // Update listing status (active/inactive)
   updateListingStatus: async (id, status) => {
     try {
-      const data = await makeApiRequest(`/api/listings/${id}`, {
+      const response = await fetch(`/api/listings/${id}`, {
         method: 'PUT',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status })
       });
-      return {
-        success: true,
-        listing: data.listing || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update status');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error updating status:', error);
+      throw error;
     }
   }
 };
 
-// Dashboard API functions with better error handling
+// Dashboard API functions
 export const dashboardAPI = {
   // Get dashboard statistics for the seller
   getSellerStats: async () => {
     try {
-      // Check if token exists before making request
       const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/stats', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch stats');
       }
 
-      // Validate token format
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        localStorage.removeItem('token');
-        throw new Error('Invalid token format');
-      }
-
-      // Check if token is expired
-      try {
-        const payload = JSON.parse(atob(parts[1]));
-        if (payload.exp && payload.exp < Date.now() / 1000) {
-          localStorage.removeItem('token');
-          throw new Error('Token has expired');
-        }
-      } catch (e) {
-        localStorage.removeItem('token');
-        throw new Error('Invalid token payload');
-      }
-
-      console.log('Making stats API request with valid token');
-      const data = await makeApiRequest('/api/seller/stats');
-      
       return {
         success: true,
-        stats: data.stats || data.data || data
+        stats: data.stats
       };
     } catch (error) {
-      console.error('Error in getSellerStats:', error);
+      console.error('Error fetching seller stats:', error);
       return {
         success: false,
-        message: error.message
+        message: error.message || 'Failed to fetch stats'
       };
     }
   },
@@ -255,44 +191,32 @@ export const dashboardAPI = {
   // Get recent activity for the seller
   getRecentActivity: async () => {
     try {
-      // Check if token exists before making request
       const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/activity', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch activity');
       }
 
-      // Validate token format
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        localStorage.removeItem('token');
-        throw new Error('Invalid token format');
-      }
-
-      // Check if token is expired
-      try {
-        const payload = JSON.parse(atob(parts[1]));
-        if (payload.exp && payload.exp < Date.now() / 1000) {
-          localStorage.removeItem('token');
-          throw new Error('Token has expired');
-        }
-      } catch (e) {
-        localStorage.removeItem('token');
-        throw new Error('Invalid token payload');
-      }
-
-      console.log('Making activity API request with valid token');
-      const data = await makeApiRequest('/api/seller/activity');
-      
       return {
         success: true,
-        activities: data.activities || data.data || data || []
+        activities: data.activities
       };
     } catch (error) {
-      console.error('Error in getRecentActivity:', error);
+      console.error('Error fetching recent activity:', error);
       return {
         success: false,
-        message: error.message,
-        activities: []
+        message: error.message || 'Failed to fetch activity'
       };
     }
   },
@@ -300,16 +224,32 @@ export const dashboardAPI = {
   // Get saved items count
   getSavedItemsCount: async () => {
     try {
-      const data = await makeApiRequest('/api/seller/saved-items/count');
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/saved-items/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch saved items count');
+      }
+
       return {
         success: true,
-        count: data.count || 0
+        count: data.count
       };
     } catch (error) {
+      console.error('Error fetching saved items count:', error);
       return {
         success: false,
-        message: error.message,
-        count: 0
+        message: error.message || 'Failed to fetch saved items count'
       };
     }
   },
@@ -317,16 +257,32 @@ export const dashboardAPI = {
   // Get active chats count
   getActiveChatsCount: async () => {
     try {
-      const data = await makeApiRequest('/api/seller/chats/count');
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/chats/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch chats count');
+      }
+
       return {
         success: true,
-        count: data.count || 0
+        count: data.count
       };
     } catch (error) {
+      console.error('Error fetching chats count:', error);
       return {
         success: false,
-        message: error.message,
-        count: 0
+        message: error.message || 'Failed to fetch chats count'
       };
     }
   },
@@ -334,18 +290,33 @@ export const dashboardAPI = {
   // Get reviews count
   getReviewsCount: async () => {
     try {
-      const data = await makeApiRequest('/api/seller/reviews/count');
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/reviews/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch reviews count');
+      }
+
       return {
         success: true,
-        count: data.count || 0,
+        count: data.count,
         averageRating: data.averageRating || 0
       };
     } catch (error) {
+      console.error('Error fetching reviews count:', error);
       return {
         success: false,
-        message: error.message,
-        count: 0,
-        averageRating: 0
+        message: error.message || 'Failed to fetch reviews count'
       };
     }
   }
@@ -356,35 +327,40 @@ export const userAPI = {
   // Get user profile
   getProfile: async () => {
     try {
-      const data = await makeApiRequest('/api/user/profile');
-      return {
-        success: true,
-        user: data.user || data.data || data
-      };
+      const response = await fetch('/api/user/profile', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error fetching profile:', error);
+      throw error;
     }
   },
 
   // Update user profile
   updateProfile: async (profileData) => {
     try {
-      const data = await makeApiRequest('/api/user/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'PUT',
+        headers: getAuthHeaders(),
         body: JSON.stringify(profileData)
       });
-      return {
-        success: true,
-        user: data.user || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error updating profile:', error);
+      throw error;
     }
   }
 };
@@ -394,73 +370,82 @@ export const settingsAPI = {
   // Get user settings
   getSettings: async () => {
     try {
-      const data = await makeApiRequest('/api/user/settings');
-      return {
-        success: true,
-        settings: data.settings || data.data || data
-      };
+      const response = await fetch('/api/user/settings', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error fetching settings:', error);
+      throw error;
     }
   },
 
   // Update notification preferences
   updateNotificationPreferences: async (preferences) => {
     try {
-      const data = await makeApiRequest('/api/user/settings/notifications', {
+      const response = await fetch('/api/user/settings/notifications', {
         method: 'PUT',
+        headers: getAuthHeaders(),
         body: JSON.stringify(preferences)
       });
-      return {
-        success: true,
-        settings: data.settings || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update notification preferences');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error updating notification preferences:', error);
+      throw error;
     }
   },
 
   // Update privacy settings
   updatePrivacySettings: async (privacySettings) => {
     try {
-      const data = await makeApiRequest('/api/user/settings/privacy', {
+      const response = await fetch('/api/user/settings/privacy', {
         method: 'PUT',
+        headers: getAuthHeaders(),
         body: JSON.stringify(privacySettings)
       });
-      return {
-        success: true,
-        settings: data.settings || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update privacy settings');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error updating privacy settings:', error);
+      throw error;
     }
   },
 
   // Change password
   changePassword: async (passwordData) => {
     try {
-      const data = await makeApiRequest('/api/user/settings/change-password', {
+      const response = await fetch('/api/user/settings/change-password', {
         method: 'PUT',
+        headers: getAuthHeaders(),
         body: JSON.stringify(passwordData)
       });
-      return {
-        success: true,
-        message: data.message || 'Password changed successfully'
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to change password');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error changing password:', error);
+      throw error;
     }
   },
 
@@ -484,127 +469,132 @@ export const settingsAPI = {
         throw new Error(errorData.message || 'Failed to upload image');
       }
 
-      const data = await response.json();
-      return {
-        success: true,
-        imageUrl: data.imageUrl || data.data || data
-      };
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error uploading image:', error);
+      throw error;
     }
   },
 
   // Delete account
   deleteAccount: async (confirmationData) => {
     try {
-      const data = await makeApiRequest('/api/user/settings/delete-account', {
+      const response = await fetch('/api/user/settings/delete-account', {
         method: 'DELETE',
+        headers: getAuthHeaders(),
         body: JSON.stringify(confirmationData)
       });
-      return {
-        success: true,
-        message: data.message || 'Account deleted successfully'
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete account');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error deleting account:', error);
+      throw error;
     }
   },
 
   // Get login sessions
   getLoginSessions: async () => {
     try {
-      const data = await makeApiRequest('/api/user/settings/sessions');
-      return {
-        success: true,
-        sessions: data.sessions || data.data || data || []
-      };
+      const response = await fetch('/api/user/settings/sessions', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        sessions: []
-      };
+      console.error('Error fetching login sessions:', error);
+      throw error;
     }
   },
 
   // Revoke login session
   revokeSession: async (sessionId) => {
     try {
-      const data = await makeApiRequest(`/api/user/settings/sessions/${sessionId}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/user/settings/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
-      return {
-        success: true,
-        message: data.message || 'Session revoked successfully'
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to revoke session');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error revoking session:', error);
+      throw error;
     }
   },
 
   // Setup 2FA
   setup2FA: async () => {
     try {
-      const data = await makeApiRequest('/api/user/settings/2fa/setup', {
-        method: 'POST'
+      const response = await fetch('/api/user/settings/2fa/setup', {
+        method: 'POST',
+        headers: getAuthHeaders()
       });
-      return {
-        success: true,
-        qrCode: data.qrCode,
-        secret: data.secret
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to setup 2FA');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error setting up 2FA:', error);
+      throw error;
     }
   },
 
   // Verify 2FA setup
   verify2FA: async (verificationData) => {
     try {
-      const data = await makeApiRequest('/api/user/settings/2fa/verify', {
+      const response = await fetch('/api/user/settings/2fa/verify', {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: JSON.stringify(verificationData)
       });
-      return {
-        success: true,
-        message: data.message || '2FA setup completed'
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to verify 2FA');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error verifying 2FA:', error);
+      throw error;
     }
   },
 
   // Disable 2FA
   disable2FA: async (verificationData) => {
     try {
-      const data = await makeApiRequest('/api/user/settings/2fa/disable', {
+      const response = await fetch('/api/user/settings/2fa/disable', {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: JSON.stringify(verificationData)
       });
-      return {
-        success: true,
-        message: data.message || '2FA disabled successfully'
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to disable 2FA');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error disabling 2FA:', error);
+      throw error;
     }
   }
 };
@@ -614,53 +604,59 @@ export const messagesAPI = {
   // Get user's chats
   getChats: async () => {
     try {
-      const data = await makeApiRequest('/api/messages/chats');
-      return {
-        success: true,
-        chats: data.chats || data.data || data || []
-      };
+      const response = await fetch('/api/messages/chats', {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        chats: []
-      };
+      console.error('Error fetching chats:', error);
+      throw error;
     }
   },
 
   // Get messages for a specific chat
   getMessages: async (chatId) => {
     try {
-      const data = await makeApiRequest(`/api/messages/${chatId}`);
-      return {
-        success: true,
-        messages: data.messages || data.data || data || []
-      };
+      const response = await fetch(`/api/messages/${chatId}`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        messages: []
-      };
+      console.error('Error fetching messages:', error);
+      throw error;
     }
   },
 
   // Send a message
   sendMessage: async (chatId, messageData) => {
     try {
-      const data = await makeApiRequest(`/api/messages/${chatId}`, {
+      const response = await fetch(`/api/messages/${chatId}`, {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: JSON.stringify(messageData)
       });
-      return {
-        success: true,
-        message: data.message || data.data || data
-      };
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error sending message:', error);
+      throw error;
     }
   }
 };
@@ -678,27 +674,15 @@ export const authAPI = {
         body: JSON.stringify(credentials)
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
       }
 
-      // Store token if provided
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
-
-      return {
-        success: true,
-        user: data.user || data.data,
-        token: data.token
-      };
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error during login:', error);
+      throw error;
     }
   },
 
@@ -713,39 +697,38 @@ export const authAPI = {
         body: JSON.stringify(userData)
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
       }
 
-      // Store token if provided
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
-
-      return {
-        success: true,
-        user: data.user || data.data,
-        token: data.token
-      };
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error during registration:', error);
+      throw error;
     }
   },
 
   // Logout
   logout: async () => {
     try {
-      await makeApiRequest('/api/auth/logout', { method: 'POST' });
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+
+      // Remove token regardless of response
       localStorage.removeItem('token');
+
+      if (!response.ok) {
+        console.warn('Logout request failed, but token removed locally');
+      }
+
       return { success: true };
     } catch (error) {
       // Remove token even if request fails
       localStorage.removeItem('token');
+      console.error('Error during logout:', error);
       return { success: true }; // Still return success since token is removed
     }
   },
@@ -761,47 +744,28 @@ export const authAPI = {
         body: JSON.stringify({ email })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to send reset email');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send reset email');
       }
 
-      return {
-        success: true,
-        message: data.message || 'Reset email sent successfully'
-      };
+      return await response.json();
     } catch (error) {
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('Error during forgot password:', error);
+      throw error;
     }
   }
 };
 
 // Utility function to check if user is authenticated
 export const isAuthenticated = () => {
-  if (typeof window === 'undefined') return false;
-  
   const token = localStorage.getItem('token');
   if (!token) return false;
 
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      localStorage.removeItem('token');
-      return false;
-    }
-
     // Check if token is expired (basic check)
-    const payload = JSON.parse(atob(parts[1]));
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      localStorage.removeItem('token');
-      return false;
-    }
-    
-    return true;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp > Date.now() / 1000;
   } catch (error) {
     console.error('Error checking token:', error);
     localStorage.removeItem('token');
@@ -811,19 +775,11 @@ export const isAuthenticated = () => {
 
 // Utility function to get current user info from token
 export const getCurrentUser = () => {
-  if (typeof window === 'undefined') return null;
-  
   const token = localStorage.getItem('token');
   if (!token) return null;
 
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      localStorage.removeItem('token');
-      return null;
-    }
-
-    const payload = JSON.parse(atob(parts[1]));
+    const payload = JSON.parse(atob(token.split('.')[1]));
 
     // Check if token is expired
     if (payload.exp && payload.exp < Date.now() / 1000) {
@@ -835,8 +791,7 @@ export const getCurrentUser = () => {
       id: payload.sellerId || payload.userId || payload.id || payload.sub,
       name: payload.name || payload.given_name || 'User',
       email: payload.email || '',
-      picture: payload.picture || null,
-      token
+      picture: payload.picture || null
     };
   } catch (error) {
     console.error('Error decoding token:', error);
