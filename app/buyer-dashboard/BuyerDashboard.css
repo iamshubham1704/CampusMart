@@ -1114,3 +1114,8 @@
  .sidebar::-webkit-scrollbar-thumb:hover {
    background: rgba(168, 85, 247, 0.7);
  }
+
+.sell-item{
+  background-color: red;
+  padding: 20px;
+}
