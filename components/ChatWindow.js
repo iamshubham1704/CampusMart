@@ -1,14 +1,21 @@
 // components/ChatWindow.js
-"use client"
-import { useState, useEffect, useRef } from 'react';
-import styles from './ChatWindow.module.css';
+"use client";
+import { useState, useEffect, useRef } from "react";
+import styles from "./ChatWindow.module.css";
 
 export default function ChatWindow({ conversation, currentUser, userType }) {
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+
+  console.log("=== ChatWindow Debug ===");
+  console.log("currentUser:", currentUser);
+  console.log("currentUser.id:", currentUser?.id);
+  console.log("userType:", userType);
+  console.log("conversation:", conversation);
+  console.log("========================");
 
   useEffect(() => {
     if (conversation) {
@@ -23,19 +30,21 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
 
   const fetchMessages = async () => {
     if (!conversation) return;
-    
+
     try {
       setLoading(true);
-      const response = await fetch(`/api/messages?conversationId=${conversation.id}`);
+      const response = await fetch(
+        `/api/messages?conversationId=${conversation.id}`
+      );
       const data = await response.json();
-      
+
       if (response.ok) {
         setMessages(data.messages);
       } else {
-        console.error('Error fetching messages:', data.error);
+        console.error("Error fetching messages:", data.error);
       }
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error("Error fetching messages:", error);
     } finally {
       setLoading(false);
     }
@@ -43,20 +52,20 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
 
   const markAsRead = async () => {
     if (!conversation) return;
-    
+
     try {
-      await fetch('/api/messages/mark-read', {
-        method: 'POST',
+      await fetch("/api/messages/mark-read", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           conversationId: conversation.id,
-          userId: currentUser.id
+          userId: currentUser.id || currentUser._id,
         }),
       });
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      console.error("Error marking messages as read:", error);
     }
   };
 
@@ -66,37 +75,37 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
 
     try {
       setSending(true);
-      const response = await fetch('/api/messages', {
-        method: 'POST',
+      const response = await fetch("/api/messages", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           conversationId: conversation.id,
-          senderId: currentUser.id,
+          senderId: currentUser.id || currentUser._id,
           senderType: userType,
           message: newMessage.trim(),
         }),
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
-        setMessages(prev => [...prev, data.message]);
-        setNewMessage('');
+        setMessages((prev) => [...prev, data.message]);
+        setNewMessage("");
       } else {
-        alert('Error sending message: ' + data.error);
+        alert("Error sending message: " + data.error);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Error sending message. Please try again.');
+      console.error("Error sending message:", error);
+      alert("Error sending message. Please try again.");
     } finally {
       setSending(false);
     }
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const formatMessageTime = (dateString) => {
@@ -119,18 +128,20 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
       <div className={styles.chatHeader}>
         <div className={styles.chatHeaderInfo}>
           <h3>
-            {userType === 'buyer' ? conversation.seller_name : conversation.buyer_name}
+            {userType === "buyer"
+              ? conversation.seller_name
+              : conversation.buyer_name}
           </h3>
           {conversation.product_title && (
             <small>Re: {conversation.product_title}</small>
           )}
         </div>
-        <button 
+        <button
           className={styles.refreshBtn}
           onClick={fetchMessages}
           disabled={loading}
         >
-          {loading ? '⟳' : '↻'}
+          {loading ? "⟳" : "↻"}
         </button>
       </div>
 
@@ -148,21 +159,18 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
                 <div
                   key={message.id}
                   className={`${styles.messageItem} ${
-                    message.sender_id === currentUser.id 
-                      ? styles.ownMessage 
+                    message.sender_id === (currentUser.id || currentUser._id)
+                      ? styles.ownMessage
                       : styles.otherMessage
                   }`}
                 >
                   <div className={styles.messageContent}>
-                    <div className={styles.messageText}>
-                      {message.message}
-                    </div>
+                    <div className={styles.messageText}>{message.message}</div>
                     <div className={styles.messageInfo}>
                       <span className={styles.senderName}>
-                        {message.sender_id === currentUser.id 
-                          ? 'You' 
-                          : message.sender_name
-                        }
+                        {message.sender_id === (currentUser.id || currentUser._id)
+                          ? "You"
+                          : message.sender_name}
                       </span>
                       <span className={styles.messageTime}>
                         {formatMessageTime(message.created_at)}
@@ -187,18 +195,18 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
             rows="3"
             disabled={sending}
             onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage(e);
               }
             }}
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={styles.sendBtn}
             disabled={!newMessage.trim() || sending}
           >
-            {sending ? 'Sending...' : 'Send'}
+            {sending ? "Sending..." : "Send"}
           </button>
         </div>
       </form>
