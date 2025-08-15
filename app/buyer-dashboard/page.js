@@ -289,9 +289,6 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
           </div>
 
           <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem' }}>{buyer.name}</h3>
-          <p style={{ margin: '0 0 0.5rem 0', opacity: 0.7, fontSize: '0.9rem' }}>
-            {buyer.year} at {buyer.university}
-          </p>
           <p style={{ margin: 0, opacity: 0.6, fontSize: '0.8rem' }}>
             Member since {new Date(buyer.createdAt).toLocaleDateString()}
           </p>
@@ -321,37 +318,9 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme }) => {
             width: '100%',
             marginTop: '1.5rem'
           }}>
-            <div style={{
-              textAlign: 'center',
-              padding: '1rem',
-              backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
-              borderRadius: '0.75rem',
-              transition: 'transform 0.2s'
-            }}>
-              <Package size={20} style={{ margin: '0 auto 0.5rem', color: '#3b82f6' }} />
-              <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{buyer.totalPurchases || 0}</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>Purchases</div>
-            </div>
-            <div style={{
-              textAlign: 'center',
-              padding: '1rem',
-              backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
-              borderRadius: '0.75rem'
-            }}>
-              <DollarSign size={20} style={{ margin: '0 auto 0.5rem', color: '#10b981' }} />
-              <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>₹{buyer.totalSaved || 0}</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>Saved</div>
-            </div>
-            <div style={{
-              textAlign: 'center',
-              padding: '1rem',
-              backgroundColor: isDarkTheme ? '#334155' : '#f8fafc',
-              borderRadius: '0.75rem'
-            }}>
-              <Heart size={20} style={{ margin: '0 auto 0.5rem', color: '#ef4444' }} />
-              <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{buyer.favoriteCategory || 'None'}</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.25rem' }}>Favorite</div>
-            </div>
+           
+            
+            
           </div>
         </div>
 
