@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 const SellerCompleteProfile = () => {
-  const { data: session, status } = useSession();
+  const session = useSession();
   const router = useRouter();
   const [form, setForm] = useState({
     phone: ''
@@ -12,11 +12,15 @@ const SellerCompleteProfile = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Safe access to session data
+  const sessionData = session?.data;
+  const sessionStatus = session?.status;
+
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (sessionStatus === 'unauthenticated') {
       router.push('/seller-login');
     }
-  }, [status, router]);
+  }, [sessionStatus, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,18 +52,18 @@ const SellerCompleteProfile = () => {
     router.push('/seller-dashboard');
   };
 
-  if (status === 'loading') {
+  if (sessionStatus === 'loading') {
     return <div>Loading...</div>;
   }
 
-  if (!session) {
+  if (!sessionData) {
     return <div>Redirecting...</div>;
   }
 
   return (
     <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px' }}>
       <h2>Complete Your Seller Profile</h2>
-      <p>Welcome {session.user.name}! Please complete your seller profile to continue.</p>
+      <p>Welcome {sessionData?.user?.name}! Please complete your seller profile to continue.</p>
       
       <form onSubmit={handleSubmit}>
         {error && <p style={{color: 'red'}}>{error}</p>}
