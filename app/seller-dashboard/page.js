@@ -567,7 +567,8 @@ const SellerDashboard = () => {
                 )}
               </div>
 
-              <button className={styles.messagesButton}>
+              <button className={styles.messagesButton}
+               onClick={() => router.push('/seller-dashboard/messages')}>
                 <MessageSquare size={16} />
                 Messages
               </button>
