@@ -31,41 +31,107 @@ export async function GET(request) {
     // Extract token from Authorization header
     const authHeader = request.headers.get('authorization');
     console.log('Auth header present:', !!authHeader);
-    console.log('Auth header preview:', authHeader?.substring(0, 20) + '...');
-
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('Invalid authorization header format');
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid authorization header format' 
-      }, { status: 401 });
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     const token = authHeader.substring(7);
     if (!token) {
       console.log('No token found after Bearer');
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'No token provided' 
-      }, { status: 401 });
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     console.log('Token extracted, length:', token.length);
 
-    // Verify the token
-    const decoded = verifyToken(token);
+    // Verify the token with error handling
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (tokenError) {
+      console.error('Token verification error:', tokenError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        message: 'Invalid or expired token',
+        error: process.env.NODE_ENV === 'development' ? tokenError.message : undefined
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
+    }
+
     if (!decoded) {
       console.log('Token verification failed');
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid or expired token' 
-      }, { status: 401 });
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     console.log('Token verification successful. Decoded token:', JSON.stringify(decoded, null, 2));
 
-    // Connect to database
-    const client = await clientPromise;
+    // Connect to database with timeout
+    let client;
+    try {
+      client = await Promise.race([
+        clientPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database connection timeout')), 10000)
+        )
+      ]);
+    } catch (dbError) {
+      console.error('Database connection failed:', dbError);
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Database connection failed',
+        error: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+      }), { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
+    }
+
     const db = client.db('campusmart');
     console.log('Database connection established');
 
@@ -73,10 +139,18 @@ export async function GET(request) {
     const userId = getUserId(decoded);
     if (!userId) {
       console.error('No valid user ID found in token');
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid token: no user ID found' 
-      }, { status: 401 });
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     const objectId = toObjectId(userId);
@@ -87,20 +161,25 @@ export async function GET(request) {
     const collections = ['sellers', 'users']; // Add other collection names if needed
 
     for (const collectionName of collections) {
-      console.log(`Checking collection: ${collectionName}`);
-      user = await db.collection(collectionName).findOne(
-        { _id: objectId },
-        {
-          projection: {
-            password: 0,
-            __v: 0
+      try {
+        console.log(`Checking collection: ${collectionName}`);
+        user = await db.collection(collectionName).findOne(
+          { _id: objectId },
+          {
+            projection: {
+              password: 0,
+              __v: 0
+            }
           }
+        );
+        
+        if (user) {
+          console.log(`User found in collection: ${collectionName}`);
+          break;
         }
-      );
-      
-      if (user) {
-        console.log(`User found in collection: ${collectionName}`);
-        break;
+      } catch (findError) {
+        console.error(`Error finding user in ${collectionName}:`, findError);
+        continue;
       }
     }
 
@@ -109,38 +188,51 @@ export async function GET(request) {
       console.log('User not found by ObjectId, trying alternative searches...');
       
       for (const collectionName of collections) {
-        // Try by string ID
-        user = await db.collection(collectionName).findOne(
-          { _id: userId },
-          { projection: { password: 0, __v: 0 } }
-        );
-        
-        if (user) {
-          console.log(`User found by string ID in collection: ${collectionName}`);
-          break;
-        }
-        
-        // Try by email if userId looks like an email
-        if (typeof userId === 'string' && userId.includes('@')) {
+        try {
+          // Try by string ID
           user = await db.collection(collectionName).findOne(
-            { email: userId },
+            { _id: userId },
             { projection: { password: 0, __v: 0 } }
           );
           
           if (user) {
-            console.log(`User found by email in collection: ${collectionName}`);
+            console.log(`User found by string ID in collection: ${collectionName}`);
             break;
           }
+          
+          // Try by email if userId looks like an email
+          if (typeof userId === 'string' && userId.includes('@')) {
+            user = await db.collection(collectionName).findOne(
+              { email: userId },
+              { projection: { password: 0, __v: 0 } }
+            );
+            
+            if (user) {
+              console.log(`User found by email in collection: ${collectionName}`);
+              break;
+            }
+          }
+        } catch (findError) {
+          console.error(`Error in alternative search for ${collectionName}:`, findError);
+          continue;
         }
       }
     }
 
     if (!user) {
       console.log('User not found in any collection');
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'User not found' 
-      }, { status: 404 });
+      }), { 
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     console.log('User found:', user.name || user.email);
@@ -160,8 +252,8 @@ export async function GET(request) {
       console.log('Fetching seller statistics...');
 
       try {
-        // Fetch sales data
-        const sales = await db.collection('orders').aggregate([
+        // Fetch sales data with timeout
+        const salesPromise = db.collection('orders').aggregate([
           {
             $match: {
               sellerId: user._id,
@@ -177,8 +269,8 @@ export async function GET(request) {
           }
         ]).toArray();
 
-        // Fetch ratings
-        const ratings = await db.collection('reviews').aggregate([
+        // Fetch ratings with timeout
+        const ratingsPromise = db.collection('reviews').aggregate([
           {
             $match: { sellerId: user._id }
           },
@@ -191,9 +283,9 @@ export async function GET(request) {
           }
         ]).toArray();
 
-        // Calculate response rate (last 30 days)
+        // Calculate response rate (last 30 days) with timeout
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const messages = await db.collection('messages').aggregate([
+        const messagesPromise = db.collection('messages').aggregate([
           {
             $match: {
               receiverId: user._id,
@@ -213,19 +305,29 @@ export async function GET(request) {
           }
         ]).toArray();
 
+        // Execute all queries with timeout
+        const [sales, ratings, messages] = await Promise.allSettled([
+          Promise.race([salesPromise, new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Sales query timeout')), 5000))]),
+          Promise.race([ratingsPromise, new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Ratings query timeout')), 5000))]),
+          Promise.race([messagesPromise, new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Messages query timeout')), 5000))])
+        ]);
+
         // Update seller stats
-        if (sales.length > 0) {
-          sellerStats.totalSales = sales[0].totalSales || 0;
-          sellerStats.totalEarnings = sales[0].totalEarnings || 0;
+        if (sales.status === 'fulfilled' && sales.value.length > 0) {
+          sellerStats.totalSales = sales.value[0].totalSales || 0;
+          sellerStats.totalEarnings = sales.value[0].totalEarnings || 0;
         }
 
-        if (ratings.length > 0) {
-          sellerStats.rating = Math.round((ratings[0].averageRating || 0) * 10) / 10;
+        if (ratings.status === 'fulfilled' && ratings.value.length > 0) {
+          sellerStats.rating = Math.round((ratings.value[0].averageRating || 0) * 10) / 10;
         }
 
-        if (messages.length > 0 && messages[0].totalMessages > 0) {
+        if (messages.status === 'fulfilled' && messages.value.length > 0 && messages.value[0].totalMessages > 0) {
           sellerStats.responseRate = Math.round(
-            (messages[0].respondedMessages / messages[0].totalMessages) * 100
+            (messages.value[0].respondedMessages / messages.value[0].totalMessages) * 100
           );
         }
 
@@ -258,10 +360,18 @@ export async function GET(request) {
 
     console.log('Profile data prepared successfully');
 
-    return Response.json({
+    return new Response(JSON.stringify({
       success: true,
       data: profileData
-    }, { status: 200 });
+    }), { 
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
 
   } catch (error) {
     console.error('=== USER PROFILE API ERROR ===');
@@ -269,14 +379,22 @@ export async function GET(request) {
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
     
-    return Response.json({
+    return new Response(JSON.stringify({
       success: false,
       message: 'Internal server error',
       ...(process.env.NODE_ENV === 'development' && { 
         error: error.message,
         stack: error.stack 
       })
-    }, { status: 500 });
+    }), { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
   }
 }
 
@@ -288,26 +406,78 @@ export async function PUT(request) {
     // Extract and verify token
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid authorization header' 
-      }, { status: 401 });
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (tokenError) {
+      console.error('Token verification error:', tokenError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        message: 'Invalid or expired token',
+        error: process.env.NODE_ENV === 'development' ? tokenError.message : undefined
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
+    }
     
     if (!decoded) {
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid or expired token' 
-      }, { status: 401 });
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     console.log('Token verified for update request:', decoded.userId || decoded.id);
 
-    // Get update data
-    const updateData = await request.json();
+    // Get update data with validation
+    let updateData;
+    try {
+      updateData = await request.json();
+    } catch (jsonError) {
+      console.error('JSON parsing error:', jsonError);
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Invalid JSON data'
+      }), { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
+    }
+
     console.log('Update data received:', Object.keys(updateData));
 
     // Define allowed fields for security
@@ -328,17 +498,49 @@ export async function PUT(request) {
 
     console.log('Filtered update data:', Object.keys(filteredData));
 
-    // Connect to database
-    const client = await clientPromise;
+    // Connect to database with timeout
+    let client;
+    try {
+      client = await Promise.race([
+        clientPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database connection timeout')), 10000)
+        )
+      ]);
+    } catch (dbError) {
+      console.error('Database connection failed:', dbError);
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'Database connection failed',
+        error: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+      }), { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
+    }
+
     const db = client.db('campusmart');
 
     // Get user ID
     const userId = getUserId(decoded);
     if (!userId) {
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'Invalid token: no user ID found' 
-      }, { status: 401 });
+      }), { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     const objectId = toObjectId(userId);
@@ -348,76 +550,128 @@ export async function PUT(request) {
     const collections = ['sellers', 'users'];
 
     for (const collectionName of collections) {
-      const result = await db.collection(collectionName).updateOne(
-        { _id: objectId },
-        { $set: filteredData }
-      );
+      try {
+        const result = await db.collection(collectionName).updateOne(
+          { _id: objectId },
+          { $set: filteredData }
+        );
 
-      if (result.matchedCount > 0) {
-        updateResult = result;
-        console.log(`Profile updated in collection: ${collectionName}, modified: ${result.modifiedCount}`);
-        break;
+        if (result.matchedCount > 0) {
+          updateResult = result;
+          console.log(`Profile updated in collection: ${collectionName}, modified: ${result.modifiedCount}`);
+          break;
+        }
+      } catch (updateError) {
+        console.error(`Error updating in ${collectionName}:`, updateError);
+        continue;
       }
     }
 
     // If not found by ObjectId, try string ID
     if (!updateResult || updateResult.matchedCount === 0) {
       for (const collectionName of collections) {
-        const result = await db.collection(collectionName).updateOne(
-          { _id: userId },
-          { $set: filteredData }
-        );
+        try {
+          const result = await db.collection(collectionName).updateOne(
+            { _id: userId },
+            { $set: filteredData }
+          );
 
-        if (result.matchedCount > 0) {
-          updateResult = result;
-          console.log(`Profile updated by string ID in collection: ${collectionName}`);
-          break;
+          if (result.matchedCount > 0) {
+            updateResult = result;
+            console.log(`Profile updated by string ID in collection: ${collectionName}`);
+            break;
+          }
+        } catch (updateError) {
+          console.error(`Error updating by string ID in ${collectionName}:`, updateError);
+          continue;
         }
       }
     }
 
     if (!updateResult || updateResult.matchedCount === 0) {
-      return Response.json({ 
+      return new Response(JSON.stringify({ 
         success: false,
         message: 'User not found' 
-      }, { status: 404 });
+      }), { 
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     }
 
     // Fetch updated user data
     let updatedUser = null;
     for (const collectionName of collections) {
-      updatedUser = await db.collection(collectionName).findOne(
-        { _id: objectId },
-        { projection: { password: 0, __v: 0 } }
-      );
-      
-      if (updatedUser) break;
-      
-      // Try string ID if ObjectId didn't work
-      updatedUser = await db.collection(collectionName).findOne(
-        { _id: userId },
-        { projection: { password: 0, __v: 0 } }
-      );
-      
-      if (updatedUser) break;
+      try {
+        updatedUser = await db.collection(collectionName).findOne(
+          { _id: objectId },
+          { projection: { password: 0, __v: 0 } }
+        );
+        
+        if (updatedUser) break;
+        
+        // Try string ID if ObjectId didn't work
+        updatedUser = await db.collection(collectionName).findOne(
+          { _id: userId },
+          { projection: { password: 0, __v: 0 } }
+        );
+        
+        if (updatedUser) break;
+      } catch (fetchError) {
+        console.error(`Error fetching updated user from ${collectionName}:`, fetchError);
+        continue;
+      }
     }
 
-    return Response.json({
+    return new Response(JSON.stringify({
       success: true,
       message: 'Profile updated successfully',
       data: updatedUser
-    }, { status: 200 });
+    }), { 
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
 
   } catch (error) {
     console.error('=== USER PROFILE UPDATE ERROR ===');
     console.error('Error:', error);
     
-    return Response.json({
+    return new Response(JSON.stringify({
       success: false,
       message: 'Failed to update profile',
       ...(process.env.NODE_ENV === 'development' && { 
         error: error.message 
       })
-    }, { status: 500 });
+    }), { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
   }
+}
+
+// OPTIONS handler for CORS
+export async function OPTIONS(request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
 }
