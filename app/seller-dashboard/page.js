@@ -531,16 +531,6 @@ const SellerDashboard = () => {
                       <div className={styles.profileDivider}></div>
 
                       <div className={styles.profileMenuItems}>
-                        <Link href="/seller-dashboard/profile-section">
-                          <button
-                            className={styles.profileMenuItem}
-                            onClick={() => handleProfileAction('profile')}
-                          >
-                            <User size={16} />
-                            <span>My Profile</span>
-                          </button>
-                        </Link>
-
                         <button
                           className={styles.profileMenuItem}
                           onClick={() => handleProfileAction('settings')}

@@ -1425,7 +1425,7 @@ const BuyerDashboard = () => {
                   Location ({filters.locations.length} selected)
                 </label>
                 <div style={styles.checkboxGroup}>
-                  {['MAIN CANTEEN', 'GROUND', 'LIBRARY', 'OTHER'].map(location => (
+                  {['MAIT', 'DTU', 'NSUT', 'DU'].map(location => (
                     <label key={location} style={styles.checkboxLabel}>
                       <input
                         type="checkbox"
