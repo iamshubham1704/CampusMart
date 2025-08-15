@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 const CompleteProfile = () => {
-  const { data: session, status } = useSession();
+  const sessionResult = useSession();
   const router = useRouter();
   const [form, setForm] = useState({
     phone: '',
@@ -12,12 +12,21 @@ const CompleteProfile = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before accessing session
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Safe destructuring after component is mounted
+  const { data: session, status } = sessionResult || {};
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (mounted && status === 'unauthenticated') {
       router.push('/buyer-login');
     }
-  }, [status, router]);
+  }, [mounted, status, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,10 +59,12 @@ const CompleteProfile = () => {
     router.push('/buyer-dashboard');
   };
 
-  if (status === 'loading') {
+  // Show loading until component is mounted and session is resolved
+  if (!mounted || status === 'loading') {
     return <div>Loading...</div>;
   }
 
+  // Show redirecting message if no session after mounting
   if (!session) {
     return <div>Redirecting...</div>;
   }
@@ -61,7 +72,7 @@ const CompleteProfile = () => {
   return (
     <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px' }}>
       <h2>Complete Your Profile</h2>
-      <p>Welcome {session.user.name}! Please complete your profile to continue.</p>
+      <p>Welcome {session?.user?.name}! Please complete your profile to continue.</p>
       
       <form onSubmit={handleSubmit}>
         {error && <p style={{color: 'red'}}>{error}</p>}

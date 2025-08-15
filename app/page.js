@@ -275,20 +275,19 @@ const CampusMart = () => {
         </div>
         <div className="hero-container">
           <div className="hero-content">
-            <div className="hero-badge">
-              <span>🎓 Trusted by 10K+ Students</span>
-            </div>
             <h1 className="hero-title">
               Your Campus
               <span className="gradient-text"> Marketplace</span>
             </h1>
-            <p className="hero-subtitle">
-              Buy and sell textbooks, electronics, furniture, and more within your university community. 
-              Connect with fellow students for safe, affordable trading.
-            </p>
             
             <div className="hero-buttons">
-              <div className="role-card buyer-card" onClick={() => handleRoleSelect('buyer')}>
+              <div className="role-card buyer-card" 
+                style={{
+                  width: '280px',
+                  height: '180px',
+                  margin: '0 auto'
+                }} 
+                onClick={() => handleRoleSelect('buyer')}>
                 <div className="card-icon">
                   <ShoppingBag size={28} />
                 </div>
@@ -299,7 +298,13 @@ const CampusMart = () => {
                 <ArrowRight className="card-arrow" size={20} />
               </div>
               
-              <div className="role-card seller-card" onClick={() => handleRoleSelect('seller')}>
+              <div className="role-card seller-card" 
+                style={{
+                  width: '280px',
+                  height: '180px',
+                  margin: '0 auto'
+                }} 
+                onClick={() => handleRoleSelect('seller')}>
                 <div className="card-icon">
                   <Store size={28} />
                 </div>

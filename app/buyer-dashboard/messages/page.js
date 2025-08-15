@@ -1,11 +1,12 @@
-"use client"
-import { useState, useEffect } from 'react';
+'use client';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ChatList from '../../../components/ChatList';
 import ChatWindow from '../../../components/ChatWindow';
 import styles from '../../styles/Messages.module.css';
 
-export default function BuyerMessages() {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function BuyerMessagesContent() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -122,5 +123,23 @@ export default function BuyerMessages() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function MessagesLoading() {
+  return (
+    <div className={styles.messagesContainer}>
+      <div className={styles.loading}>Loading messages...</div>
+    </div>
+  );
+}
+
+// Main component that wraps the content in Suspense
+export default function BuyerMessages() {
+  return (
+    <Suspense fallback={<MessagesLoading />}>
+      <BuyerMessagesContent />
+    </Suspense>
   );
 }
