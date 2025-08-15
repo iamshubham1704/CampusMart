@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 const SellerCompleteProfile = () => {
+  const [isClient, setIsClient] = useState(false);
   const session = useSession();
   const router = useRouter();
   const [form, setForm] = useState({
@@ -12,15 +13,20 @@ const SellerCompleteProfile = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Ensure component only renders on client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Safe access to session data
   const sessionData = session?.data;
   const sessionStatus = session?.status;
 
   useEffect(() => {
-    if (sessionStatus === 'unauthenticated') {
+    if (isClient && sessionStatus === 'unauthenticated') {
       router.push('/seller-login');
     }
-  }, [sessionStatus, router]);
+  }, [isClient, sessionStatus, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,6 +57,11 @@ const SellerCompleteProfile = () => {
   const handleSkip = () => {
     router.push('/seller-dashboard');
   };
+
+  // Don't render anything until client-side hydration is complete
+  if (!isClient) {
+    return <div>Loading...</div>;
+  }
 
   if (sessionStatus === 'loading') {
     return <div>Loading...</div>;
