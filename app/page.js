@@ -180,7 +180,20 @@ const CampusMart = () => {
 
             {/* Right Actions */}
             <div className="nav-actions">
-              {/* Mobile Menu Button */}
+           
+              {/* Theme Toggle */}
+              <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}>
+                <div className="theme-icon">
+                  {isDarkTheme ? <Sun size={20} /> : <Moon size={20} />}
+                </div>
+              </button>
+
+              {/* Notifications */}
+              <button className="notification-btn" title="Notifications">
+                <Bell size={20} />
+                <span className="notification-badge">3</span>
+              </button>
+
               <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
                 {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
