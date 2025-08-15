@@ -28,11 +28,15 @@ const SellerDashboard = () => {
     if (typeof window === 'undefined') return null;
 
     const token = localStorage.getItem('token');
-    if (!token) return null;
+    if (!token) {
+      console.warn('No token found in localStorage');
+      return null;
+    }
 
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
+        console.error('Invalid token format - not a valid JWT');
         localStorage.removeItem('token');
         return null;
       }
@@ -41,6 +45,7 @@ const SellerDashboard = () => {
 
       // Check if token is expired
       if (payload.exp && payload.exp < Date.now() / 1000) {
+        console.error('Token has expired');
         localStorage.removeItem('token');
         return null;
       }
@@ -99,36 +104,118 @@ const SellerDashboard = () => {
 
       const user = getCurrentUser();
 
-      if (!user) {
+      if (!user || !user.token) {
+        console.error('No valid user or token found, redirecting to login');
         router.push('/seller-login');
         return;
       }
 
-      // Fetch all data in parallel for better performance
-      const [listingsResponse, statsResponse, activityResponse] = await Promise.all([
-        listingsAPI.getMyListings().catch(err => ({ success: false, listings: [] })),
-        dashboardAPI.getSellerStats().catch(err => ({ success: false, stats: null })),
-        dashboardAPI.getRecentActivity().catch(err => ({ success: false, activities: [] }))
-      ]);
-
-      // Set listings
-      if (listingsResponse.success) {
-        setMyListings(listingsResponse.listings);
-      } else {
-        console.error('Error fetching listings:', listingsResponse.message);
-        setMyListings([]);
+      // Verify token is still valid before making API calls
+      const tokenParts = user.token.split('.');
+      if (tokenParts.length !== 3) {
+        console.error('Invalid token format');
+        localStorage.removeItem('token');
+        router.push('/seller-login');
+        return;
       }
 
-      // Set seller data with real stats
-      let sellerStats = {};
+      let tokenPayload;
+      try {
+        tokenPayload = JSON.parse(atob(tokenParts[1]));
+        if (tokenPayload.exp && tokenPayload.exp < Date.now() / 1000) {
+          console.error('Token expired during fetch');
+          localStorage.removeItem('token');
+          router.push('/seller-login');
+          return;
+        }
+      } catch (e) {
+        console.error('Error parsing token payload:', e);
+        localStorage.removeItem('token');
+        router.push('/seller-login');
+        return;
+      }
 
+      console.log('Making API calls with valid token...');
+
+      // Temporarily disable stats and activity APIs for debugging
+      const useRealAPIs = false; // Set to true when backend is ready
+
+      let apiCalls;
+      if (useRealAPIs) {
+        apiCalls = [
+          listingsAPI.getMyListings().catch(err => {
+            console.error('Listings API error:', err);
+            return { success: false, listings: [], message: err.message || 'Failed to fetch listings' };
+          }),
+          dashboardAPI.getSellerStats().catch(err => {
+            console.error('Stats API error:', err);
+            return { success: false, stats: null, message: err.message || 'Failed to fetch stats' };
+          }),
+          dashboardAPI.getRecentActivity().catch(err => {
+            console.error('Activity API error:', err);
+            return { success: false, activities: [], message: err.message || 'Failed to fetch activity' };
+          })
+        ];
+      } else {
+        // Only fetch listings for now
+        apiCalls = [
+          listingsAPI.getMyListings().catch(err => {
+            console.error('Listings API error:', err);
+            return { success: false, listings: [], message: err.message || 'Failed to fetch listings' };
+          })
+        ];
+      }
+
+      const responses = await Promise.all(apiCalls);
+      const [listingsResponse, statsResponse, activityResponse] = useRealAPIs ? responses : [
+        responses[0], 
+        { success: false, stats: null, message: 'Stats API disabled for debugging' },
+        { success: false, activities: [], message: 'Activity API disabled for debugging' }
+      ];
+
+      // Handle listings response
+      if (listingsResponse.success) {
+        setMyListings(listingsResponse.listings || []);
+        console.log('Listings fetched successfully:', listingsResponse.listings.length);
+      } else {
+        console.warn('Error fetching listings:', listingsResponse.message);
+        setMyListings([]);
+        
+        // If it's a token error, redirect to login
+        if (listingsResponse.message && listingsResponse.message.toLowerCase().includes('token')) {
+          localStorage.removeItem('token');
+          router.push('/seller-login');
+          return;
+        }
+      }
+
+      // Handle stats with better error handling
+      let sellerStats = {};
+      
       if (statsResponse.success && statsResponse.stats) {
         sellerStats = statsResponse.stats;
+        console.log('Stats fetched successfully');
       } else {
-        console.error('Error fetching stats:', statsResponse.message);
+        console.warn('Stats API failed:', {
+          success: statsResponse.success,
+          message: statsResponse.message,
+          hasStats: !!statsResponse.stats
+        });
+        
+        // If it's a token error, redirect to login
+        if (statsResponse.message && 
+            (statsResponse.message.toLowerCase().includes('token') || 
+             statsResponse.message.toLowerCase().includes('unauthorized') ||
+             statsResponse.message.toLowerCase().includes('authentication'))) {
+          console.error('Authentication error detected, redirecting to login');
+          localStorage.removeItem('token');
+          router.push('/seller-login');
+          return;
+        }
+
         // Fallback to basic stats calculation from listings
         const activeListingsCount = listingsResponse.success
-          ? listingsResponse.listings.filter(listing => listing.status === 'active').length
+          ? (listingsResponse.listings || []).filter(listing => listing.status === 'active').length
           : 0;
 
         sellerStats = {
@@ -152,7 +239,7 @@ const SellerDashboard = () => {
         };
       }
 
-      // Combine user data with real stats
+      // Combine user data with stats
       const completeSellerData = {
         _id: user.id,
         name: user.name,
@@ -163,13 +250,22 @@ const SellerDashboard = () => {
 
       setSellerData(completeSellerData);
 
-      // Set recent activity
+      // Handle activity response
       if (activityResponse.success) {
-        setRecentActivity(activityResponse.activities);
+        setRecentActivity(activityResponse.activities || []);
+        console.log('Activity fetched successfully');
       } else {
-        console.error('Error fetching activity:', activityResponse.message);
+        console.warn('Error fetching activity:', activityResponse.message);
+        
+        // If it's a token error, redirect to login
+        if (activityResponse.message && activityResponse.message.toLowerCase().includes('token')) {
+          localStorage.removeItem('token');
+          router.push('/seller-login');
+          return;
+        }
+
         // Fallback to basic activity based on recent listings
-        const fallbackActivity = listingsResponse.success && listingsResponse.listings.length > 0
+        const fallbackActivity = listingsResponse.success && listingsResponse.listings && listingsResponse.listings.length > 0
           ? listingsResponse.listings.slice(0, 3).map((listing, index) => ({
             type: 'listing',
             title: 'Listing created',
@@ -185,7 +281,15 @@ const SellerDashboard = () => {
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data');
+      
+      // Check if it's a token-related error
+      if (err.message && err.message.toLowerCase().includes('token')) {
+        localStorage.removeItem('token');
+        router.push('/seller-login');
+        return;
+      }
+
+      setError('Failed to load dashboard data. Please try again.');
 
       // Set basic user data even on error
       const user = getCurrentUser();
@@ -207,6 +311,9 @@ const SellerDashboard = () => {
           memberSince: new Date().getFullYear(),
           accountType: 'Standard'
         });
+      } else {
+        router.push('/seller-login');
+        return;
       }
 
       setMyListings([]);
@@ -217,6 +324,13 @@ const SellerDashboard = () => {
   };
 
   useEffect(() => {
+    // Check for valid token before mounting
+    const user = getCurrentUser();
+    if (!user || !user.token) {
+      router.push('/seller-login');
+      return;
+    }
+    
     fetchData();
   }, [router]);
 
