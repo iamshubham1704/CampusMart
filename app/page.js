@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   ShoppingBag,
   Store,
@@ -13,21 +12,29 @@ import {
   Zap,
   Check,
   Star,
-  MapPin
+  MapPin,
+  Menu,
+  X,
+  Home,
+  Info,
+  Phone,
+  User,
+  LogIn,
+  Bell,
+  Heart
 } from 'lucide-react';
 
 const CampusMart = () => {
   const [mounted, setMounted] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(true);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
-  const router = useRouter();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Handle component mounting
   useEffect(() => {
     setMounted(true);
-    // Load theme from in-memory storage (no localStorage in Claude artifacts)
     const savedTheme = typeof window !== 'undefined' ? 
-      (document.documentElement.getAttribute('data-theme') === 'dark') : true;
+      (localStorage.getItem('theme') === 'dark') : false;
     setIsDarkTheme(savedTheme);
   }, []);
 
@@ -51,6 +58,9 @@ const CampusMart = () => {
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.className = isDarkTheme ? 'dark-theme' : 'light-theme';
       document.body.className = isDarkTheme ? 'dark-theme' : 'light-theme';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', theme);
+      }
     }
   }, [isDarkTheme, mounted]);
 
@@ -58,11 +68,17 @@ const CampusMart = () => {
     setIsDarkTheme(prev => !prev);
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(prev => !prev);
+  };
+
   const handleRoleSelect = (role) => {
     if (role === 'buyer') {
-      router.push('/buyer-registration');
+      console.log('Navigate to buyer registration');
+      // router.push('/buyer-registration');
     } else if (role === 'seller') {
-      router.push('/seller-registration');
+      console.log('Navigate to seller registration');
+      // router.push('/seller-registration');
     }
   };
 
@@ -72,118 +88,217 @@ const CampusMart = () => {
   }
 
   return (
-    <div className={`homepage ${isDarkTheme ? 'dark-theme' : 'light-theme'}`}>
-      {/* Theme Toggle Button */}
-      <button
-        className="theme-toggle"
-        onClick={toggleTheme}
-        aria-label={`Switch to ${isDarkTheme ? 'light' : 'dark'} theme`}
-        type="button"
-      >
-        {isDarkTheme ? <Sun size={18} /> : <Moon size={18} />}
-        <span>{isDarkTheme ? 'Light' : 'Dark'}</span>
-      </button>
-
-      {/* Header */}
+    <>
+      {/* Enhanced Professional Header */}
       <header className="header">
-        <nav className="navbar">
-          <div className="nav-brand">
-            <h1>CampusMart</h1>
-          </div>
-          <ul className="nav-menu">
-            <li><a href="#home">Home</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#how-it-works">How It Works</a></li>
-            <li><a href="#buyer-policy">Buyer Policy</a></li>
-            <li><a href="#seller-policy">Seller Policy</a></li>
-            <li><a href="#contact">Contact Us</a></li>
-          </ul>
-          <div className="nav-actions">
-            <div className="search-container">
-              <Search size={18} className="search-icon" />
-              <input type="text" placeholder="Search products..." className="search-input" />
-            </div>
-            <button className="login-btn">Login</button>
-            <button className="signup-btn">Sign Up</button>
-          </div>
-        </nav>
-      </header>
-
-      {/* Hero Section */}
-      <section className="hero-section" id="home">
-        <div 
-          className="hero-background"
-          style={{
-            background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(64, 224, 208, 0.15) 0%, transparent 50%)`
-          }}
-        />
-        <div className="hero-overlay">
-          <div className="hero-content">
-            <h1 className="hero-title">The Student Marketplace</h1>
-            <p className="hero-subtitle">
-              Buy and sell within your campus effortlessly. Connect with fellow
-              students, find great deals, and declutter your dorm.
-            </p>
-            
-            {/* Role Selection Cards */}
-            <div className="hero-buttons">
-              <div
-                onClick={() => handleRoleSelect('buyer')}
-                className="btn btn-buyer role-card"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleRoleSelect('buyer');
-                  }
-                }}
-              >
-                <div className="card-glow"></div>
-                <div className="card-content">
-                  <div className="btn-icon">
-                    <ShoppingBag size={24} />
+        <div className="header-container">
+          <nav className="navbar">
+            {/* Brand Logo */}
+            <div className="nav-brand">
+              <div className="brand-logo">
+                <div className="logo-container">
+                  <div className="logo-icon">
+                    <Store size={28} />
                   </div>
-                  <span className="btn-text">I'm a Buyer</span>
-                  <ArrowRight size={18} className="btn-arrow" />
+                  <div className="logo-pulse"></div>
+                </div>
+                <div className="brand-text">
+                  <h1 className="brand-name">CampusMart</h1>
+                  <span className="brand-tagline">Student Marketplace</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Center Navigation */}
+            <div className="nav-center">
+              <ul className="nav-menu">
+                <li className="nav-item">
+                  <a href="#" className="nav-link active">
+                    <Home size={18} />
+                    <span>Home</span>
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a href="#" className="nav-link">
+                    <ShoppingBag size={18} />
+                    <span>Marketplace</span>
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a href="#" className="nav-link">
+                    <Users size={18} />
+                    <span>Community</span>
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a href="#" className="nav-link">
+                    <Info size={18} />
+                    <span>About</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Right Actions */}
+            <div className="nav-actions">
+              {/* Search Bar */}
+              <div className="search-container">
+                <div className="search-wrapper">
+                  <Search className="search-icon" size={20} />
+                  <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Search textbooks, electronics..."
+                  />
+                  <div className="search-suggestions">
+                    <div className="search-suggestion">📚 Textbooks</div>
+                    <div className="search-suggestion">💻 Electronics</div>
+                    <div className="search-suggestion">🪑 Furniture</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Theme Toggle */}
+              <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}>
+                <div className="theme-icon">
+                  {isDarkTheme ? <Sun size={20} /> : <Moon size={20} />}
+                </div>
+              </button>
+
+              {/* Notifications */}
+              <button className="notification-btn" title="Notifications">
+                <Bell size={20} />
+                <span className="notification-badge">3</span>
+              </button>
+
+              {/* Favorites */}
+              <button className="favorites-btn" title="Favorites">
+                <Heart size={20} />
+              </button>
+
+              {/* Auth Buttons */}
+              <div className="auth-buttons">
+                <button className="login-btn">
+                  <LogIn size={18} />
+                  <span>Login</span>
+                </button>
+                <button className="signup-btn">
+                  <User size={18} />
+                  <span>Sign Up</span>
+                </button>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
+          </nav>
+
+          {/* Mobile Menu */}
+          <div className={`mobile-menu ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
+            <div className="mobile-menu-content">
+              <div className="mobile-search">
+                <div className="search-wrapper">
+                  <Search className="search-icon" size={20} />
+                  <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Search products..."
+                  />
                 </div>
               </div>
               
-              <div
-                onClick={() => handleRoleSelect('seller')}
-                className="btn btn-seller role-card"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleRoleSelect('seller');
-                  }
-                }}
-              >
-                <div className="card-glow"></div>
-                <div className="card-content">
-                  <div className="btn-icon">
-                    <Store size={24} />
-                  </div>
-                  <span className="btn-text">I'm a Seller</span>
-                  <ArrowRight size={18} className="btn-arrow" />
+              <ul className="mobile-nav-menu">
+                <li><a href="#" className="mobile-nav-link active"><Home size={20} /><span>Home</span></a></li>
+                <li><a href="#" className="mobile-nav-link"><ShoppingBag size={20} /><span>Marketplace</span></a></li>
+                <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
+                <li><a href="#" className="mobile-nav-link"><Info size={20} /><span>About</span></a></li>
+              </ul>
+              
+              <div className="mobile-actions">
+                <button className="mobile-notification-btn">
+                  <Bell size={20} />
+                  <span>Notifications</span>
+                  <span className="notification-badge">3</span>
+                </button>
+                <button className="mobile-favorites-btn">
+                  <Heart size={20} />
+                  <span>Favorites</span>
+                </button>
+              </div>
+
+              <div className="mobile-auth-buttons">
+                <button className="mobile-login-btn">
+                  <LogIn size={20} />
+                  <span>Login</span>
+                </button>
+                <button className="mobile-signup-btn">
+                  <User size={20} />
+                  <span>Sign Up</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-background">
+          <div className="hero-gradient"></div>
+          <div className="hero-pattern"></div>
+        </div>
+        <div className="hero-container">
+          <div className="hero-content">
+            <div className="hero-badge">
+              <span>🎓 Trusted by 10K+ Students</span>
+            </div>
+            <h1 className="hero-title">
+              Your Campus
+              <span className="gradient-text"> Marketplace</span>
+            </h1>
+            <p className="hero-subtitle">
+              Buy and sell textbooks, electronics, furniture, and more within your university community. 
+              Connect with fellow students for safe, affordable trading.
+            </p>
+            
+            <div className="hero-buttons">
+              <div className="role-card buyer-card" onClick={() => handleRoleSelect('buyer')}>
+                <div className="card-icon">
+                  <ShoppingBag size={28} />
                 </div>
+                <div className="card-content">
+                  <h3>Start Buying</h3>
+                  <p>Find great deals from students</p>
+                </div>
+                <ArrowRight className="card-arrow" size={20} />
+              </div>
+              
+              <div className="role-card seller-card" onClick={() => handleRoleSelect('seller')}>
+                <div className="card-icon">
+                  <Store size={28} />
+                </div>
+                <div className="card-content">
+                  <h3>Start Selling</h3>
+                  <p>Turn your items into cash</p>
+                </div>
+                <ArrowRight className="card-arrow" size={20} />
               </div>
             </div>
             
             <div className="hero-features">
-              <div className="feature-item">
-                <Check size={16} className="feature-icon" />
-                <span>Verified Students Only</span>
+              <div className="feature-badge">
+                <Shield size={16} />
+                <span>Secure & Verified</span>
               </div>
-              <div className="feature-item">
-                <Shield size={16} className="feature-icon" />
-                <span>Safe Campus Meetings</span>
+              <div className="feature-badge">
+                <Users size={16} />
+                <span>Campus Only</span>
               </div>
-              <div className="feature-item">
-                <Zap size={16} className="feature-icon" />
-                <span>No Platform Fees</span>
+              <div className="feature-badge">
+                <Zap size={16} />
+                <span>Instant Connect</span>
               </div>
             </div>
           </div>
@@ -191,140 +306,116 @@ const CampusMart = () => {
       </section>
 
       {/* Roadmap Section */}
-      <section className="roadmap-section" id="how-it-works">
+      <section className="roadmap-section">
         <div className="container">
-          <h2 className="section-title">ROADMAP</h2>
-          <p className="section-subtitle">
-            Your journey to seamless campus trading starts here. Follow our cosmic
-            roadmap to success.
-          </p>
+          <div className="section-header">
+            <h2 className="section-title">How CampusMart Works</h2>
+            <p className="section-subtitle">
+              Join thousands of students in just 4 simple steps
+            </p>
+          </div>
           
           <div className="roadmap-container">
             <div className="roadmap-path">
               <div className="roadmap-step">
+                <div className="step-number">1</div>
                 <div className="step-icon">
-                  <Users size={32} />
+                  <User size={32} />
                 </div>
                 <div className="step-content">
-                  <h3>Sign Up with College Email</h3>
-                  <p>Verify your student status with your official college email address for secure access to your campus marketplace.</p>
+                  <h3>Create Account</h3>
+                  <p>Sign up with your university email to join your campus community and start buying or selling.</p>
                 </div>
-                <div className="step-number">Step 1</div>
               </div>
               
               <div className="roadmap-step">
+                <div className="step-number">2</div>
                 <div className="step-icon">
                   <Search size={32} />
                 </div>
                 <div className="step-content">
-                  <h3>Browse or List</h3>
-                  <p>Find exactly what you need, or list what you want to sell. From textbooks to tech, we've got it.</p>
+                  <h3>Browse & List</h3>
+                  <p>Search for items you need or list your own products with photos and descriptions.</p>
                 </div>
-                <div className="step-number">Step 2</div>
               </div>
               
               <div className="roadmap-step">
+                <div className="step-number">3</div>
                 <div className="step-icon">
-                  <Zap size={32} />
+                  <Users size={32} />
                 </div>
                 <div className="step-content">
-                  <h3>Chat & Negotiate</h3>
-                  <p>Connect directly with buyers/sellers through our secure messaging system. Negotiate prices and arrange meetups.</p>
+                  <h3>Connect & Trade</h3>
+                  <p>Message sellers, negotiate prices, and arrange safe meetups on campus.</p>
                 </div>
-                <div className="step-number">Step 3</div>
               </div>
               
               <div className="roadmap-step">
+                <div className="step-number">4</div>
                 <div className="step-icon">
-                  <Shield size={32} />
+                  <Check size={32} />
                 </div>
                 <div className="step-content">
-                  <h3>Meet Safely On Campus</h3>
-                  <p>Complete your transaction in person at safe, public locations on campus. Cash or digital payments accepted.</p>
+                  <h3>Complete Transaction</h3>
+                  <p>Meet safely, exchange items, and leave reviews to build your campus reputation.</p>
                 </div>
-                <div className="step-number">Step 4</div>
               </div>
             </div>
+            
+            <button className="roadmap-cta" onClick={() => handleRoleSelect('buyer')}>
+              Get Started Today
+            </button>
           </div>
-          
-          <button className="btn btn-primary roadmap-cta">Begin Your Journey</button>
         </div>
       </section>
 
       {/* Featured Products Section */}
       <section className="featured-section">
         <div className="container">
-          <h2 className="section-title">Featured Products</h2>
-          <p className="section-subtitle">
-            Discover amazing deals from fellow students. These hot items won't last long!
-          </p>
+          <div className="section-header">
+            <h2 className="section-title">Trending on Campus</h2>
+            <p className="section-subtitle">
+              Most popular items being traded right now
+            </p>
+          </div>
           
           <div className="products-grid">
             {[
-              {
-                title: "MacBook Air M2 - Like New",
-                price: "$899",
-                originalPrice: "$1099",
-                seller: "Sarah M.",
-                rating: 5,
-                location: "East Campus",
-                badge: "Electronics",
-                image: "💻"
-              },
-              {
-                title: "Calculus Textbook Bundle",
-                price: "$45",
-                originalPrice: "$180",
-                seller: "Mike Chen",
-                rating: 5,
-                location: "Science Library",
-                badge: "Textbooks",
-                image: "📚"
-              },
-              {
-                title: "Mini Fridge - Perfect for Dorms",
-                price: "$85",
-                originalPrice: "$150",
-                seller: "Emma K.",
-                rating: 5,
-                location: "West Residence",
-                badge: "Furniture",
-                image: "❄️"
-              },
-              {
-                title: "Gaming Chair - Ergonomic",
-                price: "$120",
-                originalPrice: "$200",
-                seller: "Alex P.",
-                rating: 5,
-                location: "Tech Campus",
-                badge: "Furniture",
-                image: "🪑"
-              }
+              { emoji: '📚', name: 'Engineering Textbook', price: '$45', originalPrice: '$120', seller: 'Alex M.', rating: 5, location: 'North Campus', badge: 'Hot Deal' },
+              { emoji: '💻', name: 'MacBook Pro 2019', price: '$899', originalPrice: '$1299', seller: 'Sarah K.', rating: 5, location: 'South Dorm', badge: 'Featured' },
+              { emoji: '🪑', name: 'Study Desk & Chair', price: '$75', originalPrice: '$150', seller: 'Mike R.', rating: 4, location: 'West Campus', badge: 'New' },
+              { emoji: '🎧', name: 'Noise-Canceling Headphones', price: '$120', originalPrice: '$200', seller: 'Emma L.', rating: 5, location: 'East Hall', badge: 'Popular' },
+              { emoji: '📱', name: 'iPhone 12', price: '$450', originalPrice: '$699', seller: 'Josh T.', rating: 4, location: 'Central Campus', badge: 'Hot Deal' },
+              { emoji: '🛏️', name: 'Twin Mattress', price: '$80', originalPrice: '$200', seller: 'Lisa W.', rating: 5, location: 'Graduate Housing', badge: 'Featured' }
             ].map((product, index) => (
               <div key={index} className="product-card">
                 <div className="product-image">
-                  <span className="product-emoji">{product.image}</span>
-                  <span className="product-badge">{product.badge}</span>
+                  <span className="product-emoji">{product.emoji}</span>
+                  <div className={`product-badge ${product.badge.toLowerCase().replace(' ', '-')}`}>{product.badge}</div>
+                  <button className="favorite-btn">
+                    <Heart size={16} />
+                  </button>
                 </div>
                 <div className="product-info">
-                  <h3>{product.title}</h3>
+                  <h3 className="product-name">{product.name}</h3>
                   <div className="product-price">
                     <span className="current-price">{product.price}</span>
                     <span className="original-price">{product.originalPrice}</span>
+                    <span className="discount">{Math.round((1 - parseInt(product.price.slice(1)) / parseInt(product.originalPrice.slice(1))) * 100)}% off</span>
                   </div>
                   <div className="seller-info">
                     <span className="seller-name">{product.seller}</span>
                     <div className="rating">
-                      {Array.from({ length: product.rating }).map((_, i) => (
+                      {[...Array(product.rating)].map((_, i) => (
                         <Star key={i} size={14} fill="currentColor" />
                       ))}
+                      <span className="rating-text">({product.rating})</span>
                     </div>
                   </div>
-                  <p className="product-location">
+                  <div className="product-location">
                     <MapPin size={14} />
-                    {product.location}
-                  </p>
+                    <span>{product.location}</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -333,196 +424,144 @@ const CampusMart = () => {
       </section>
 
       {/* Trust Section */}
-      <section className="trust-section" id="about">
+      <section className="trust-section">
         <div className="container">
-          <h2 className="section-title">Trusted by Students Everywhere</h2>
-          <p className="section-subtitle">
-            Join thousands of students who trust CampusMart for safe and easy campus trading.
-          </p>
+          <div className="section-header">
+            <h2 className="section-title">Trusted by Students Nationwide</h2>
+            <p className="section-subtitle">
+              Join the largest student marketplace community
+            </p>
+          </div>
           
           <div className="stats-grid">
             <div className="stat-card">
-              <h3>10,000+</h3>
+              <div className="stat-icon">👥</div>
+              <h3>10K+</h3>
               <p>Active Students</p>
-              <span>Verified students using our platform on their campuses</span>
+              <span>Across 50+ universities</span>
             </div>
             <div className="stat-card">
-              <h3>25,000+</h3>
-              <p>Successful Trades</p>
-              <span>Completed transactions on our platform monthly</span>
+              <div className="stat-icon">📦</div>
+              <h3>25K+</h3>
+              <p>Items Sold</p>
+              <span>This semester alone</span>
             </div>
             <div className="stat-card">
-              <h3>99.9%</h3>
-              <p>Safety Rate</p>
-              <span>Of all campus meetings result in safe transactions</span>
+              <div className="stat-icon">⭐</div>
+              <h3>4.8★</h3>
+              <p>Average Rating</p>
+              <span>From user reviews</span>
             </div>
             <div className="stat-card">
-              <h3>&lt; 2 hrs</h3>
-              <p>Average Response</p>
-              <span>Quick replies from fellow students</span>
+              <div className="stat-icon">💰</div>
+              <h3>$2M+</h3>
+              <p>Money Saved</p>
+              <span>By our community</span>
             </div>
           </div>
-          
+
           <div className="testimonials-section">
-            <h3>What Students Are Saying</h3>
+            <h3>What Students Say</h3>
             <div className="testimonials-grid">
-              {[
-                {
-                  text: "Found my dream laptop at half the price! The seller was super responsive and we met safely on campus. Couldn't be happier!",
-                  author: "Jessica Chen",
-                  school: "Stanford University",
-                  initials: "JC"
-                },
-                {
-                  text: "Sold my textbooks in just 2 days. Way better than those other buyback programs that give you pennies.",
-                  author: "Marcus Johnson",
-                  school: "UCLA",
-                  initials: "MJ"
-                },
-                {
-                  text: "The verification process made me feel so much safer. Knowing everyone is a real student gives me peace of mind.",
-                  author: "Priya Patel",
-                  school: "MIT",
-                  initials: "PP"
-                }
-              ].map((testimonial, index) => (
-                <div key={index} className="testimonial-card">
-                  <div className="stars">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} size={14} fill="currentColor" />
-                    ))}
-                  </div>
-                  <p>"{testimonial.text}"</p>
-                  <div className="testimonial-author">
-                    <div className="author-avatar">{testimonial.initials}</div>
-                    <div className="author-info">
-                      <span className="author-name">{testimonial.author}</span>
-                      <span className="author-school">{testimonial.school}</span>
-                    </div>
+              <div className="testimonial-card">
+                <div className="stars">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={16} fill="currentColor" />
+                  ))}
+                </div>
+                <p>"Saved over $300 on textbooks this semester! Super easy to use and everyone's been honest."</p>
+                <div className="testimonial-author">
+                  <div className="author-avatar">JD</div>
+                  <div className="author-info">
+                    <div className="author-name">Jessica Davis</div>
+                    <div className="author-school">Stanford University</div>
                   </div>
                 </div>
-              ))}
+              </div>
+              
+              <div className="testimonial-card">
+                <div className="stars">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={16} fill="currentColor" />
+                  ))}
+                </div>
+                <p>"Perfect for moving out! Sold my furniture quickly to students who actually needed them."</p>
+                <div className="testimonial-author">
+                  <div className="author-avatar">RM</div>
+                  <div className="author-info">
+                    <div className="author-name">Ryan Mitchell</div>
+                    <div className="author-school">UC Berkeley</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="testimonial-card">
+                <div className="stars">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={16} fill="currentColor" />
+                  ))}
+                </div>
+                <p>"The verification system makes me feel safe. Great way to find affordable campus items!"</p>
+                <div className="testimonial-author">
+                  <div className="author-avatar">AL</div>
+                  <div className="author-info">
+                    <div className="author-name">Amy Liu</div>
+                    <div className="author-school">MIT</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          
+
           <div className="cta-section">
-            <h3>Start your campus trading journey today!</h3>
-            <p>Join thousands of students who are already buying and selling safely on their campus. No fees, no hassle. Just great deals with fellow students.</p>
+            <h3>Ready to Start Trading?</h3>
+            <p>Join your campus community today and discover a smarter way to buy and sell.</p>
             <div className="cta-buttons">
-              <button 
-                className="btn btn-buyer"
-                onClick={() => handleRoleSelect('buyer')}
-              >
-                <Users size={20} />
-                Join as Buyer
+              <button className="btn btn-buyer" onClick={() => handleRoleSelect('buyer')}>
+                <ShoppingBag size={20} />
+                Start Buying
               </button>
-              <button 
-                className="btn btn-seller"
-                onClick={() => handleRoleSelect('seller')}
-              >
+              <button className="btn btn-seller" onClick={() => handleRoleSelect('seller')}>
                 <Store size={20} />
-                Join as Seller
+                Start Selling
               </button>
             </div>
           </div>
-          
+
           <div className="trust-features">
-            <div className="trust-feature">
-              <div className="trust-icon">
-                <Check size={24} />
-              </div>
-              <div className="trust-content">
-                <h4>Student Verified</h4>
-                <p>Only verified students can join your campus marketplace</p>
-              </div>
-            </div>
-            <div className="trust-feature">
-              <div className="trust-icon">
-                <Zap size={24} />
-              </div>
-              <div className="trust-content">
-                <h4>No Platform Fees</h4>
-                <p>Keep 100% of your earnings - we don't charge any fees</p>
-              </div>
-            </div>
             <div className="trust-feature">
               <div className="trust-icon">
                 <Shield size={24} />
               </div>
               <div className="trust-content">
-                <h4>Safe Meetings</h4>
-                <p>Meet safely on campus in public, well-lit areas</p>
+                <h4>University Verified</h4>
+                <p>Every user is verified through their official university email address.</p>
+              </div>
+            </div>
+            
+            <div className="trust-feature">
+              <div className="trust-icon">
+                <Users size={24} />
+              </div>
+              <div className="trust-content">
+                <h4>Campus Community</h4>
+                <p>Trade only with verified students from your university for maximum trust.</p>
+              </div>
+            </div>
+            
+            <div className="trust-feature">
+              <div className="trust-icon">
+                <Zap size={24} />
+              </div>
+              <div className="trust-content">
+                <h4>Instant Messaging</h4>
+                <p>Connect with buyers and sellers instantly through our secure messaging system.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="footer" id="contact">
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-section">
-              <h3>CampusMart</h3>
-              <p>The trusted student marketplace connecting campus communities. Buy and sell safely with verified students at your university.</p>
-              <div className="newsletter">
-                <h4>Stay Updated</h4>
-                <div className="newsletter-form">
-                  <input type="email" placeholder="Enter your email" />
-                  <button className="subscribe-btn">Subscribe</button>
-                </div>
-                <p className="newsletter-text">Get notified about new features and campus deals.</p>
-              </div>
-            </div>
-            
-            <div className="footer-section">
-              <h4>Quick Links</h4>
-              <ul>
-                <li><a href="#home">Home</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#how-it-works">How It Works</a></li>
-                <li><a href="#contact">Contact</a></li>
-              </ul>
-            </div>
-            
-            <div className="footer-section" id="buyer-policy">
-              <h4>Policies</h4>
-              <ul>
-                <li><a href="#buyer-policy">Buyer Policy</a></li>
-                <li><a href="#seller-policy">Seller Policy</a></li>
-                <li><a href="#privacy">Privacy Policy</a></li>
-                <li><a href="#terms">Terms of Service</a></li>
-              </ul>
-            </div>
-            
-            <div className="footer-section">
-              <h4>Support</h4>
-              <ul>
-                <li><a href="#help">Help Center</a></li>
-                <li><a href="#faq">FAQs</a></li>
-                <li><a href="#report">Report a Problem</a></li>
-                <li><a href="#safety">Safety Tips</a></li>
-              </ul>
-              <div className="contact-info">
-                <h4>Contact Us</h4>
-                <p>📧 hello@campusmart.com</p>
-                <p>📞 1-800-CAMPUS</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="footer-bottom">
-            <p>&copy; 2025 CampusMart. All rights reserved.</p>
-            <div className="social-links">
-              <span>Follow us:</span>
-              <a href="#facebook" aria-label="Facebook">📘</a>
-              <a href="#twitter" aria-label="Twitter">🐦</a>
-              <a href="#instagram" aria-label="Instagram">📸</a>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 };
 
