@@ -42,6 +42,7 @@ import CartDrawer from '../../components/CartDrawer';
 import ProductViewModal from './quick-view/page';
 import { useWishlist } from '../../components/contexts/WishlistContext';
 import WishlistModal from './wishlist/page';
+import Link from 'next/link';
 
 // Updated useBuyer hook with real API integration
 const useBuyer = () => {
@@ -1229,6 +1230,7 @@ const BuyerDashboard = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <Link href="/seller-login"><button style={{backgroundColor: '#3b82f6',fontSize: '1rem', color: 'white', padding: '1rem', borderRadius: '0.5rem'}}>Sell Item</button></Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button style={styles.actionButton} onClick={() => setIsDarkTheme(!isDarkTheme)}>
