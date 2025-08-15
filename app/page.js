@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ShoppingBag,
   Store,
@@ -25,10 +26,12 @@ import {
 } from 'lucide-react';
 
 const CampusMart = () => {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
 
   // Handle component mounting
   useEffect(() => {
@@ -38,17 +41,35 @@ const CampusMart = () => {
     setIsDarkTheme(savedTheme);
   }, []);
 
-  // Handle mouse movement for interactive effects
+  // Enhanced mouse movement handler with parallax calculation
   useEffect(() => {
     const handleMouseMove = (e) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) * 100,
-        y: (e.clientY / window.innerHeight) * 100,
-      });
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      
+      setMousePosition({ x, y });
+      
+      // Calculate parallax offset for background elements
+      const parallaxX = (e.clientX - window.innerWidth / 2) * 0.05;
+      const parallaxY = (e.clientY - window.innerHeight / 2) * 0.05;
+      setParallaxOffset({ x: parallaxX, y: parallaxY });
+    };
+
+    const handleScroll = () => {
+      const scrolled = window.pageYOffset;
+      const parallax = scrolled * 0.3;
+      
+      // Update CSS custom properties for scroll-based parallax
+      document.documentElement.style.setProperty('--scroll-y', `${parallax}px`);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   // Handle theme changes
@@ -64,6 +85,16 @@ const CampusMart = () => {
     }
   }, [isDarkTheme, mounted]);
 
+  // Update mouse position CSS variables for interactive background
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.style.setProperty('--mouse-x', `${mousePosition.x}%`);
+      document.documentElement.style.setProperty('--mouse-y', `${mousePosition.y}%`);
+      document.documentElement.style.setProperty('--parallax-x', `${parallaxOffset.x}px`);
+      document.documentElement.style.setProperty('--parallax-y', `${parallaxOffset.y}px`);
+    }
+  }, [mousePosition, parallaxOffset, mounted]);
+
   const toggleTheme = () => {
     setIsDarkTheme(prev => !prev);
   };
@@ -74,11 +105,9 @@ const CampusMart = () => {
 
   const handleRoleSelect = (role) => {
     if (role === 'buyer') {
-      console.log('Navigate to buyer registration');
-      // router.push('/buyer-registration');
+      router.push('/buyer-registration');
     } else if (role === 'seller') {
-      console.log('Navigate to seller registration');
-      // router.push('/seller-registration');
+      router.push('/seller-registration');
     }
   };
 
@@ -89,6 +118,16 @@ const CampusMart = () => {
 
   return (
     <>
+      {/* Interactive Background Elements */}
+      <div className="interactive-background">
+        <div className="bg-element bg-element-1"></div>
+        <div className="bg-element bg-element-2"></div>
+        <div className="bg-element bg-element-3"></div>
+        <div className="parallax-layer parallax-layer-1"></div>
+        <div className="parallax-layer parallax-layer-2"></div>
+        <div className="parallax-layer parallax-layer-3"></div>
+      </div>
+
       {/* Enhanced Professional Header */}
       <header className="header">
         <div className="header-container">
@@ -243,11 +282,12 @@ const CampusMart = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section with Interactive Background */}
       <section className="hero-section">
         <div className="hero-background">
           <div className="hero-gradient"></div>
           <div className="hero-pattern"></div>
+          <div className="mouse-follower"></div>
         </div>
         <div className="hero-container">
           <div className="hero-content">
