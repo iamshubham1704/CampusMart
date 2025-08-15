@@ -180,23 +180,7 @@ const CampusMart = () => {
 
             {/* Right Actions */}
             <div className="nav-actions">
-              {/* Search Bar */}
-              <div className="search-container">
-                <div className="search-wrapper">
-                  <Search className="search-icon" size={20} />
-                  <input
-                    type="text"
-                    className="search-input"
-                    placeholder="Search textbooks, electronics..."
-                  />
-                  <div className="search-suggestions">
-                    <div className="search-suggestion">📚 Textbooks</div>
-                    <div className="search-suggestion">💻 Electronics</div>
-                    <div className="search-suggestion">🪑 Furniture</div>
-                  </div>
-                </div>
-              </div>
-
+           
               {/* Theme Toggle */}
               <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}>
                 <div className="theme-icon">
