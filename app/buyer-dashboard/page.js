@@ -39,19 +39,18 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
-// ProductViewModal is imported as default, so no need for ./quick-view/page
 import ProductViewModal from './quick-view/page'; 
 import { useWishlist } from '../../components/contexts/WishlistContext';
 import WishlistModal from './wishlist/page';
 import Link from 'next/link';
 
-// Updated useBuyer hook with real API integration
+
 const useBuyer = () => {
   const [buyer, setBuyer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch buyer profile from API
+
   const fetchBuyerProfile = async () => {
     try {
       setLoading(true);
@@ -59,10 +58,8 @@ const useBuyer = () => {
 
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
       if (!token) {
-        // If no token, set buyer to null and stop loading
         setBuyer(null);
         setLoading(false);
-        // Do not throw error here, just indicate no user is logged in
         return;
       }
 
@@ -78,8 +75,6 @@ const useBuyer = () => {
         if (response.status === 401) {
           localStorage.removeItem('buyerToken');
           localStorage.removeItem('token');
-          // Removed window.location.href = '/buyer-login'; to prevent immediate redirect
-          // when BuyerDashboard loads. Let the components decide to show login prompts.
           setBuyer(null); // Clear buyer data on auth failure
           setLoading(false);
           return;
@@ -93,25 +88,8 @@ const useBuyer = () => {
       console.error('Error fetching buyer profile:', error);
       setError(error.message);
 
-      // Fallback to mock data for development - ONLY FOR DEV, REMOVE IN PRODUCTION
-      // if (process.env.NODE_ENV === 'development') {
-      //   setBuyer({
-      //     _id: '1',
-      //     name: 'John Doe',
-      //     email: 'john.doe@university.edu',
-      //     phone: '+1 234 567 8900',
-      //     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      //     location: 'North Campus',
-      //     university: 'State University',
-      //     year: 'Junior',
-      //     createdAt: '2023-09-15T00:00:00.Z',
-      //     verified: true,
-      //     totalPurchases: 12,
-      //     totalSaved: 2450,
-      //     favoriteCategory: 'Electronics'
-      //   });
-      // } else {
-          setBuyer(null); // Ensure buyer is null if fetch fails in production
+      
+          setBuyer(null); 
       // }
     } finally {
       setLoading(false);
@@ -179,7 +157,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // 
     year: ''
   });
 
-  // Update form data when buyer data changes
+
   useEffect(() => {
     if (buyer) {
       setFormData({
@@ -194,21 +172,6 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // 
   }, [buyer]);
 
   const handleSave = async () => {
-    // Pass formData to updateProfile function if it exists in props or context
-    // This ProfileModal doesn't have updateProfile from useBuyer directly.
-    // It should ideally receive it as a prop from BuyerDashboard or rely on context.
-    // For now, assuming updateProfile is available via an inherited context or passed prop.
-    // If not, you'd need to re-implement the update logic here or pass `updateProfile` from `useBuyer`.
-    // For this example, let's assume updateProfile function is passed to ProfileModal.
-    // (This part of ProfileModal is outside the scope of the original request, but crucial).
-
-    // --- TEMPORARY FIX: For demonstration, use the context's updateProfile (if provided)
-    // If you pass `updateProfile` from `useBuyer` to `ProfileModal` as a prop:
-    // const result = await updateProfile(formData);
-    // Otherwise, you'd have to re-fetch the token and make the PUT request here.
-    // Given the `useBuyer` is already handling this, let's assume it passes the update function.
-    
-    // For now, I'll put a placeholder:
     alert('Save functionality needs to be wired up with a real updateProfile function passed as prop.');
     setIsEditing(false); // Simulate save
   };
@@ -224,7 +187,6 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // 
     window.location.href = '/buyer-login';
   };
 
-  // Add a check for buyer being null if it's not loaded or user is not logged in
   if (!isOpen || loading || !buyer) {
     if (loading) return (
       <div style={overlayStyle}>
@@ -234,8 +196,8 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // 
         </div>
       </div>
     );
-    // If modal is open but no buyer and not loading, it means not logged in
-    return null; // Or show a message "Please log in"
+
+    return null; 
   }
 
   const overlayStyle = {
@@ -356,9 +318,6 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // 
             width: '100%',
             marginTop: '1.5rem'
           }}>
-           
-            
-            
           </div>
         </div>
 
@@ -627,9 +586,7 @@ const BuyerDashboard = () => {
   });
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
-  // Mock data for development - Ensure this is your fallback for listings
   useEffect(() => {
-    // Only set mock data if listings are empty AND we're in development
     if (listings.length === 0 && process.env.NODE_ENV === 'development') {
       setListings([
         {
@@ -641,8 +598,8 @@ const BuyerDashboard = () => {
           category: 'textbooks',
           condition: 'Like New',
           location: 'North Campus',
-          seller: { // Ensure seller object is structured similarly to what ProductViewModal expects
-            id: '654321098765432109876544', // Example Seller ID
+          seller: { 
+            id: '654321098765432109876544', 
             name: 'Alice Johnson',
             avatar: 'https://ui-avatars.com/api/?name=Alice+Johnson&size=100&background=c084fc&color=ffffff',
             rating: 4.8,
@@ -792,7 +749,7 @@ const BuyerDashboard = () => {
   };
 
   const handleAddToCart = async (product) => {
-    // Use product._id if that's what your backend expects for cart
+
     const productIdToAdd = product.id || product._id;
     const success = await addToCart(productIdToAdd, 1);
     if (success) {
@@ -1248,8 +1205,6 @@ const BuyerDashboard = () => {
   const closeProductModal = () => {
     setSelectedProductId(null);
     setIsProductModalOpen(false);
-    // Optionally refetch buyer profile if it might have changed (e.g., after logging in from modal)
-    // buyerRefetch();
   };
 
   return (
@@ -1355,7 +1310,7 @@ const BuyerDashboard = () => {
                   Welcome back, {buyer.name?.split(' ')[0]}!
                 </h3>
                 <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.7 }}>
-                  {buyer.university} • {buyer.location}
+                  {buyer.university} - {buyer.year} year
                 </p>
               </div>
             )}

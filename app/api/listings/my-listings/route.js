@@ -25,6 +25,9 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .toArray();
 
+       const totalCount = await db.collection('listings')
+      .countDocuments({ sellerId: new ObjectId(userId) });
+
     // Transform the data for frontend
     const transformedListings = listings.map(listing => ({
       id: listing._id.toString(),
@@ -48,7 +51,7 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       listings: transformedListings,
-      total: transformedListings.length
+      total: totalCount
     });
 
   } catch (error) {

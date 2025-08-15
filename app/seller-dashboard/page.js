@@ -638,7 +638,7 @@ const SellerDashboard = () => {
           <div className={styles.statsGrid}>
             <StatCard
               icon={Heart}
-              value={sellerData?.savedItems || 0}
+              value={sellerData?.totalListings || 0}
               label="Total Listings"
               change="+3 this week"
               color="#ec4899"
