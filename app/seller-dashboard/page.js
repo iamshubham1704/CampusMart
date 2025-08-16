@@ -9,7 +9,7 @@ import {
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
-import Link from 'next/link';
+import NotificationBadge from '../../components/NotificationBadge';
 
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -637,24 +637,15 @@ const SellerDashboard = () => {
           {/* Stats Cards */}
           <div className={styles.statsGrid}>
             <StatCard
-              icon={Heart}
-              value={sellerData?.totalListings || 0}
-              label="Total Listings"
-              change="+3 this week"
-              color="#ec4899"
-            />
-            <StatCard
               icon={MessageSquare}
               value={sellerData?.activeChats || 0}
               label="Pending Messages"
-              change="+2 new today"
               color="#3b82f6"
             />
             <StatCard
               icon={Package}
               value={myListings.length}
               label="Active Listings"
-              change="This month"
               color="#10b981"
             />
             <StatCard

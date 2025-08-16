@@ -1,6 +1,6 @@
 // components/ChatWindow.js
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./ChatWindow.module.css";
 
 export default function ChatWindow({ conversation, currentUser, userType }) {
@@ -9,61 +9,106 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const autoRefreshRef = useRef(null);
 
-  ("=== ChatWindow Debug ===");
-  ("currentUser:", currentUser);
-  ("currentUser.id:", currentUser?.id);
-  ("userType:", userType);
-  ("conversation:", conversation);
-  ("========================");
+  console.log("=== ChatWindow Debug ===");
+  console.log("currentUser:", currentUser);
+  console.log("currentUser.id:", currentUser?.id);
+  console.log("currentUser._id:", currentUser?._id);
+  console.log("userType:", userType);
+  console.log("conversation:", conversation);
+  console.log("========================");
 
   useEffect(() => {
     if (conversation) {
       fetchMessages();
       markAsRead();
+      
+      // Set up auto-refresh for messages every 5 seconds
+      autoRefreshRef.current = setInterval(() => {
+        fetchMessages(false); // false = don't show loading
+      }, 5000);
     }
+
+    // Cleanup interval when conversation changes or component unmounts
+    return () => {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+      }
+    };
   }, [conversation]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchMessages = async () => {
+  const getCurrentUserId = useCallback(() => {
+    return currentUser?.id || currentUser?._id || currentUser?.sellerId || currentUser?.buyerId;
+  }, [currentUser]);
+
+  const fetchMessages = async (showLoading = true) => {
     if (!conversation) return;
 
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
+
+      console.log("Fetching messages for conversation:", conversation.id || conversation._id);
+
       const response = await fetch(
-        `/api/messages?conversationId=${conversation.id}`
+        `/api/messages?conversationId=${conversation.id || conversation._id}`
       );
       const data = await response.json();
 
       if (response.ok) {
+        console.log("Messages fetched:", data.messages);
         setMessages(data.messages);
+        
+        // Mark as read after fetching new messages
+        if (!showLoading) { // Only auto-mark as read during auto-refresh
+          markAsRead();
+        }
       } else {
         console.error("Error fetching messages:", data.error);
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
   const markAsRead = async () => {
     if (!conversation) return;
 
+    const userId = getCurrentUserId();
+    if (!userId) {
+      console.error("No user ID found for marking messages as read");
+      return;
+    }
+
     try {
-      await fetch("/api/messages/mark-read", {
+      const response = await fetch("/api/messages/mark-read", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          conversationId: conversation.id,
-          userId: currentUser.id || currentUser._id,
+          conversationId: conversation.id || conversation._id,
+          userId: userId,
         }),
       });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error("Error marking messages as read:", data.error);
+      } else {
+        console.log("Messages marked as read:", data);
+      }
     } catch (error) {
       console.error("Error marking messages as read:", error);
     }
@@ -73,16 +118,30 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
     e.preventDefault();
     if (!newMessage.trim() || !conversation || sending) return;
 
+    const userId = getCurrentUserId();
+    if (!userId) {
+      alert("Error: Unable to identify current user. Please refresh and try again.");
+      return;
+    }
+
     try {
       setSending(true);
+      
+      console.log("Sending message:", {
+        conversationId: conversation.id || conversation._id,
+        senderId: userId,
+        senderType: userType,
+        message: newMessage.trim(),
+      });
+
       const response = await fetch("/api/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          conversationId: conversation.id,
-          senderId: currentUser.id || currentUser._id,
+          conversationId: conversation.id || conversation._id,
+          senderId: userId,
           senderType: userType,
           message: newMessage.trim(),
         }),
@@ -91,9 +150,11 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
       const data = await response.json();
 
       if (response.ok) {
+        console.log("Message sent successfully:", data.message);
         setMessages((prev) => [...prev, data.message]);
         setNewMessage("");
       } else {
+        console.error("Error sending message:", data);
         alert("Error sending message: " + data.error);
       }
     } catch (error) {
@@ -110,14 +171,42 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
 
   const formatMessageTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) {
+      return "Just now";
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays === 1) {
+      return "Yesterday";
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const getOtherPartyName = () => {
+    if (userType === "buyer") {
+      return conversation.seller_name || "Seller";
+    } else {
+      return conversation.buyer_name || "Buyer";
+    }
   };
 
   if (!conversation) {
     return (
       <div className={styles.chatWindow}>
         <div className={styles.noConversation}>
-          <p>Select a conversation to start messaging</p>
+          <div className={styles.emptyStateIcon}>💬</div>
+          <h3>Select a conversation to start messaging</h3>
+          <p>Choose a conversation from the list to view and send messages</p>
         </div>
       </div>
     );
@@ -127,19 +216,21 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
     <div className={styles.chatWindow}>
       <div className={styles.chatHeader}>
         <div className={styles.chatHeaderInfo}>
-          <h3>
-            {userType === "buyer"
-              ? conversation.seller_name
-              : conversation.buyer_name}
-          </h3>
+          <h3>{getOtherPartyName()}</h3>
           {conversation.product_title && (
             <small>Re: {conversation.product_title}</small>
           )}
+          <div className={styles.userType}>
+            <span className={styles.userTypeBadge}>
+              You are: {userType}
+            </span>
+          </div>
         </div>
         <button
           className={styles.refreshBtn}
-          onClick={fetchMessages}
+          onClick={() => fetchMessages(true)}
           disabled={loading}
+          title="Refresh messages"
         >
           {loading ? "⟳" : "↻"}
         </button>
@@ -155,30 +246,35 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
                 <p>No messages yet. Start the conversation!</p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`${styles.messageItem} ${
-                    message.sender_id === (currentUser.id || currentUser._id)
-                      ? styles.ownMessage
-                      : styles.otherMessage
-                  }`}
-                >
-                  <div className={styles.messageContent}>
-                    <div className={styles.messageText}>{message.message}</div>
-                    <div className={styles.messageInfo}>
-                      <span className={styles.senderName}>
-                        {message.sender_id === (currentUser.id || currentUser._id)
-                          ? "You"
-                          : message.sender_name}
-                      </span>
-                      <span className={styles.messageTime}>
-                        {formatMessageTime(message.created_at)}
-                      </span>
+              messages.map((message) => {
+                const isOwnMessage = message.sender_id === getCurrentUserId();
+                
+                return (
+                  <div
+                    key={message.id || message._id}
+                    className={`${styles.messageItem} ${
+                      isOwnMessage ? styles.ownMessage : styles.otherMessage
+                    }`}
+                  >
+                    <div className={styles.messageContent}>
+                      <div className={styles.messageText}>{message.message}</div>
+                      <div className={styles.messageInfo}>
+                        <span className={styles.senderName}>
+                          {isOwnMessage ? "You" : (message.sender_name || getOtherPartyName())}
+                        </span>
+                        <span className={styles.messageTime}>
+                          {formatMessageTime(message.created_at)}
+                        </span>
+                        {message.read_at && isOwnMessage && (
+                          <span className={styles.readStatus} title="Message read">
+                            ✓✓
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
             <div ref={messagesEndRef} />
           </>
@@ -190,7 +286,7 @@ export default function ChatWindow({ conversation, currentUser, userType }) {
           <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={`Type your message to ${getOtherPartyName()}...`}
             className={styles.messageInput}
             rows="3"
             disabled={sending}

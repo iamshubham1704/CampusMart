@@ -1,24 +1,40 @@
 // components/ChatList.js
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styles from './ChatList.module.css';
 
 export default function ChatList({ userType, userId, onSelectChat, onNewChat }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
 
+  // Auto-refresh conversations every 30 seconds
   useEffect(() => {
     if (userId) {
       fetchConversations();
+      
+      // Set up auto-refresh
+      const interval = setInterval(() => {
+        fetchConversations(false); // false = don't show loading
+      }, 30000); // 30 seconds
+
+      return () => clearInterval(interval);
     }
   }, [userId, userType]);
 
-  const fetchConversations = async () => {
-    try {
-      setLoading(true);
+  const fetchConversations = useCallback(async (showLoading = true) => {
+    if (!userId) return;
 
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
+    try {
+      if (showLoading) {
+        setLoading(true);
+      }
+
+      // Get token from localStorage - try different possible token keys
+      const token = localStorage.getItem('token') || 
+                   localStorage.getItem('sellerToken') || 
+                   localStorage.getItem('buyerToken') ||
+                   localStorage.getItem('auth-token');
 
       const headers = {
         'Content-Type': 'application/json'
@@ -28,6 +44,8 @@ export default function ChatList({ userType, userId, onSelectChat, onNewChat }) 
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      console.log('Fetching conversations for:', { userType, userId });
+
       const response = await fetch(`/api/conversations?userType=${userType}&userId=${userId}`, {
         headers
       });
@@ -35,12 +53,19 @@ export default function ChatList({ userType, userId, onSelectChat, onNewChat }) 
       const data = await response.json();
 
       if (response.ok) {
+        console.log('Conversations fetched:', data.conversations);
         setConversations(data.conversations);
       } else {
         console.error('Error fetching conversations:', data.error);
 
         // Handle authentication errors
         if (response.status === 401) {
+          // Clear all possible tokens
+          localStorage.removeItem('token');
+          localStorage.removeItem('sellerToken');
+          localStorage.removeItem('buyerToken');
+          localStorage.removeItem('auth-token');
+          
           // Redirect to appropriate login page
           const loginPage = userType === 'buyer' ? '/buyer-login' : '/seller-login';
           window.location.href = loginPage;
@@ -50,15 +75,21 @@ export default function ChatList({ userType, userId, onSelectChat, onNewChat }) 
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
-  };
+  }, [userId, userType]);
 
   const handleChatSelect = (conversation) => {
+    console.log('Chat selected:', conversation);
+    setSelectedConversationId(conversation.id || conversation._id);
     onSelectChat(conversation);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
@@ -72,6 +103,15 @@ export default function ChatList({ userType, userId, onSelectChat, onNewChat }) 
       return `${diffDays} days ago`;
     } else {
       return date.toLocaleDateString();
+    }
+  };
+
+  // Function to get the other party's name
+  const getOtherPartyName = (conversation) => {
+    if (userType === 'buyer') {
+      return conversation.seller_name || 'Unknown Seller';
+    } else {
+      return conversation.buyer_name || 'Unknown Buyer';
     }
   };
 
@@ -93,7 +133,7 @@ export default function ChatList({ userType, userId, onSelectChat, onNewChat }) 
         <div className={styles.headerActions}>
           <button
             className={styles.refreshBtn}
-            onClick={fetchConversations}
+            onClick={() => fetchConversations(true)}
             title="Refresh"
           >
             ↻
@@ -128,20 +168,23 @@ export default function ChatList({ userType, userId, onSelectChat, onNewChat }) 
             )}
           </div>
         ) : (
-
           conversations.map((conversation) => (
             <div
-              key={conversation.id}
-              className={styles.conversationItem}
+              key={conversation.id || conversation._id}
+              className={`${styles.conversationItem} ${
+                (selectedConversationId === conversation.id || selectedConversationId === conversation._id) 
+                  ? styles.selected 
+                  : ''
+              }`}
               onClick={() => handleChatSelect(conversation)}
             >
               <div className={styles.conversationInfo}>
                 <div className={styles.conversationHeader}>
                   <span className={styles.otherUserName}>
-                    {userType === 'buyer' ? conversation.seller_name : conversation.buyer_name}
+                    {getOtherPartyName(conversation)}
                   </span>
                   <span className={styles.timestamp}>
-                    {formatDate(conversation.last_message_at || conversation.created_at)}
+                    {formatDate(conversation.last_message_at || conversation.updated_at || conversation.created_at)}
                   </span>
                 </div>
 
