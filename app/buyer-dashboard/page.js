@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
-import ProductViewModal from './quick-view/page'; 
+import ProductViewModal from './quick-view/page';
 import { useWishlist } from '../../components/contexts/WishlistContext';
 import WishlistModal from './wishlist/page';
 import Link from 'next/link';
@@ -88,8 +88,8 @@ const useBuyer = () => {
       console.error('Error fetching buyer profile:', error);
       setError(error.message);
 
-      
-          setBuyer(null); 
+
+      setBuyer(null);
       // }
     } finally {
       setLoading(false);
@@ -190,14 +190,14 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => { // 
   if (!isOpen || loading || !buyer) {
     if (loading) return (
       <div style={overlayStyle}>
-        <div style={{...modalStyle, textAlign: 'center'}}>
+        <div style={{ ...modalStyle, textAlign: 'center' }}>
           <Loader2 size={32} className="animate-spin" />
           <p>Loading profile...</p>
         </div>
       </div>
     );
 
-    return null; 
+    return null;
   }
 
   const overlayStyle = {
@@ -598,8 +598,8 @@ const BuyerDashboard = () => {
           category: 'textbooks',
           condition: 'Like New',
           location: 'North Campus',
-          seller: { 
-            id: '654321098765432109876544', 
+          seller: {
+            id: '654321098765432109876544',
             name: 'Alice Johnson',
             avatar: 'https://ui-avatars.com/api/?name=Alice+Johnson&size=100&background=c084fc&color=ffffff',
             rating: 4.8,
@@ -1246,7 +1246,7 @@ const BuyerDashboard = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Link href="/seller-login"><button style={{backgroundColor: '#3b82f6',fontSize: '1rem', color: 'white', padding: '1rem', borderRadius: '0.5rem'}}>Sell Item</button></Link>
+          <Link href="/seller-login"><button style={{ backgroundColor: '#3b82f6', fontSize: '1rem', color: 'white', padding: '1rem', borderRadius: '0.5rem' }}>Sell Item</button></Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button style={styles.actionButton} onClick={() => setIsDarkTheme(!isDarkTheme)}>
@@ -1641,7 +1641,7 @@ const BuyerDashboard = () => {
 
                       <div style={styles.priceSection}>
                         <div style={styles.currentPrice}>
-                          ₹{product.price}
+                          ₹{Math.round(product.price)}
                         </div>
                         {product.originalPrice > product.price && (
                           <>
@@ -1700,8 +1700,8 @@ const BuyerDashboard = () => {
         isDarkTheme={isDarkTheme}
         buyer={buyer} // Pass buyer data to ProfileModal
         loading={buyerLoading} // Pass loading state to ProfileModal
-        // If ProfileModal needs to update profile, you'd pass updateBuyerProfile here:
-        // updateProfile={updateBuyerProfile}
+      // If ProfileModal needs to update profile, you'd pass updateBuyerProfile here:
+      // updateProfile={updateBuyerProfile}
       />
 
       {/* Sidebar Overlay for Mobile */}

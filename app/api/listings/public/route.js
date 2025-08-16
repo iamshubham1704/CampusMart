@@ -84,7 +84,7 @@ export async function GET(request) {
       return {
         id: listing._id.toString(),
         title: listing.title || 'Untitled',
-        price: parseFloat(listing.price) || 0,
+        price: parseFloat(listing.price * 1.1) || 0,
         originalPrice: listing.originalPrice
           ? parseFloat(listing.originalPrice)
           : parseFloat(listing.price) * 1.3,

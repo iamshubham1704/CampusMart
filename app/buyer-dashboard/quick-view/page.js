@@ -531,33 +531,13 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                 {/* Right Side - Product Details */}
                 <div className="product-details-section">
                   <div className="price-section">
-                    <div className="price">₹ {product.price}</div>
+                    <div className="price">₹ {Math.round(product.price * 1.1)}</div>
                     {product.originalPrice && (
                       <>
                         <div className="original-price">₹{product.originalPrice}</div>
                         <div className="discount">save {calculateSavings()}%</div>
                       </>
                     )}
-                  </div>
-
-                  <div className="quantity-section">
-                    <label>Quantity</label>
-                    <div className="quantity-controls">
-                      <button
-                        className="qty-btn"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        disabled={quantity <= 1}
-                      >
-                        -
-                      </button>
-                      <span className="quantity-display">{quantity}</span>
-                      <button
-                        className="qty-btn"
-                        onClick={() => setQuantity(quantity + 1)}
-                      >
-                        +
-                      </button>
-                    </div>
                   </div>
 
                   <div className="payment-section">

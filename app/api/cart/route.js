@@ -50,15 +50,15 @@ export async function GET(request) {
         id: cartItem._id || cartItem.listingId,
         listingId: listing._id.toString(),
         title: listing.title,
-        price: parseFloat(listing.price),
+        price: Math.round(listing.price * 1.1),
         image: listing.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
         seller: listing.seller?.[0]?.name || listing.sellerName || 'Unknown Seller',
         condition: listing.condition,
         quantity: cartItem.quantity || 1,
         addedAt: cartItem.addedAt,
-        subtotal: (parseFloat(listing.price) * (cartItem.quantity || 1))
+        subtotal: (Math.round(listing.price * 1.1) * (cartItem.quantity || 1))
       };
-    }).filter(Boolean); // Remove null items
+    }).filter(Boolean);
 
     const totalItems = cartWithDetails.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cartWithDetails.reduce((sum, item) => sum + item.subtotal, 0);

@@ -28,13 +28,7 @@ const CartDrawer = () => {
     clearCart
   } = useCart();
 
-  const handleQuantityChange = async (listingId, newQuantity) => {
-    if (newQuantity < 1) {
-      await removeFromCart(listingId);
-    } else {
-      await updateQuantity(listingId, newQuantity);
-    }
-  };
+ 
 
   const handleCheckout = () => {
     // Implement checkout logic
@@ -104,23 +98,6 @@ const CartDrawer = () => {
                     </div>
 
                     <div className="item-actions">
-                      <div className="quantity-controls">
-                        <button
-                          className="quantity-btn"
-                          onClick={() => handleQuantityChange(item.listingId, item.quantity - 1)}
-                          disabled={isLoading}
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <span className="quantity">{item.quantity}</span>
-                        <button
-                          className="quantity-btn"
-                          onClick={() => handleQuantityChange(item.listingId, item.quantity + 1)}
-                          disabled={isLoading}
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
                       
                       <button
                         className="remove-item-btn"
