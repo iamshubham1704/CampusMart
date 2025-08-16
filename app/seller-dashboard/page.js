@@ -9,7 +9,7 @@ import {
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
-import NotificationBadge from '../../components/NotificationBadge';
+import Link from 'next/link';
 
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -627,8 +627,8 @@ const SellerDashboard = () => {
       </header>
 
       <div className={styles.mainLayout}>
-        {/* Sidebar */}
-        <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarMobileOpen : styles.sidebarMobile}`}>
+        {/* Left Sidebar Navigation - Always visible on desktop, mobile overlay */}
+        <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarMobileOpen : ''}`}>
           <nav className={styles.nav}>
             <div className={styles.navList}>
               <button
@@ -640,7 +640,10 @@ const SellerDashboard = () => {
               </button>
 
               <button
-                onClick={handleNavigation(() => router.push('/seller-dashboard/products'))}
+                onClick={handleNavigation(() => {
+                  setActiveTab('products');
+                  router.push('/seller-dashboard/products');
+                })}
                 className={`${styles.navItem} ${activeTab === 'products' ? styles.active : ''}`}
               >
                 <Package size={20} />
@@ -648,7 +651,10 @@ const SellerDashboard = () => {
               </button>
 
               <button
-                onClick={handleNavigation(() => router.push('/seller-dashboard/notifications'))}
+                onClick={handleNavigation(() => {
+                  setActiveTab('notifications');
+                  router.push('/seller-dashboard/notifications');
+                })}
                 className={`${styles.navItem} ${activeTab === 'notifications' ? styles.active : ''}`}
               >
                 <Bell size={20} />
@@ -656,7 +662,10 @@ const SellerDashboard = () => {
               </button>
 
               <button 
-                onClick={handleNavigation(() => router.push('/seller-dashboard/settings'))}
+                onClick={handleNavigation(() => {
+                  setActiveTab('settings');
+                  router.push('/seller-dashboard/settings');
+                })}
                 className={`${styles.navItem} ${activeTab === 'settings' ? styles.active : ''}`}
               >
                 <Settings size={20} />
@@ -686,15 +695,24 @@ const SellerDashboard = () => {
           {/* Stats Cards */}
           <div className={styles.statsGrid}>
             <StatCard
+              icon={Heart}
+              value={sellerData?.totalListings || 0}
+              label="Total Listings"
+              change="+3 this week"
+              color="#ec4899"
+            />
+            <StatCard
               icon={MessageSquare}
               value={sellerData?.activeChats || 0}
               label="Pending Messages"
+              change="+2 new today"
               color="#3b82f6"
             />
             <StatCard
               icon={Package}
               value={myListings.length}
               label="Active Listings"
+              change="This month"
               color="#10b981"
             />
             <StatCard

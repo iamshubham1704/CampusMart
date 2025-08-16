@@ -806,12 +806,7 @@ const BuyerDashboard = () => {
           <div className="contentHeader">
             <div className="resultsInfo">
               <h2>Found {filteredProducts.length} items</h2>
-              <p>
-                {getActiveFilterCount() > 0
-                  ? `${getActiveFilterCount()} filter${getActiveFilterCount() > 1 ? 's' : ''} applied`
-                  : 'Best deals for students'
-                }
-              </p>
+              
             </div>
 
             <div className="viewControls">

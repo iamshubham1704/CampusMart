@@ -22,8 +22,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0 16px;
   gap: 16px;
 }
 
@@ -135,8 +134,7 @@
 /* Layout */
 .mainLayout {
   display: flex;
-  max-width: 1400px;
-  margin: 0 auto;
+  
 }
 
 /* Sidebar Styles */
@@ -862,7 +860,17 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
+@media (max-width: 768px) {
+  .headerContent {
+    padding: 0 12px;
+  }
+}
 
+@media (max-width: 480px) {
+  .headerContent {
+    padding: 0 8px;
+  }
+}
 @media (max-width: 768px) {
   .header {
     padding: 8px 12px;
@@ -902,17 +910,24 @@
     flex-direction: column;
   }
   
+  @media (max-width: 768px) {
+  /* ... other styles ... */
   .sidebar {
     width: 100%;
     min-height: auto;
     position: fixed;
-    top: 64px;
+    top: 0; /* Changed: Align to the top of the viewport */
     left: 0;
-    height: calc(100vh - 64px);
+    height: 100vh; /* Changed: Make it full height */
+    padding-top: 90px; /* Added: Pushes nav items below the header */
+    background-color: #1e3a8a; /* Added: Makes background solid */
     z-index: 998;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
+    overflow-y: auto; /* Added: Allows scrolling if content is long */
   }
+  /* ... other styles ... */
+}
   
   .sidebarMobileOpen {
     transform: translateX(0);

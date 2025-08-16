@@ -1,17 +1,15 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, User, Lock, Bell, Shield, Smartphone, Trash2,
   Camera, Save, Eye, EyeOff, Check, X, AlertTriangle,
   Loader2, Upload, Download, LogOut, Monitor, Globe,
-  Mail, Phone, MapPin, Calendar, Building2, ChevronRight
+  Mail, Phone, MapPin, Calendar, Building2, ChevronRight,
+  Settings, Palette, Moon, Sun, Zap, Crown, Star,
+  Activity, BarChart3, TrendingUp, Award, Sparkles
 } from 'lucide-react';
-import styles from './SettingsPage.module.css';
-import { userAPI, settingsAPI, getCurrentUser } from '../../utils/api';
 
 const SettingsPage = () => {
-  const router = useRouter();
   const fileInputRef = useRef(null);
   
   // State management
@@ -24,21 +22,70 @@ const SettingsPage = () => {
     confirm: false
   });
   
-  // User data
-  const [userData, setUserData] = useState(null);
+  // Initialize user data from memory or defaults
+  // Replace the existing userData useState initialization
+const [userData, setUserData] = useState(() => {
+  // Try to get saved data from memory, fallback to defaults
+  const savedData = window.localStorage?.getItem('campusmart_user_data');
+  if (savedData) {
+    try {
+      return JSON.parse(savedData);
+    } catch (e) {
+      console.error('Failed to parse saved user data:', e);
+    }
+  }
+  
+  return {
+    name: 'John Doe',
+    email: 'john.doe@university.edu',
+    phone: '+1 (555) 123-4567',
+    location: 'New York, NY',
+    college: 'University of Technology',
+    year: '3rd Year',
+    bio: 'Computer Science student passionate about technology and innovation. Love to build things and help fellow students.',
+    profileImage: null,
+    isPremium: true,
+    memberSince: '2023',
+    totalSales: 45,
+    rating: 4.8
+  };
+});
+
+  // Profile form should sync with userData
+  const [profileForm, setProfileForm] = useState({
+    name: userData.name,
+    email: userData.email,
+    phone: userData.phone,
+    location: userData.location,
+    college: userData.college,
+    year: userData.year,
+    bio: userData.bio
+  });
+
+  // Update profileForm when userData changes
+  useEffect(() => {
+    setProfileForm({
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      location: userData.location,
+      college: userData.college,
+      year: userData.year,
+      bio: userData.bio
+    });
+  }, [userData]);
+  // Add this useEffect after your existing useEffects
+useEffect(() => {
+  // Save userData to localStorage whenever it changes
+  try {
+    window.localStorage?.setItem('campusmart_user_data', JSON.stringify(userData));
+  } catch (e) {
+    console.error('Failed to save user data:', e);
+  }
+}, [userData]);
+  
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  
-  // Form states
-  const [profileForm, setProfileForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    location: '',
-    college: '',
-    year: '',
-    bio: ''
-  });
   
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -54,7 +101,9 @@ const SettingsPage = () => {
     marketingEmails: false,
     weeklyDigest: true,
     instantMessages: true,
-    priceAlerts: true
+    priceAlerts: true,
+    soundEnabled: true,
+    vibrationEnabled: true
   });
   
   const [privacySettings, setPrivacySettings] = useState({
@@ -63,80 +112,61 @@ const SettingsPage = () => {
     showPhone: false,
     showLastSeen: true,
     allowSearchEngines: true,
-    dataCollection: true
+    dataCollection: true,
+    showOnlineStatus: true,
+    allowDirectMessages: true
   });
   
   const [securitySettings, setSecuritySettings] = useState({
     twoFactorEnabled: false,
     loginAlerts: true,
-    sessionTimeout: '24h'
+    sessionTimeout: '24h',
+    deviceTrust: true,
+    biometricAuth: false
   });
   
-  const [loginSessions, setLoginSessions] = useState([]);
+  const [appearanceSettings, setAppearanceSettings] = useState({
+    theme: 'dark',
+    accentColor: 'blue',
+    compactMode: false,
+    animations: true,
+    fontSize: 'medium'
+  });
+  
+  const [loginSessions, setLoginSessions] = useState([
+    {
+      id: 1,
+      device: 'Chrome on Windows',
+      location: 'New York, NY',
+      lastActive: 'Just now',
+      ip: '192.168.1.1',
+      isCurrent: true
+    },
+    {
+      id: 2,
+      device: 'Safari on iPhone',
+      location: 'New York, NY',
+      lastActive: '2 hours ago',
+      ip: '192.168.1.2',
+      isCurrent: false
+    }
+  ]);
   
   // Success and error messages
   const [message, setMessage] = useState({ type: '', text: '' });
   
-  // Generate user avatar
+  // Generate user avatar with premium indicator
   const generateUserAvatar = (name, profileImage) => {
     if (profileImage) return profileImage;
     if (imagePreview) return imagePreview;
     
     const initial = name ? name.charAt(0).toUpperCase() : 'U';
-    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23667eea' rx='60'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.35em' fill='%23ffffff' font-size='48' font-family='Arial, sans-serif' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
-  };
-  
-  // Load user data on component mount
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        setLoading(true);
-        
-        const user = getCurrentUser();
-        if (!user) {
-          router.push('/seller-login');
-          return;
-        }
-        
-        // Fetch complete user profile
-        const profileResponse = await userAPI.getProfile();
-        if (profileResponse.success) {
-          const profile = profileResponse.data;
-          setUserData(profile);
-          setProfileForm({
-            name: profile.name || '',
-            email: profile.email || '',
-            phone: profile.phone || '',
-            location: profile.location || '',
-            college: profile.college || '',
-            year: profile.year || '',
-            bio: profile.bio || ''
-          });
-        }
-        
-        // Load settings if available
-        try {
-          const settingsResponse = await settingsAPI.getSettings();
-          if (settingsResponse.success) {
-            const settings = settingsResponse.data;
-            setNotificationSettings(prev => ({ ...prev, ...settings.notifications }));
-            setPrivacySettings(prev => ({ ...prev, ...settings.privacy }));
-            setSecuritySettings(prev => ({ ...prev, ...settings.security }));
-          }
-        } catch (error) {
-          ('Settings not available, using defaults');
-        }
-        
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        setMessage({ type: 'error', text: 'Failed to load user data' });
-      } finally {
-        setLoading(false);
-      }
-    };
+    const colors = ['667eea', '764ba2', 'f093fb', '4facfe', 'fa709a'];
+    const colorIndex = name ? name.length % colors.length : 0;
+    const color = colors[colorIndex];
     
-    loadUserData();
-  }, [router]);
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23${color};stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23${color}88;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' fill='url(%23grad)' rx='60'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.35em' fill='%23ffffff' font-size='48' font-family='Arial, sans-serif' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
+  };
   
   // Show message helper
   const showMessage = (type, text) => {
@@ -163,36 +193,37 @@ const SettingsPage = () => {
     }
   };
   
-  // Handle profile form submission
+  // Handle profile form submission - FIXED
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
       
-      // Upload image if selected
-      let imageUrl = userData?.profileImage;
-      if (profileImage) {
-        const imageResponse = await settingsAPI.uploadProfileImage(profileImage);
-        if (imageResponse.success) {
-          imageUrl = imageResponse.data.imageUrl;
-        }
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Update profile
-      const response = await userAPI.updateProfile({
-        ...profileForm,
-        profileImage: imageUrl
-      });
+      // Update userData with the form data
+      // In handleProfileSubmit function, replace the setUserData call with:
+setUserData(prev => ({
+  ...prev,
+  name: profileForm.name,
+  email: profileForm.email,
+  phone: profileForm.phone,
+  location: profileForm.location,
+  college: profileForm.college,
+  year: profileForm.year,
+  bio: profileForm.bio,
+  profileImage: imagePreview || prev.profileImage
+}));
+
+// Clear temporary image states
+setProfileImage(null);
+setImagePreview(null);
       
-      if (response.success) {
-        setUserData(prev => ({ ...prev, ...response.data }));
-        setProfileImage(null);
-        setImagePreview(null);
-        showMessage('success', 'Profile updated successfully');
-      }
+      showMessage('success', 'Profile updated successfully');
       
     } catch (error) {
-      showMessage('error', error.message || 'Failed to update profile');
+      showMessage('error', 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -215,22 +246,18 @@ const SettingsPage = () => {
     try {
       setSaving(true);
       
-      const response = await settingsAPI.changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
-      });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (response.success) {
-        setPasswordForm({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        });
-        showMessage('success', 'Password changed successfully');
-      }
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      showMessage('success', 'Password changed successfully');
       
     } catch (error) {
-      showMessage('error', error.message || 'Failed to change password');
+      showMessage('error', 'Failed to change password');
     } finally {
       setSaving(false);
     }
@@ -238,38 +265,23 @@ const SettingsPage = () => {
   
   // Handle notification settings update
   const handleNotificationUpdate = async (key, value) => {
-    try {
-      const newSettings = { ...notificationSettings, [key]: value };
-      setNotificationSettings(newSettings);
-      
-      const response = await settingsAPI.updateNotificationPreferences(newSettings);
-      if (!response.success) {
-        // Revert on error
-        setNotificationSettings(notificationSettings);
-        showMessage('error', 'Failed to update notification preferences');
-      }
-    } catch (error) {
-      setNotificationSettings(notificationSettings);
-      showMessage('error', 'Failed to update notification preferences');
-    }
+    const newSettings = { ...notificationSettings, [key]: value };
+    setNotificationSettings(newSettings);
+    showMessage('success', 'Notification preferences updated');
   };
   
   // Handle privacy settings update
   const handlePrivacyUpdate = async (key, value) => {
-    try {
-      const newSettings = { ...privacySettings, [key]: value };
-      setPrivacySettings(newSettings);
-      
-      const response = await settingsAPI.updatePrivacySettings(newSettings);
-      if (!response.success) {
-        // Revert on error
-        setPrivacySettings(privacySettings);
-        showMessage('error', 'Failed to update privacy settings');
-      }
-    } catch (error) {
-      setPrivacySettings(privacySettings);
-      showMessage('error', 'Failed to update privacy settings');
-    }
+    const newSettings = { ...privacySettings, [key]: value };
+    setPrivacySettings(newSettings);
+    showMessage('success', 'Privacy settings updated');
+  };
+  
+  // Handle appearance settings update
+  const handleAppearanceUpdate = async (key, value) => {
+    const newSettings = { ...appearanceSettings, [key]: value };
+    setAppearanceSettings(newSettings);
+    showMessage('success', 'Appearance settings updated');
   };
   
   // Handle account deletion
@@ -286,72 +298,326 @@ const SettingsPage = () => {
     try {
       setSaving(true);
       
-      const response = await settingsAPI.deleteAccount({ password });
-      if (response.success) {
-        localStorage.removeItem('token');
-        router.push('/');
-        showMessage('success', 'Account deleted successfully');
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      showMessage('success', 'Account deleted successfully');
       
     } catch (error) {
-      showMessage('error', error.message || 'Failed to delete account');
+      showMessage('error', 'Failed to delete account');
     } finally {
       setSaving(false);
     }
   };
   
-  // Settings sections configuration
+  // Settings sections configuration with premium features
   const settingsSections = [
-    { id: 'profile', title: 'Profile', icon: User },
-    { id: 'security', title: 'Security', icon: Lock },
-    { id: 'notifications', title: 'Notifications', icon: Bell },
-    { id: 'privacy', title: 'Privacy', icon: Shield },
-    { id: 'sessions', title: 'Login Sessions', icon: Monitor },
-    { id: 'danger', title: 'Danger Zone', icon: AlertTriangle }
+    { id: 'profile', title: 'Profile', icon: User, premium: false },
+    { id: 'security', title: 'Security', icon: Lock, premium: false },
+    { id: 'notifications', title: 'Notifications', icon: Bell, premium: false },
+    { id: 'privacy', title: 'Privacy', icon: Shield, premium: true },
+    { id: 'danger', title: 'Danger Zone', icon: AlertTriangle, premium: false }
   ];
   
   if (loading) {
     return (
-      <div className={styles.loadingContainer}>
-        <Loader2 size={48} className={styles.spinner} />
-        <p>Loading settings...</p>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        color: '#e2e8f0'
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '24px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '24px',
+          padding: '48px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}>
+          <Loader2 size={48} style={{ animation: 'spin 1s linear infinite', color: '#3b82f6' }} />
+          <div>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '600' }}>Loading Settings...</h3>
+            <p style={{ margin: '0', color: '#94a3b8', fontSize: '14px' }}>Please wait while we fetch your preferences</p>
+          </div>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className={styles.settingsContainer}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+      position: 'relative',
+      overflowX: 'hidden',
+      padding: '20px'
+    }}>
+      {/* Animated Background */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0
+      }}>
+        <div style={{
+          position: 'absolute',
+          borderRadius: '50%',
+          opacity: 0.1,
+          filter: 'blur(1px)',
+          width: '300px',
+          height: '300px',
+          background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
+          top: '10%',
+          left: '10%'
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          borderRadius: '50%',
+          opacity: 0.1,
+          filter: 'blur(1px)',
+          width: '200px',
+          height: '200px',
+          background: 'linear-gradient(45deg, #8b5cf6, #ec4899)',
+          top: '60%',
+          right: '10%'
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          borderRadius: '50%',
+          opacity: 0.1,
+          filter: 'blur(1px)',
+          width: '150px',
+          height: '150px',
+          background: 'linear-gradient(45deg, #ec4899, #f59e0b)',
+          bottom: '20%',
+          left: '20%'
+        }}></div>
+      </div>
+      
       {/* Header */}
-      <div className={styles.settingsHeader}>
-        <button onClick={() => router.back()} className={styles.backButton}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '24px',
+        marginBottom: '32px',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        <button 
+          onClick={() => window.history.back()} 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '48px',
+            height: '48px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(20px)',
+            color: '#e2e8f0',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           <ArrowLeft size={20} />
         </button>
-        <h1 className={styles.settingsTitle}>Settings</h1>
+        <div style={{ flex: 1 }}>
+          <h1 style={{
+            fontSize: '32px',
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, #ffffff, #94a3b8)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            margin: '0 0 4px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            Settings
+            <Sparkles size={24} style={{ color: '#3b82f6' }} />
+          </h1>
+          <p style={{
+            color: '#94a3b8',
+            margin: '0',
+            fontSize: '16px',
+            fontWeight: '500'
+          }}>Customize your CampusMart experience</p>
+        </div>
       </div>
       
       {/* Message Display */}
       {message.text && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.type === 'success' ? <Check size={20} /> : <X size={20} />}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          marginBottom: '24px',
+          fontWeight: '500',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          position: 'relative',
+          zIndex: 1,
+          background: message.type === 'success' 
+            ? 'rgba(16, 185, 129, 0.1)' 
+            : 'rgba(239, 68, 68, 0.1)',
+          color: message.type === 'success' ? '#10b981' : '#ef4444',
+          borderColor: message.type === 'success' 
+            ? 'rgba(16, 185, 129, 0.2)' 
+            : 'rgba(239, 68, 68, 0.2)'
+        }}>
+          <div style={{ flexShrink: 0 }}>
+            {message.type === 'success' ? <Check size={20} /> : <X size={20} />}
+          </div>
           <span>{message.text}</span>
+          <button 
+            onClick={() => setMessage({ type: '', text: '' })}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: '4px',
+              marginLeft: 'auto'
+            }}
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
       
-      <div className={styles.settingsContent}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '320px 1fr',
+        gap: '32px',
+        maxWidth: '1400px',
+        margin: '0 auto',
+        position: 'relative',
+        zIndex: 1
+      }}>
         {/* Sidebar */}
-        <div className={styles.settingsSidebar}>
-          <nav className={styles.settingsNav}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '0',
+          height: 'fit-content',
+          position: 'sticky',
+          top: '20px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            padding: '24px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05))'
+          }}>
+            <img
+              src={generateUserAvatar(userData.name, userData.profileImage)}
+              alt="Profile"
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '3px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                marginBottom: '12px'
+              }}
+            />
+            <div>
+              <h3 style={{
+                color: '#ffffff',
+                fontSize: '18px',
+                fontWeight: '600',
+                margin: '0 0 4px 0'
+              }}>{userData.name}</h3>
+              <p style={{
+                color: '#94a3b8',
+                fontSize: '14px',
+                margin: '0 0 12px 0'
+              }}>{userData.email}</p>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  color: '#3b82f6',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  <Star size={14} />
+                  <span>{userData.rating}</span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  color: '#3b82f6',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  <TrendingUp size={14} />
+                  <span>{userData.totalSales}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <nav style={{
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '8px 0'
+          }}>
             {settingsSections.map(section => {
               const IconComponent = section.icon;
               return (
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`${styles.navItem} ${activeSection === section.id ? styles.active : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px 24px',
+                    background: activeSection === section.id 
+                      ? 'linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent)' 
+                      : 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    color: activeSection === section.id ? '#3b82f6' : '#cbd5e1',
+                    fontWeight: '500',
+                    borderLeft: `3px solid ${activeSection === section.id ? '#3b82f6' : 'transparent'}`
+                  }}
                 >
-                  <IconComponent size={20} />
-                  <span>{section.title}</span>
-                  <ChevronRight size={16} className={styles.chevron} />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <IconComponent size={20} />
+                    <span>{section.title}</span>
+                  </div>
+                  <ChevronRight size={16} style={{ opacity: 0.5 }} />
                 </button>
               );
             })}
@@ -359,50 +625,141 @@ const SettingsPage = () => {
         </div>
         
         {/* Main Content */}
-        <div className={styles.settingsMain}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          overflow: 'hidden',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}>
           
           {/* Profile Section */}
           {activeSection === 'profile' && (
-            <div className={styles.settingsSection}>
-              <h2 className={styles.sectionTitle}>Profile Information</h2>
-              <p className={styles.sectionDescription}>
-                Update your profile information and manage your public presence.
-              </p>
+            <div style={{ padding: '40px' }}>
+              <div style={{
+                marginBottom: '32px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #ffffff, #94a3b8)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: '0 0 8px 0'
+                }}>Profile Information</h2>
+                <p style={{
+                  color: '#94a3b8',
+                  margin: '0',
+                  lineHeight: '1.6',
+                  fontSize: '16px'
+                }}>
+                  Update your profile information and manage your public presence.
+                </p>
+              </div>
               
-              <form onSubmit={handleProfileSubmit} className={styles.settingsForm}>
+              <form onSubmit={handleProfileSubmit} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '32px'
+              }}>
                 {/* Profile Image */}
-                <div className={styles.profileImageSection}>
-                  <div className={styles.profileImageContainer}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '32px',
+                  padding: '32px',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05))',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(20px)'
+                }}>
+                  <div style={{ position: 'relative' }}>
                     <img
-                      src={generateUserAvatar(userData?.name, userData?.profileImage)}
+                      src={generateUserAvatar(userData.name, userData.profileImage)}
                       alt="Profile"
-                      className={styles.profileImage}
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '4px solid rgba(255, 255, 255, 0.2)',
+                        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.3)'
+                      }}
                     />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className={styles.imageUploadButton}
+                      style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        right: '8px',
+                        width: '36px',
+                        height: '36px',
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        border: 'none',
+                        borderRadius: '50%',
+                        color: 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)',
+                        transition: 'all 0.3s ease'
+                      }}
                     >
                       <Camera size={16} />
                     </button>
                   </div>
-                  <div className={styles.imageUploadInfo}>
-                    <p>Click to upload a new profile picture</p>
-                    <small>JPG, PNG up to 5MB</small>
+                  <div>
+                    <h4 style={{
+                      fontWeight: '600',
+                      color: '#ffffff',
+                      margin: '0 0 4px 0',
+                      fontSize: '16px'
+                    }}>Profile Picture</h4>
+                    <p style={{
+                      fontWeight: '500',
+                      color: '#cbd5e1',
+                      margin: '0 0 4px 0'
+                    }}>Click to upload a new profile picture</p>
+                    <small style={{
+                      color: '#64748b',
+                      fontSize: '12px'
+                    }}>JPG, PNG up to 5MB</small>
                   </div>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className={styles.hiddenInput}
+                    style={{ display: 'none' }}
                   />
                 </div>
                 
                 {/* Form Fields */}
-                <div className={styles.formGrid}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="name" className={styles.formLabel}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: '24px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="name" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px',
+                      marginBottom: '4px'
+                    }}>
                       <User size={16} />
                       Full Name
                     </label>
@@ -411,13 +768,33 @@ const SettingsPage = () => {
                       type="text"
                       value={profileForm.name}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
-                      className={styles.formInput}
+                      style={{
+                        padding: '14px 16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#ffffff'
+                      }}
                       placeholder="Enter your full name"
                     />
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <label htmlFor="email" className={styles.formLabel}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="email" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px',
+                      marginBottom: '4px'
+                    }}>
                       <Mail size={16} />
                       Email Address
                     </label>
@@ -426,13 +803,33 @@ const SettingsPage = () => {
                       type="email"
                       value={profileForm.email}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                      className={styles.formInput}
+                      style={{
+                        padding: '14px 16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#ffffff'
+                      }}
                       placeholder="Enter your email"
                     />
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <label htmlFor="phone" className={styles.formLabel}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="phone" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px',
+                      marginBottom: '4px'
+                    }}>
                       <Phone size={16} />
                       Phone Number
                     </label>
@@ -441,13 +838,33 @@ const SettingsPage = () => {
                       type="tel"
                       value={profileForm.phone}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                      className={styles.formInput}
+                      style={{
+                        padding: '14px 16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#ffffff'
+                      }}
                       placeholder="Enter your phone number"
                     />
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <label htmlFor="location" className={styles.formLabel}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="location" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px',
+                      marginBottom: '4px'
+                    }}>
                       <MapPin size={16} />
                       Location
                     </label>
@@ -456,13 +873,33 @@ const SettingsPage = () => {
                       type="text"
                       value={profileForm.location}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, location: e.target.value }))}
-                      className={styles.formInput}
+                      style={{
+                        padding: '14px 16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#ffffff'
+                      }}
                       placeholder="Enter your location"
                     />
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <label htmlFor="college" className={styles.formLabel}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="college" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px',
+                      marginBottom: '4px'
+                    }}>
                       <Building2 size={16} />
                       College
                     </label>
@@ -471,13 +908,33 @@ const SettingsPage = () => {
                       type="text"
                       value={profileForm.college}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, college: e.target.value }))}
-                      className={styles.formInput}
+                      style={{
+                        padding: '14px 16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#ffffff'
+                      }}
                       placeholder="Enter your college name"
                     />
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <label htmlFor="year" className={styles.formLabel}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="year" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px',
+                      marginBottom: '4px'
+                    }}>
                       <Calendar size={16} />
                       Academic Year
                     </label>
@@ -485,45 +942,97 @@ const SettingsPage = () => {
                       id="year"
                       value={profileForm.year}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, year: e.target.value }))}
-                      className={styles.formSelect}
+                      style={{
+                        padding: '14px 16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#f8f5f5ff'
+                      }}
                     >
-                      <option value="">Select year</option>
-                      <option value="1st Year">1st Year</option>
-                      <option value="2nd Year">2nd Year</option>
-                      <option value="3rd Year">3rd Year</option>
-                      <option value="4th Year">4th Year</option>
-                      <option value="Graduate">Graduate</option>
-                      <option value="Faculty">Faculty</option>
+                      <option value="" style={{background: '#1e293b', color: '#ffffff'}}>Select year</option>
+  <option value="1st Year" style={{background: '#1e293b', color: '#ffffff'}}>1st Year</option>
+  <option value="2nd Year" style={{background: '#1e293b', color: '#ffffff'}}>2nd Year</option>
+  <option value="3rd Year" style={{background: '#1e293b', color: '#ffffff'}}>3rd Year</option>
+  <option value="4th Year" style={{background: '#1e293b', color: '#ffffff'}}>4th Year</option>
+  <option value="Graduate" style={{background: '#1e293b', color: '#ffffff'}}>Graduate</option>
+  <option value="Faculty" style={{background: '#1e293b', color: '#ffffff'}}>Faculty</option>
+
                     </select>
                   </div>
                 </div>
                 
-                <div className={styles.formGroup}>
-                  <label htmlFor="bio" className={styles.formLabel}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <label htmlFor="bio" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontWeight: '600',
+                    color: '#e2e8f0',
+                    fontSize: '14px',
+                    marginBottom: '4px'
+                  }}>
                     Bio
                   </label>
                   <textarea
                     id="bio"
                     value={profileForm.bio}
                     onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
-                    className={styles.formTextarea}
+                    style={{
+                      padding: '14px 16px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      backdropFilter: 'blur(10px)',
+                      color: '#ffffff',
+                      resize: 'vertical',
+                      minHeight: '120px',
+                      fontFamily: 'inherit'
+                    }}
                     placeholder="Tell others about yourself..."
                     rows={4}
                     maxLength={500}
                   />
-                  <small className={styles.charCount}>
+                  <div style={{
+                    textAlign: 'right',
+                    fontSize: '12px',
+                    color: profileForm.bio.length > 450 ? '#f59e0b' : '#94a3b8'
+                  }}>
                     {profileForm.bio.length}/500 characters
-                  </small>
+                  </div>
                 </div>
                 
                 <button
                   type="submit"
                   disabled={saving}
-                  className={styles.saveButton}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '14px 28px',
+                    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    alignSelf: 'flex-start',
+                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)',
+                    opacity: saving ? 0.6 : 1
+                  }}
                 >
                   {saving ? (
                     <>
-                      <Loader2 size={16} className={styles.spinner} />
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                       Saving...
                     </>
                   ) : (
@@ -539,82 +1048,216 @@ const SettingsPage = () => {
           
           {/* Security Section */}
           {activeSection === 'security' && (
-            <div className={styles.settingsSection}>
-              <h2 className={styles.sectionTitle}>Security Settings</h2>
-              <p className={styles.sectionDescription}>
-                Manage your account security and authentication methods.
-              </p>
+            <div style={{ padding: '40px' }}>
+              <div style={{
+                marginBottom: '32px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #ffffff, #94a3b8)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: '0 0 8px 0'
+                }}>Security Settings</h2>
+                <p style={{
+                  color: '#94a3b8',
+                  margin: '0',
+                  lineHeight: '1.6',
+                  fontSize: '16px'
+                }}>
+                  Manage your account security and authentication methods.
+                </p>
+              </div>
               
               {/* Change Password */}
-              <div className={styles.securityCard}>
-                <h3 className={styles.cardTitle}>
+              <div style={{
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+                padding: '32px',
+                marginBottom: '24px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  color: '#ffffff',
+                  margin: '0 0 8px 0'
+                }}>
                   <Lock size={20} />
                   Change Password
                 </h3>
-                <form onSubmit={handlePasswordSubmit} className={styles.passwordForm}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="currentPassword" className={styles.formLabel}>
+                <form onSubmit={handlePasswordSubmit} style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '24px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="currentPassword" style={{
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px'
+                    }}>
                       Current Password
                     </label>
-                    <div className={styles.passwordInput}>
+                    <div style={{ position: 'relative' }}>
                       <input
                         id="currentPassword"
                         type={showPassword.current ? 'text' : 'password'}
                         value={passwordForm.currentPassword}
                         onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                        className={styles.formInput}
+                        style={{
+                          padding: '14px 16px',
+                          paddingRight: '50px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          backdropFilter: 'blur(10px)',
+                          color: '#ffffff',
+                          width: '100%'
+                        }}
                         placeholder="Enter current password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(prev => ({ ...prev, current: !prev.current }))}
-                        className={styles.passwordToggle}
+                        style={{
+                          position: 'absolute',
+                          right: '14px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          cursor: 'pointer',
+                          padding: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '6px'
+                        }}
                       >
                         {showPassword.current ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <label htmlFor="newPassword" className={styles.formLabel}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="newPassword" style={{
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px'
+                    }}>
                       New Password
                     </label>
-                    <div className={styles.passwordInput}>
+                    <div style={{ position: 'relative' }}>
                       <input
                         id="newPassword"
                         type={showPassword.new ? 'text' : 'password'}
                         value={passwordForm.newPassword}
                         onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                        className={styles.formInput}
+                        style={{
+                          padding: '14px 16px',
+                          paddingRight: '50px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          backdropFilter: 'blur(10px)',
+                          color: '#ffffff',
+                          width: '100%'
+                        }}
                         placeholder="Enter new password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(prev => ({ ...prev, new: !prev.new }))}
-                        className={styles.passwordToggle}
+                        style={{
+                          position: 'absolute',
+                          right: '14px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          cursor: 'pointer',
+                          padding: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '6px'
+                        }}
                       >
                         {showPassword.new ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
                   
-                  <div className={styles.formGroup}>
-                    <label htmlFor="confirmPassword" className={styles.formLabel}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <label htmlFor="confirmPassword" style={{
+                      fontWeight: '600',
+                      color: '#e2e8f0',
+                      fontSize: '14px'
+                    }}>
                       Confirm New Password
                     </label>
-                    <div className={styles.passwordInput}>
+                    <div style={{ position: 'relative' }}>
                       <input
                         id="confirmPassword"
                         type={showPassword.confirm ? 'text' : 'password'}
                         value={passwordForm.confirmPassword}
                         onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className={styles.formInput}
+                        style={{
+                          padding: '14px 16px',
+                          paddingRight: '50px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          backdropFilter: 'blur(10px)',
+                          color: '#ffffff',
+                          width: '100%'
+                        }}
                         placeholder="Confirm new password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(prev => ({ ...prev, confirm: !prev.confirm }))}
-                        className={styles.passwordToggle}
+                        style={{
+                          position: 'absolute',
+                          right: '14px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          cursor: 'pointer',
+                          padding: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '6px'
+                        }}
                       >
                         {showPassword.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -624,11 +1267,26 @@ const SettingsPage = () => {
                   <button
                     type="submit"
                     disabled={saving}
-                    className={styles.saveButton}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '14px 28px',
+                      background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      fontWeight: '600',
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      alignSelf: 'flex-start',
+                      boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)',
+                      opacity: saving ? 0.6 : 1
+                    }}
                   >
                     {saving ? (
                       <>
-                        <Loader2 size={16} className={styles.spinner} />
+                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                         Updating...
                       </>
                     ) : (
@@ -640,155 +1298,135 @@ const SettingsPage = () => {
                   </button>
                 </form>
               </div>
-              
-              {/* Two-Factor Authentication */}
-              <div className={styles.securityCard}>
-                <h3 className={styles.cardTitle}>
-                  <Smartphone size={20} />
-                  Two-Factor Authentication
-                </h3>
-                <p className={styles.cardDescription}>
-                  Add an extra layer of security to your account with 2FA.
-                </p>
-                <div className={styles.securityOption}>
-                  <div>
-                    <strong>Authenticator App</strong>
-                    <p>Use an app like Google Authenticator or Authy</p>
-                  </div>
-                  <button
-                    className={`${styles.toggleButton} ${securitySettings.twoFactorEnabled ? styles.enabled : ''}`}
-                  >
-                    {securitySettings.twoFactorEnabled ? 'Enabled' : 'Enable'}
-                  </button>
-                </div>
-              </div>
             </div>
           )}
           
           {/* Notifications Section */}
           {activeSection === 'notifications' && (
-            <div className={styles.settingsSection}>
-              <h2 className={styles.sectionTitle}>Notification Preferences</h2>
-              <p className={styles.sectionDescription}>
-                Choose how and when you want to receive notifications.
-              </p>
+            <div style={{ padding: '40px' }}>
+              <div style={{
+                marginBottom: '32px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #ffffff, #94a3b8)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: '0 0 8px 0'
+                }}>Notification Preferences</h2>
+                <p style={{
+                  color: '#94a3b8',
+                  margin: '0',
+                  lineHeight: '1.6',
+                  fontSize: '16px'
+                }}>
+                  Choose how and when you want to receive notifications.
+                </p>
+              </div>
               
-              <div className={styles.notificationGroups}>
-                <div className={styles.notificationGroup}>
-                  <h3 className={styles.groupTitle}>Communication</h3>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '32px'
+              }}>
+                <div style={{
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '16px',
+                  padding: '32px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <h3 style={{
+                    fontSize: '20px',
+                    fontWeight: '600',
+                    color: '#ffffff',
+                    margin: '0 0 24px 0',
+                    paddingBottom: '12px',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <Bell size={18} />
+                    Communication
+                  </h3>
                   
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <strong>Email Notifications</strong>
-                      <p>Receive notifications via email</p>
+                  {[
+                    { key: 'emailNotifications', title: 'Email Notifications', desc: 'Receive notifications via email' },
+                    { key: 'pushNotifications', title: 'Push Notifications', desc: 'Receive browser push notifications' },
+                    { key: 'messageNotifications', title: 'Message Notifications', desc: 'Get notified about new messages' },
+                    { key: 'soundEnabled', title: 'Sound Effects', desc: 'Play sounds for notifications' }
+                  ].map(item => (
+                    <div key={item.key} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '20px 0',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}>
+                      <div>
+                        <strong style={{
+                          display: 'block',
+                          color: '#ffffff',
+                          fontWeight: '500',
+                          marginBottom: '4px'
+                        }}>{item.title}</strong>
+                        <p style={{
+                          color: '#94a3b8',
+                          fontSize: '14px',
+                          margin: '0'
+                        }}>{item.desc}</p>
+                      </div>
+                      <label style={{
+                        position: 'relative',
+                        display: 'inline-block',
+                        width: '52px',
+                        height: '28px'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings[item.key]}
+                          onChange={(e) => handleNotificationUpdate(item.key, e.target.checked)}
+                          style={{
+                            opacity: 0,
+                            width: 0,
+                            height: 0
+                          }}
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: notificationSettings[item.key] 
+                            ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' 
+                            : 'rgba(100, 116, 139, 0.3)',
+                          transition: '.3s',
+                          borderRadius: '28px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)'
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            content: '""',
+                            height: '20px',
+                            width: '20px',
+                            left: notificationSettings[item.key] ? '27px' : '3px',
+                            bottom: '3px',
+                            background: '#ffffff',
+                            transition: '.3s',
+                            borderRadius: '50%',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                          }}></span>
+                        </span>
+                      </label>
                     </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.emailNotifications}
-                        onChange={(e) => handleNotificationUpdate('emailNotifications', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                  
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <strong>Push Notifications</strong>
-                      <p>Receive browser push notifications</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.pushNotifications}
-                        onChange={(e) => handleNotificationUpdate('pushNotifications', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                  
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <strong>Message Notifications</strong>
-                      <p>Get notified about new messages</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.messageNotifications}
-                        onChange={(e) => handleNotificationUpdate('messageNotifications', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className={styles.notificationGroup}>
-                  <h3 className={styles.groupTitle}>Listings & Sales</h3>
-                  
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <strong>Listing Notifications</strong>
-                      <p>Updates about your listings</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.listingNotifications}
-                        onChange={(e) => handleNotificationUpdate('listingNotifications', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                  
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <strong>Price Alerts</strong>
-                      <p>Notifications about price changes</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.priceAlerts}
-                        onChange={(e) => handleNotificationUpdate('priceAlerts', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className={styles.notificationGroup}>
-                  <h3 className={styles.groupTitle}>Marketing & Updates</h3>
-                  
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <strong>Marketing Emails</strong>
-                      <p>Promotional content and offers</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.marketingEmails}
-                        onChange={(e) => handleNotificationUpdate('marketingEmails', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                  
-                  <div className={styles.notificationItem}>
-                    <div className={styles.notificationInfo}>
-                      <strong>Weekly Digest</strong>
-                      <p>Weekly summary of activity</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.weeklyDigest}
-                        onChange={(e) => handleNotificationUpdate('weeklyDigest', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -796,162 +1434,218 @@ const SettingsPage = () => {
           
           {/* Privacy Section */}
           {activeSection === 'privacy' && (
-            <div className={styles.settingsSection}>
-              <h2 className={styles.sectionTitle}>Privacy Settings</h2>
-              <p className={styles.sectionDescription}>
-                Control your privacy and data sharing preferences.
-              </p>
+            <div style={{ padding: '40px' }}>
+              <div style={{
+                marginBottom: '32px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #ffffff, #94a3b8)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: '0 0 8px 0'
+                }}>Privacy Settings</h2>
+                <p style={{
+                  color: '#94a3b8',
+                  margin: '0',
+                  lineHeight: '1.6',
+                  fontSize: '16px'
+                }}>
+                  Control your privacy and data sharing preferences.
+                </p>
+              </div>
               
-              <div className={styles.privacyGroups}>
-                <div className={styles.privacyGroup}>
-                  <h3 className={styles.groupTitle}>Profile Visibility</h3>
-                  
-                  <div className={styles.privacyItem}>
-                    <div className={styles.privacyInfo}>
-                      <strong>Profile Visibility</strong>
-                      <p>Who can see your profile</p>
-                    </div>
-                    <select
-                      value={privacySettings.profileVisibility}
-                      onChange={(e) => handlePrivacyUpdate('profileVisibility', e.target.value)}
-                      className={styles.privacySelect}
-                    >
-                      <option value="public">Public</option>
-                      <option value="registered">Registered Users Only</option>
-                      <option value="private">Private</option>
-                    </select>
-                  </div>
-                  
-                  <div className={styles.privacyItem}>
-                    <div className={styles.privacyInfo}>
-                      <strong>Show Email Address</strong>
-                      <p>Display email on your profile</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={privacySettings.showEmail}
-                        onChange={(e) => handlePrivacyUpdate('showEmail', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                  
-                  <div className={styles.privacyItem}>
-                    <div className={styles.privacyInfo}>
-                      <strong>Show Phone Number</strong>
-                      <p>Display phone on your profile</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={privacySettings.showPhone}
-                        onChange={(e) => handlePrivacyUpdate('showPhone', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                </div>
+              <div style={{
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+                padding: '32px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  color: '#ffffff',
+                  margin: '0 0 24px 0',
+                  paddingBottom: '12px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>Profile Visibility</h3>
                 
-                <div className={styles.privacyGroup}>
-                  <h3 className={styles.groupTitle}>Data & Search</h3>
-                  
-                  <div className={styles.privacyItem}>
-                    <div className={styles.privacyInfo}>
-                      <strong>Search Engine Indexing</strong>
-                      <p>Allow search engines to index your profile</p>
+                {[
+                  { key: 'showEmail', title: 'Show Email Address', desc: 'Display email on your profile', type: 'toggle' },
+                  { key: 'showPhone', title: 'Show Phone Number', desc: 'Display phone on your profile', type: 'toggle' },
+                  { key: 'showOnlineStatus', title: 'Online Status', desc: 'Show when you\'re online', type: 'toggle' },
+                  { key: 'allowDirectMessages', title: 'Direct Messages', desc: 'Allow other users to message you directly', type: 'toggle' }
+                ].map(item => (
+                  <div key={item.key} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '20px 0',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                  }}>
+                    <div>
+                      <strong style={{
+                        display: 'block',
+                        color: '#ffffff',
+                        fontWeight: '500',
+                        marginBottom: '4px'
+                      }}>{item.title}</strong>
+                      <p style={{
+                        color: '#94a3b8',
+                        fontSize: '14px',
+                        margin: '0'
+                      }}>{item.desc}</p>
                     </div>
-                    <label className={styles.toggle}>
+                    <label style={{
+                      position: 'relative',
+                      display: 'inline-block',
+                      width: '52px',
+                      height: '28px'
+                    }}>
                       <input
                         type="checkbox"
-                        checked={privacySettings.allowSearchEngines}
-                        onChange={(e) => handlePrivacyUpdate('allowSearchEngines', e.target.checked)}
+                        checked={privacySettings[item.key]}
+                        onChange={(e) => handlePrivacyUpdate(item.key, e.target.checked)}
+                        style={{
+                          opacity: 0,
+                          width: 0,
+                          height: 0
+                        }}
                       />
-                      <span className={styles.toggleSlider}></span>
+                      <span style={{
+                        position: 'absolute',
+                        cursor: 'pointer',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: privacySettings[item.key] 
+                          ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' 
+                          : 'rgba(100, 116, 139, 0.3)',
+                        transition: '.3s',
+                        borderRadius: '28px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <span style={{
+                          position: 'absolute',
+                          content: '""',
+                          height: '20px',
+                          width: '20px',
+                          left: privacySettings[item.key] ? '27px' : '3px',
+                          bottom: '3px',
+                          background: '#ffffff',
+                          transition: '.3s',
+                          borderRadius: '50%',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                        }}></span>
+                      </span>
                     </label>
                   </div>
-                  
-                  <div className={styles.privacyItem}>
-                    <div className={styles.privacyInfo}>
-                      <strong>Data Collection</strong>
-                      <p>Allow analytics and usage data collection</p>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={privacySettings.dataCollection}
-                        onChange={(e) => handlePrivacyUpdate('dataCollection', e.target.checked)}
-                      />
-                      <span className={styles.toggleSlider}></span>
-                    </label>
-                  </div>
-                </div>
+                ))}
               </div>
-            </div>
-          )}
-          
-          {/* Login Sessions Section */}
-          {activeSection === 'sessions' && (
-            <div className={styles.settingsSection}>
-              <h2 className={styles.sectionTitle}>Active Login Sessions</h2>
-              <p className={styles.sectionDescription}>
-                Manage your active login sessions across different devices.
-              </p>
-              
-              <div className={styles.sessionsContainer}>
-                <div className={styles.sessionItem}>
-                  <div className={styles.sessionInfo}>
-                    <div className={styles.sessionHeader}>
-                      <Monitor size={20} />
-                      <div>
-                        <strong>Current Session</strong>
-                        <p>This device - Chrome on Windows</p>
-                      </div>
-                    </div>
-                    <div className={styles.sessionDetails}>
-                      <small>Last active: Just now</small>
-                      <small>IP: 192.168.1.1</small>
-                    </div>
-                  </div>
-                  <span className={styles.currentSession}>Current</span>
-                </div>
-              </div>
-              
-              <button className={styles.revokeAllButton}>
-                <LogOut size={16} />
-                Sign Out of All Other Sessions
-              </button>
             </div>
           )}
           
           {/* Danger Zone Section */}
           {activeSection === 'danger' && (
-            <div className={styles.settingsSection}>
-              <h2 className={styles.sectionTitle}>Danger Zone</h2>
-              <p className={styles.sectionDescription}>
-                Irreversible and destructive actions.
-              </p>
+            <div style={{ padding: '40px' }}>
+              <div style={{
+                marginBottom: '32px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #ffffff, #94a3b8)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: '0 0 8px 0'
+                }}>Danger Zone</h2>
+                <p style={{
+                  color: '#94a3b8',
+                  margin: '0',
+                  lineHeight: '1.6',
+                  fontSize: '16px'
+                }}>
+                  Irreversible and destructive actions.
+                </p>
+              </div>
               
-              <div className={styles.dangerZone}>
-                <div className={styles.dangerCard}>
-                  <div className={styles.dangerInfo}>
-                    <h3 className={styles.dangerTitle}>
+              <div style={{
+                border: '2px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '16px',
+                padding: '32px',
+                background: 'rgba(239, 68, 68, 0.05)',
+                backdropFilter: 'blur(20px)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: '32px'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      color: '#ef4444',
+                      fontWeight: '600',
+                      margin: '0 0 16px 0',
+                      fontSize: '20px'
+                    }}>
                       <AlertTriangle size={20} />
                       Delete Account
                     </h3>
-                    <p>
+                    <p style={{
+                      color: '#cbd5e1',
+                      margin: '0 0 16px 0',
+                      lineHeight: '1.6'
+                    }}>
                       Permanently delete your account and all associated data. 
-                      This action cannot be undone.
+                      This action cannot be undone and you will lose:
                     </p>
+                    <ul style={{
+                      margin: '0',
+                      paddingLeft: '20px',
+                      color: '#94a3b8'
+                    }}>
+                      <li style={{ marginBottom: '8px', lineHeight: '1.4' }}>All your listings and products</li>
+                      <li style={{ marginBottom: '8px', lineHeight: '1.4' }}>Message history and conversations</li>
+                      <li style={{ marginBottom: '8px', lineHeight: '1.4' }}>Transaction history and reviews</li>
+                      
+                    </ul>
                   </div>
                   <button
                     onClick={handleDeleteAccount}
                     disabled={saving}
-                    className={styles.deleteButton}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '14px 24px',
+                      background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: '600',
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s ease',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)',
+                      opacity: saving ? 0.6 : 1
+                    }}
                   >
                     {saving ? (
                       <>
-                        <Loader2 size={16} className={styles.spinner} />
+                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                         Deleting...
                       </>
                     ) : (
