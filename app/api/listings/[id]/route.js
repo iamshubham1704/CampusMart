@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
       id: listing._id.toString(),
       title: listing.title,
       description: listing.description,
-      price: listing.price * 1.1,
+      price: listing.price ,
       originalPrice: listing.originalPrice,
       condition: listing.condition,
       category: listing.category,

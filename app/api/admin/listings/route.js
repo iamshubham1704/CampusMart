@@ -1,4 +1,4 @@
-// app/api/admin/listings/route.js
+// app/api/admin/listings/route.js (FIXED FILENAME - was rotue.js)
 import { verifyToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
 import { ObjectId } from 'mongodb';
@@ -27,7 +27,7 @@ function verifyAdminToken(request) {
   }
 }
 
-// GET - Fetch all listings with seller details
+// GET - Fetch all listings with seller details and commission
 export async function GET(request) {
   try {
     const decoded = verifyAdminToken(request);
@@ -49,7 +49,7 @@ export async function GET(request) {
     const category = url.searchParams.get('category');
 
     let matchStage = {};
-    if (status) {
+    if (status && status !== 'all') {
       matchStage.status = status;
     }
     if (category) {
@@ -75,6 +75,7 @@ export async function GET(request) {
             description: 1,
             price: 1,
             originalPrice: 1,
+            commission: { $ifNull: ['$commission', 10] }, // Default 10% commission
             condition: 1,
             category: 1,
             subcategory: 1,
@@ -82,8 +83,8 @@ export async function GET(request) {
             college: 1,
             images: 1,
             tags: 1,
-            status: 1,
-            views: 1,
+            status: { $ifNull: ['$status', 'active'] },
+            views: { $ifNull: ['$views', 0] },
             favorites: 1,
             createdAt: 1,
             updatedAt: 1,
@@ -134,7 +135,7 @@ export async function GET(request) {
   }
 }
 
-// PUT - Update listing status
+// PUT - Update listing status and commission
 export async function PUT(request) {
   try {
     const decoded = verifyAdminToken(request);
@@ -144,20 +145,32 @@ export async function PUT(request) {
       }, { status: 401 });
     }
 
-    const { listingId, status } = await request.json();
+    const { listingId, status, commission } = await request.json();
 
-    if (!listingId || !status) {
+    if (!listingId) {
       return Response.json({ 
-        error: 'Missing required fields: listingId, status' 
+        error: 'Missing required field: listingId' 
       }, { status: 400 });
     }
 
-    // Validate status
-    const validStatuses = ['active', 'inactive', 'sold', 'pending', 'rejected'];
-    if (!validStatuses.includes(status)) {
-      return Response.json({ 
-        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
-      }, { status: 400 });
+    // Validate status if provided
+    if (status) {
+      const validStatuses = ['active', 'inactive', 'sold', 'pending', 'rejected'];
+      if (!validStatuses.includes(status)) {
+        return Response.json({ 
+          error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+        }, { status: 400 });
+      }
+    }
+
+    // Validate commission if provided
+    if (commission !== undefined) {
+      const commissionNum = parseFloat(commission);
+      if (isNaN(commissionNum) || commissionNum < 0 || commissionNum > 100) {
+        return Response.json({ 
+          error: 'Commission must be a number between 0 and 100' 
+        }, { status: 400 });
+      }
     }
 
     const client = await clientPromise;
@@ -172,15 +185,15 @@ export async function PUT(request) {
       }, { status: 400 });
     }
 
-    // Update listing status
+    // Prepare update object
+    const updateObj = { updatedAt: new Date() };
+    if (status) updateObj.status = status;
+    if (commission !== undefined) updateObj.commission = parseFloat(commission);
+
+    // Update listing
     const result = await db.collection('listings').updateOne(
       { _id: objectId },
-      { 
-        $set: { 
-          status: status,
-          updatedAt: new Date()
-        } 
-      }
+      { $set: updateObj }
     );
 
     if (result.matchedCount === 0) {
@@ -189,13 +202,17 @@ export async function PUT(request) {
       }, { status: 404 });
     }
 
+    const updateMessage = [];
+    if (status) updateMessage.push(`status updated to ${status}`);
+    if (commission !== undefined) updateMessage.push(`commission updated to ${commission}%`);
+
     return Response.json({
       success: true,
-      message: `Listing status updated to ${status} successfully`
+      message: `Listing ${updateMessage.join(' and ')} successfully`
     }, { status: 200 });
 
   } catch (error) {
-    console.error('Error updating listing status:', error);
+    console.error('Error updating listing:', error);
     return Response.json({
       success: false,
       error: 'Internal server error'
