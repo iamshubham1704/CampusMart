@@ -111,6 +111,17 @@ export async function POST(req) {
       // Don't fail the login for this
     }
 
+
+    //IsActive Seller
+    try {
+      await sellers.updateOne(
+        { _id: seller._id }, 
+        { $set: { isActive: true } }
+      );
+    } catch (updateError) {
+      // Don't fail the login for this
+    }
+
     // Create response headers with cookie
     const headers = new Headers({
       'Content-Type': 'application/json',

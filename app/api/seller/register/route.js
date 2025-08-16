@@ -33,6 +33,7 @@ export async function POST(req) {
       email,
       phone,
       password: hashedPassword,
+      isActive: true,
       createdAt: new Date(),
     };
 
