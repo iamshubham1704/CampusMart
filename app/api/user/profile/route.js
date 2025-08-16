@@ -330,6 +330,7 @@ export async function GET(request) {
       year: user.year || '',
       profileImage: user.profileImage || '',
       isSeller: user.isSeller || false,
+      isActive: true,
       accountType: user.accountType || 'user',
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

@@ -60,7 +60,7 @@ const UnifiedSellerRegistration = () => {
     setSuccess('');
 
     // Validation
-    if (!form.name || !form.email || !form.phone || !form.password || !form.businessName) {
+    if (!form.name || !form.email || !form.phone || !form.password) {
       setError('Please fill in all required fields');
       setLoading(false);
       return;
@@ -86,9 +86,9 @@ const UnifiedSellerRegistration = () => {
     }
 
     const college = form.college === 'other' ? form.customCollege : form.college;
-    const businessType = form.businessType === 'other' ? form.customBusinessType : form.businessType;
+   
 
-    if (!college || !businessType) {
+    if (!college ) {
       setError('Please specify your college and business type');
       setLoading(false);
       return;
@@ -101,9 +101,6 @@ const UnifiedSellerRegistration = () => {
         phone: form.phone,
         password: form.password,
         college,
-        businessType,
-        businessName: form.businessName,
-        description: form.description,
       };
 
       const res = await fetch('/api/seller/register', {

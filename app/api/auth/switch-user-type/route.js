@@ -26,6 +26,10 @@ export async function POST(request) {
       userData = await db.collection('buyers').findOne({ email: session.user.email });
       if (userData) {
         // Move from buyers to sellers
+        
+        
+        
+        
         const sellerData = {
           name: userData.name,
           email: userData.email,
