@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { NotificationService } from '../../../../utils/notificationService';
+import { NotificationService } from '../../../utils/notificationService';
 import clientPromise from '../../../../lib/mongo';
 import { ObjectId } from 'mongodb';
 
