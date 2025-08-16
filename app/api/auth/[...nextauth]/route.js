@@ -1,4 +1,3 @@
-// app/api/auth/[...nextauth]/route.js
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { MongoClient } from 'mongodb';
@@ -11,9 +10,9 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.NEXTAUTH_URL,
     }),
-  ],
-  callbacks: {
+  ],  callbacks: {
     async signIn({ user, account, profile }) {
       if (account.provider === 'google') {
         try {
@@ -36,8 +35,7 @@ export const authOptions = {
               { $set: { updatedAt: new Date() } }
             );
           } else {
-            // For new users, create in buyers collection as default
-            // They can switch to seller later via account type selection
+
             await db.collection('buyers').insertOne({
               name: user.name,
               email: user.email,
@@ -105,7 +103,6 @@ export const authOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Handle redirects after successful sign-in
       if (url.startsWith('/')) return `${baseUrl}${url}`;
       else if (new URL(url).origin === baseUrl) return url;
       return `${baseUrl}/choose-account-type`;
