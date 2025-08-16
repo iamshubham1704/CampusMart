@@ -576,15 +576,6 @@ const BuyerDashboard = () => {
     }));
   };
 
-  const handleLocationChange = (location, isChecked) => {
-    if (isChecked) {
-      filters.locations.push(location);
-    } else {
-      filters.locations = filters.locations.filter(l => l !== location);
-    }
-    // Update the filters object and trigger any necessary re-renders
-  };
-
   const openProductModal = (productId) => {
     setSelectedProductId(productId);
     setIsProductModalOpen(true);
@@ -618,7 +609,7 @@ const BuyerDashboard = () => {
     <div className={`dashboard ${isDarkTheme ? 'dark' : 'light'}`} ref={dashboardRef}>
       {/* Mouse-tracking animated background */}
       <div className="animatedBackground">
-        <div 
+        <div
           className="gradientOverlay"
           style={{
             transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
@@ -786,25 +777,26 @@ const BuyerDashboard = () => {
                   ))}
                 </div>
               </div>
+              <select
+                // style={styles.dropdown}
+                value={filters.locations[0] || ""}
+                onChange={(e) => {
+                  // Update filters object properly
+                  setFilters(prev => ({
+                    ...prev,
+                    locations: e.target.value ? [e.target.value] : []
+                  }));
+                  // OR if you're mutating directly (not recommended):
+                  // filters.locations = e.target.value ? [e.target.value] : [];
+                  // forceUpdate(); // You'll need some way to trigger re-render
+                }}
+              >
+                <option value="">Select Location</option>
+                {['MAIT', 'DTU', 'NSUT', 'DU'].map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
 
-              {/* Location */}
-              <div style={styles.filterGroup}>
-                <label style={styles.filterLabel}>
-                  Location ({filters.locations.length} selected)
-                </label>
-                <div style={styles.checkboxGroup}>
-                  {['MAIT', 'DTU', 'NSUT', 'DU'].map(location => (
-                    <label key={location} style={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={filters.locations.includes(location)}
-                        onChange={(e) => handleLocationChange(location, e.target.checked)}
-                      />
-                      <span>{location}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </aside>
@@ -1008,7 +1000,7 @@ const BuyerDashboard = () => {
         currentUser={buyer}
         currentUserLoading={buyerLoading}
       />
-      
+
       <WishlistModal
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
