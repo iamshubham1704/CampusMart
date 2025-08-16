@@ -319,7 +319,7 @@ const CreateListing = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Original Price (₹)</label>
+              <label className={styles.label}>Original Price (₹) [Market Price]</label>
               <input
                 type="number"
                 name="originalPrice"

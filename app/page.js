@@ -32,17 +32,36 @@ const CampusMart = () => {
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
   // Handle component mounting
   useEffect(() => {
     setMounted(true);
-    const savedTheme = typeof window !== 'undefined' ? 
-      (localStorage.getItem('theme') === 'dark') : false;
-    setIsDarkTheme(savedTheme);
+    
+    // Get initial window size
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    // Theme initialization - avoid localStorage on server
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') === 'dark';
+      setIsDarkTheme(savedTheme);
+    }
+
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Enhanced mouse movement handler with parallax calculation
+  // Enhanced mouse movement handler with parallax calculation - only on desktop
   useEffect(() => {
+    if (windowSize.width <= 768) return; // Skip on mobile/tablet
+    
     const handleMouseMove = (e) => {
       const x = (e.clientX / window.innerWidth) * 100;
       const y = (e.clientY / window.innerHeight) * 100;
@@ -50,14 +69,14 @@ const CampusMart = () => {
       setMousePosition({ x, y });
       
       // Calculate parallax offset for background elements
-      const parallaxX = (e.clientX - window.innerWidth / 2) * 0.05;
-      const parallaxY = (e.clientY - window.innerHeight / 2) * 0.05;
+      const parallaxX = (e.clientX - window.innerWidth / 2) * 0.02; // Reduced intensity
+      const parallaxY = (e.clientY - window.innerHeight / 2) * 0.02;
       setParallaxOffset({ x: parallaxX, y: parallaxY });
     };
 
     const handleScroll = () => {
       const scrolled = window.pageYOffset;
-      const parallax = scrolled * 0.3;
+      const parallax = scrolled * 0.1; // Reduced scroll parallax
       document.documentElement.style.setProperty('--scroll-y', `${parallax}px`);
     };
 
@@ -68,30 +87,28 @@ const CampusMart = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [windowSize.width]);
 
   // Handle theme changes
   useEffect(() => {
-    if (mounted) {
+    if (mounted && typeof window !== 'undefined') {
       const theme = isDarkTheme ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.className = isDarkTheme ? 'dark-theme' : 'light-theme';
       document.body.className = isDarkTheme ? 'dark-theme' : 'light-theme';
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('theme', theme);
-      }
+      localStorage.setItem('theme', theme);
     }
   }, [isDarkTheme, mounted]);
 
-  // Update mouse position CSS variables for interactive background
+  // Update mouse position CSS variables for interactive background - only on desktop
   useEffect(() => {
-    if (mounted) {
+    if (mounted && windowSize.width > 768) {
       document.documentElement.style.setProperty('--mouse-x', `${mousePosition.x}%`);
       document.documentElement.style.setProperty('--mouse-y', `${mousePosition.y}%`);
       document.documentElement.style.setProperty('--parallax-x', `${parallaxOffset.x}px`);
       document.documentElement.style.setProperty('--parallax-y', `${parallaxOffset.y}px`);
     }
-  }, [mousePosition, parallaxOffset, mounted]);
+  }, [mousePosition, parallaxOffset, mounted, windowSize.width]);
 
   const toggleTheme = () => {
     setIsDarkTheme(prev => !prev);
@@ -109,22 +126,52 @@ const CampusMart = () => {
     }
   };
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMobileMenuOpen && !event.target.closest('.mobile-menu') && !event.target.closest('.mobile-menu-btn')) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isMobileMenuOpen]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
   // Don't render until mounted to prevent hydration mismatch
   if (!mounted) {
     return null;
   }
 
+  const isMobile = windowSize.width <= 768;
+  const isTablet = windowSize.width > 768 && windowSize.width <= 1024;
+
   return (
     <>
-      {/* Interactive Background Elements */}
-      <div className="interactive-background">
-        <div className="bg-element bg-element-1"></div>
-        <div className="bg-element bg-element-2"></div>
-        <div className="bg-element bg-element-3"></div>
-        <div className="parallax-layer parallax-layer-1"></div>
-        <div className="parallax-layer parallax-layer-2"></div>
-        <div className="parallax-layer parallax-layer-3"></div>
-      </div>
+      {/* Interactive Background Elements - Only on desktop */}
+      {!isMobile && (
+        <div className="interactive-background">
+          <div className="bg-element bg-element-1"></div>
+          <div className="bg-element bg-element-2"></div>
+          <div className="bg-element bg-element-3"></div>
+          <div className="parallax-layer parallax-layer-1"></div>
+          <div className="parallax-layer parallax-layer-2"></div>
+          <div className="parallax-layer parallax-layer-3"></div>
+        </div>
+      )}
 
       {/* Enhanced Professional Header */}
       <header className="header">
@@ -135,58 +182,70 @@ const CampusMart = () => {
               <div className="brand-logo">
                 <div className="logo-container">
                   <div className="logo-icon">
-                    <Store size={28} />
+                    <Store size={isMobile ? 24 : 28} />
                   </div>
-                  <div className="logo-pulse"></div>
+                  {!isMobile && <div className="logo-pulse"></div>}
                 </div>
                 <div className="brand-text">
                   <h1 className="brand-name">CampusMart</h1>
-                  <span className="brand-tagline">Student Marketplace</span>
+                  {!isMobile && <span className="brand-tagline">Student Marketplace</span>}
                 </div>
               </div>
             </div>
 
-            {/* Center Navigation */}
-            <div className="nav-center">
-              <ul className="nav-menu">
-                <li className="nav-item">
-                  <a href="#" className="nav-link active">
-                    <Home size={18} />
-                    <span>Home</span>
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a href="#" className="nav-link">
-                    <ShoppingBag size={18} />
-                    <span>Policy</span>
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a href="#" className="nav-link">
-                    <Info size={18} />
-                    <span>About</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
+            {/* Center Navigation - Hidden on mobile/tablet */}
+            {!isMobile && !isTablet && (
+              <div className="nav-center">
+                <ul className="nav-menu">
+                  <li className="nav-item">
+                    <a href="#" className="nav-link active">
+                      <Home size={18} />
+                      <span>Home</span>
+                    </a>
+                  </li>
+                  <li className="nav-item">
+                    <a href="#" className="nav-link">
+                      <ShoppingBag size={18} />
+                      <span>Policy</span>
+                    </a>
+                  </li>
+                  <li className="nav-item">
+                    <a href="#" className="nav-link">
+                      <Info size={18} />
+                      <span>About</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            )}
 
             {/* Right Actions */}
             <div className="nav-actions">
-           
               {/* Theme Toggle */}
-              <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}>
+              <button 
+                className="theme-toggle" 
+                onClick={toggleTheme} 
+                title={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}
+                aria-label={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}
+              >
                 <div className="theme-icon">
                   {isDarkTheme ? <Sun size={20} /> : <Moon size={20} />}
                 </div>
               </button>
 
-              {/* Notifications */}
-              <button className="notification-btn" title="Notifications">
-                <Bell size={20} />
-                <span className="notification-badge">3</span>
-              </button>
+              {/* Notifications - Hidden on small mobile */}
+              {windowSize.width > 480 && (
+                <button className="notification-btn" title="Notifications" aria-label="Notifications">
+                  <Bell size={20} />
+                  <span className="notification-badge">3</span>
+                </button>
+              )}
 
-              <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
+              <button 
+                className="mobile-menu-btn" 
+                onClick={toggleMobileMenu}
+                aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              >
                 {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
@@ -244,8 +303,8 @@ const CampusMart = () => {
       <section className="hero-section">
         <div className="hero-background">
           <div className="hero-gradient"></div>
-          <div className="hero-pattern"></div>
-          <div className="mouse-follower"></div>
+          {!isMobile && <div className="hero-pattern"></div>}
+          {!isMobile && <div className="mouse-follower"></div>}
         </div>
         <div className="hero-container">
           <div className="hero-content">
@@ -255,15 +314,9 @@ const CampusMart = () => {
             </h1>
             
             <div className="hero-buttons">
-              <div className="role-card buyer-card" 
-                style={{
-                  width: '280px',
-                  height: '180px',
-                  margin: '0 auto'
-                }} 
-                onClick={() => handleRoleSelect('buyer')}>
+              <div className="role-card buyer-card" onClick={() => handleRoleSelect('buyer')}>
                 <div className="card-icon">
-                  <ShoppingBag size={28} />
+                  <ShoppingBag size={isMobile ? 24 : 28} />
                 </div>
                 <div className="card-content">
                   <h3>Start Buying</h3>
@@ -272,15 +325,9 @@ const CampusMart = () => {
                 <ArrowRight className="card-arrow" size={20} />
               </div>
               
-              <div className="role-card seller-card" 
-                style={{
-                  width: '280px',
-                  height: '180px',
-                  margin: '0 auto'
-                }} 
-                onClick={() => handleRoleSelect('seller')}>
+              <div className="role-card seller-card" onClick={() => handleRoleSelect('seller')}>
                 <div className="card-icon">
-                  <Store size={28} />
+                  <Store size={isMobile ? 24 : 28} />
                 </div>
                 <div className="card-content">
                   <h3>Start Selling</h3>
@@ -323,7 +370,7 @@ const CampusMart = () => {
               <div className="roadmap-step">
                 <div className="step-number">1</div>
                 <div className="step-icon">
-                  <User size={32} />
+                  <User size={isMobile ? 28 : 32} />
                 </div>
                 <div className="step-content">
                   <h3>Create Account</h3>
@@ -334,7 +381,7 @@ const CampusMart = () => {
               <div className="roadmap-step">
                 <div className="step-number">2</div>
                 <div className="step-icon">
-                  <Search size={32} />
+                  <Search size={isMobile ? 28 : 32} />
                 </div>
                 <div className="step-content">
                   <h3>Browse & List</h3>
@@ -345,7 +392,7 @@ const CampusMart = () => {
               <div className="roadmap-step">
                 <div className="step-number">3</div>
                 <div className="step-icon">
-                  <Users size={32} />
+                  <Users size={isMobile ? 28 : 32} />
                 </div>
                 <div className="step-content">
                   <h3>Connect & Trade</h3>
@@ -356,7 +403,7 @@ const CampusMart = () => {
               <div className="roadmap-step">
                 <div className="step-number">4</div>
                 <div className="step-icon">
-                  <Check size={32} />
+                  <Check size={isMobile ? 28 : 32} />
                 </div>
                 <div className="step-content">
                   <h3>Complete Transaction</h3>
@@ -395,7 +442,7 @@ const CampusMart = () => {
                 <div className="product-image">
                   <span className="product-emoji">{product.emoji}</span>
                   <div className={`product-badge ${product.badge.toLowerCase().replace(' ', '-')}`}>{product.badge}</div>
-                  <button className="favorite-btn">
+                  <button className="favorite-btn" aria-label="Add to favorites">
                     <Heart size={16} />
                   </button>
                 </div>
@@ -538,7 +585,7 @@ const CampusMart = () => {
               </div>
               <div className="trust-content">
                 <h4>University Verified</h4>
-                <p>Verifying college users at the time of registrations .</p>
+                <p>Verifying college users at the time of registrations.</p>
               </div>
             </div>
             
@@ -568,4 +615,4 @@ const CampusMart = () => {
   );
 };
 
-export default CampusMart;
+export default CampusMart;
