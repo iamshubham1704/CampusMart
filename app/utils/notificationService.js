@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import clientPromise from '../../../../lib/mongo';
+import clientPromise from '../../lib/mongo';
 import { ObjectId } from 'mongodb';
 
 export async function POST(request) {
