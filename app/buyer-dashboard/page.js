@@ -35,7 +35,8 @@ import {
   Edit3,
   Save,
   Package,
-  ChevronDown
+  ChevronDown,
+  Pen
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
@@ -658,6 +659,7 @@ const BuyerDashboard = () => {
     { id: 'textbooks', name: 'Textbooks', icon: BookOpen },
     { id: 'electronics', name: 'Electronics', icon: Laptop },
     { id: 'clothing', name: 'Clothing', icon: Shirt },
+    { id: 'Stationery', name: 'Stationery', icon: Pen },
     { id: 'furniture', name: 'Furniture', icon: Home },
     { id: 'food', name: 'Food & Drinks', icon: Coffee },
     { id: 'gaming', name: 'Gaming', icon: Gamepad2 },
@@ -795,13 +797,13 @@ const BuyerDashboard = () => {
     }));
   };
 
-  const handleLocationChange = (location, checked) => {
-    setFilters(prev => ({
-      ...prev,
-      locations: checked
-        ? [...prev.locations, location]
-        : prev.locations.filter(l => l !== location)
-    }));
+  const handleLocationChange = (location, isChecked) => {
+    if (isChecked) {
+      filters.locations.push(location);
+    } else {
+      filters.locations = filters.locations.filter(l => l !== location);
+    }
+    // Update the filters object and trigger any necessary re-renders
   };
 
   // Show loading state if buyer is still loading
@@ -1436,23 +1438,18 @@ const BuyerDashboard = () => {
               </div>
 
               {/* Location */}
-              <div style={styles.filterGroup}>
-                <label style={styles.filterLabel}>
-                  Location ({filters.locations.length} selected)
-                </label>
-                <div style={styles.checkboxGroup}>
-                  {['MAIT', 'DTU', 'NSUT', 'DU'].map(location => (
-                    <label key={location} style={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={filters.locations.includes(location)}
-                        onChange={(e) => handleLocationChange(location, e.target.checked)}
-                      />
-                      <span>{location}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <select
+                style={styles.dropdown}
+                value={filters.locations[0] || ""}
+                onChange={(e) => {
+                  filters.locations = e.target.value ? [e.target.value] : [];
+                }}
+              >
+                <option value="">Select Location</option>
+                {['MAIT', 'DTU', 'NSUT', 'DU'].map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
             </div>
           </div>
         </aside>

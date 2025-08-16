@@ -50,7 +50,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
   const [paymentStep, setPaymentStep] = useState('options'); // 'options', 'qr', 'upi-id', or 'screenshot'
   const [uploadedScreenshot, setUploadedScreenshot] = useState(null);
   const [selectedUpiOption, setSelectedUpiOption] = useState(''); // 'qr' or 'upi-id'
-  
+
   const { addToCart, isInCart, cartLoading } = useCart();
   const router = useRouter();
 
@@ -194,24 +194,70 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       return;
     }
 
+    if (!currentUser || !product) {
+      alert('Missing user or product information');
+      return;
+    }
+
     try {
-      console.log('Processing order with screenshot:', uploadedScreenshot.name);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      alert('Order submitted successfully! We will verify your payment and confirm shortly.');
-      
+      console.log('📤 Uploading payment screenshot...', {
+        file: uploadedScreenshot.name,
+        size: uploadedScreenshot.size,
+        type: uploadedScreenshot.type
+      });
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('screenshot', uploadedScreenshot);
+      formData.append('productId', product._id || product.id);
+      formData.append('sellerId', product.seller?._id || product.sellerId || product.userId);
+      formData.append('amount', product.price.toString());
+      formData.append('paymentMethod', 'upi');
+      formData.append('upiId', '8750471736@ptsbi');
+
+      // Get authentication token
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in again to continue');
+        router.push('/buyer-login');
+        return;
+      }
+
+      // Upload screenshot
+      const response = await fetch('/api/payment-screenshots/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || result.error || 'Failed to upload screenshot');
+      }
+
+      console.log('✅ Screenshot uploaded successfully:', result);
+
+      // Show success message with order details
+      alert(`Order submitted successfully! 
+
+Order ID: ${result.data.orderId}
+Status: Payment verification pending
+
+We will verify your payment and confirm your order shortly. You can track your order status in your dashboard.`);
+
       // Reset all payment states
       setShowPaymentModal(false);
       setPaymentStep('options');
       setSelectedUpiOption('');
       setUploadedScreenshot(null);
       onClose();
-      
+
     } catch (error) {
-      console.error('Error submitting order:', error);
-      alert('Failed to submit order. Please try again.');
+      console.error('❌ Error submitting payment:', error);
+      alert(`Failed to submit order: ${error.message}`);
     }
   };
 
@@ -489,7 +535,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                 {/* Right Side - Product Details */}
                 <div className="product-details-section">
                   <div className="price-section">
-                    <div className="price">₹ {product.price}</div>
+                    <div className="price">₹ {Math.round(product.price * 1.1)}</div>
                     {product.originalPrice && (
                       <>
                         <div className="original-price">₹{product.originalPrice}</div>
@@ -526,62 +572,62 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                     </button>
                   </div>
 
-                 
+
 
                   {product.seller && (
-  <div className="seller-info">
-    <div className="seller-avatar">
-      <img src={product.seller.avatar} alt={product.seller.name} />
-    </div>
-    <div className="seller-details">
-      <div className="seller-name">
-        <span>{product.seller.name}</span>
-        {product.seller.verified && <span className="verified-badge">Verified</span>}
-      </div>
-      <div className="seller-rating">★★★★★</div>
-    </div>
-    <button onClick={handleContactSeller} className="message-seller">
-      💬 Message seller
-    </button>
-  </div>
-)}
+                    <div className="seller-info">
+                      <div className="seller-avatar">
+                        <img src={product.seller.avatar} alt={product.seller.name} />
+                      </div>
+                      <div className="seller-details">
+                        <div className="seller-name">
+                          <span>{product.seller.name}</span>
+                          {product.seller.verified && <span className="verified-badge">Verified</span>}
+                        </div>
+                        <div className="seller-rating">★★★★★</div>
+                      </div>
+                      <button onClick={handleContactSeller} className="message-seller">
+                        💬 Message seller
+                      </button>
+                    </div>
+                  )}
 
-{/* Product Actions - Moved below seller info */}
-<div className="product-actions">
-  <div className="action-cards">
-    <button onClick={() => setShowOrderPolicyModal(true)} className="action-card">
-      <div className="action-icon">
-        <FileText size={24} />
-      </div>
-      <div className="action-content">
-        <h5>Order Policy</h5>
-        <p>View return policy, shipping info, and warranty details</p>
-      </div>
-    </button>
-    
-    <button onClick={() => setShowReportModal(true)} className="action-card report-card">
-      <div className="action-icon">
-        <Flag size={24} />
-      </div>
-      <div className="action-content">
-        <h5>Report Product</h5>
-        <p>Report inappropriate content or issues with this listing</p>
-      </div>
-    </button>
-  </div>
-</div>
+                  {/* Product Actions - Moved below seller info */}
+                  <div className="product-actions">
+                    <div className="action-cards">
+                      <button onClick={() => setShowOrderPolicyModal(true)} className="action-card">
+                        <div className="action-icon">
+                          <FileText size={24} />
+                        </div>
+                        <div className="action-content">
+                          <h5>Order Policy</h5>
+                          <p>View return policy, shipping info, and warranty details</p>
+                        </div>
+                      </button>
+
+                      <button onClick={() => setShowReportModal(true)} className="action-card report-card">
+                        <div className="action-icon">
+                          <Flag size={24} />
+                        </div>
+                        <div className="action-content">
+                          <h5>Report Product</h5>
+                          <p>Report inappropriate content or issues with this listing</p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              
 
-{/* Product Details Section */}
-<div className="details-section">
-  <div className="details-left">
-    <h3>Details</h3>
-    <p>{product.description}</p>
-  </div>
-</div>
+
+              {/* Product Details Section */}
+              <div className="details-section">
+                <div className="details-left">
+                  <h3>Details</h3>
+                  <p>{product.description}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -595,7 +641,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                     <X size={20} />
                   </button>
                 </div>
-                
+
                 <div className="modal-body">
                   {/* Step 1: Payment Options */}
                   {paymentStep === 'options' && (
@@ -604,9 +650,9 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                         <h4>Choose Payment Method</h4>
                         <p>Select how you'd like to pay for this item</p>
                       </div>
-                      
+
                       <div className="payment-options-grid">
-                        <div 
+                        <div
                           className={`payment-option-card ${selectedUpiOption === 'qr' ? 'selected' : ''}`}
                           onClick={() => handlePaymentOptionSelect('qr')}
                         >
@@ -620,8 +666,8 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                           </div>
                           <ArrowRight size={20} className="payment-option-arrow" />
                         </div>
-                        
-                        <div 
+
+                        <div
                           className={`payment-option-card ${selectedUpiOption === 'upi-id' ? 'selected' : ''}`}
                           onClick={() => handlePaymentOptionSelect('upi-id')}
                         >
@@ -636,7 +682,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                           <ArrowRight size={20} className="payment-option-arrow" />
                         </div>
                       </div>
-                      
+
                       <div className="payment-summary">
                         <div className="summary-row">
                           <span>Product:</span>
@@ -658,31 +704,31 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                   {paymentStep === 'qr' && (
                     <div className="payment-qr-step">
                       <div className="payment-step-header">
-                        <button 
-                          onClick={() => setPaymentStep('options')} 
+                        <button
+                          onClick={() => setPaymentStep('options')}
                           className="back-btn"
                         >
                           <ChevronLeft size={16} /> Back to Options
                         </button>
                         <h4>Scan QR Code to Pay</h4>
                       </div>
-                      
+
                       <div className="qr-payment-container">
                         <div className="qr-code-display">
                           <div className="qr-placeholder">
-  <img 
-  src="/qr.png" 
-  alt="Payment QR Code"
-  className="qr-image"
-/>
+                            <img
+                              src="/qr.png"
+                              alt="Payment QR Code"
+                              className="qr-image"
+                            />
 
-<div style={{display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
-  <QrCode size={120} />
-</div>
-</div>
+                            <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                              <QrCode size={120} />
+                            </div>
+                          </div>
                           <p className="qr-instruction">Scan with any UPI app</p>
                         </div>
-                        
+
                         <div className="payment-details">
                           <div className="detail-row">
                             <span className="detail-label">UPI ID:</span>
@@ -697,7 +743,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                             <span className="detail-value">{product?.title}</span>
                           </div>
                         </div>
-                        
+
                         <div className="payment-instructions">
                           <h5>How to pay:</h5>
                           <ol>
@@ -708,9 +754,9 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                             <li>Take a screenshot of successful payment</li>
                           </ol>
                         </div>
-                        
-                        <button 
-                          onClick={() => setPaymentStep('screenshot')} 
+
+                        <button
+                          onClick={() => setPaymentStep('screenshot')}
                           className="payment-done-btn"
                         >
                           Payment Done - Upload Screenshot
@@ -723,15 +769,15 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                   {paymentStep === 'upi-id' && (
                     <div className="payment-upi-step">
                       <div className="payment-step-header">
-                        <button 
-                          onClick={() => setPaymentStep('options')} 
+                        <button
+                          onClick={() => setPaymentStep('options')}
                           className="back-btn"
                         >
                           <ChevronLeft size={16} /> Back to Options
                         </button>
                         <h4>Pay with UPI ID</h4>
                       </div>
-                      
+
                       <div className="upi-payment-container">
                         <div className="upi-id-display">
                           <h5>Send money to this UPI ID:</h5>
@@ -742,7 +788,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                             </button>
                           </div>
                         </div>
-                        
+
                         <div className="payment-details">
                           <div className="detail-row">
                             <span className="detail-label">Amount to Send:</span>
@@ -753,7 +799,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                             <span className="detail-value">{product?.title}</span>
                           </div>
                         </div>
-                        
+
                         <div className="payment-instructions">
                           <h5>Steps to pay:</h5>
                           <ol>
@@ -765,9 +811,9 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                             <li>Take screenshot of successful transaction</li>
                           </ol>
                         </div>
-                        
-                        <button 
-                          onClick={() => setPaymentStep('screenshot')} 
+
+                        <button
+                          onClick={() => setPaymentStep('screenshot')}
                           className="payment-done-btn"
                         >
                           Payment Done - Upload Screenshot
@@ -780,15 +826,15 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                   {paymentStep === 'screenshot' && (
                     <div className="payment-screenshot-step">
                       <div className="payment-step-header">
-                        <button 
-                          onClick={() => setPaymentStep(selectedUpiOption)} 
+                        <button
+                          onClick={() => setPaymentStep(selectedUpiOption)}
                           className="back-btn"
                         >
                           <ChevronLeft size={16} /> Back
                         </button>
                         <h4>Upload Payment Screenshot</h4>
                       </div>
-                      
+
                       <div className="screenshot-upload-container">
                         <div className="upload-area">
                           <label htmlFor="screenshot-upload" className="upload-label">
@@ -814,7 +860,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                             style={{ display: 'none' }}
                           />
                         </div>
-                        
+
                         <div className="upload-instructions">
                           <h5>Screenshot should contain:</h5>
                           <ul>
@@ -824,8 +870,8 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                             <li>✓ Date and time of transaction</li>
                           </ul>
                         </div>
-                        
-                        <button 
+
+                        <button
                           onClick={handlePaymentSubmit}
                           disabled={!uploadedScreenshot}
                           className={`submit-order-btn ${!uploadedScreenshot ? 'disabled' : ''}`}
@@ -913,7 +959,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                         <li>Contact seller for pickup arrangements</li>
                       </ul>
                     </div>
-                    
+
                     <div className="policy-section">
                       <h4>🔄 Return Policy</h4>
                       <ul>
@@ -923,7 +969,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                         <li>No returns on used items unless defective</li>
                       </ul>
                     </div>
-                    
+
                     <div className="policy-section">
                       <h4>🛡️ Warranty</h4>
                       <ul>
@@ -932,7 +978,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
                         <li>Keep purchase receipt for warranty claims</li>
                       </ul>
                     </div>
-                    
+
                     <div className="policy-section">
                       <h4>💳 Payment</h4>
                       <ul>

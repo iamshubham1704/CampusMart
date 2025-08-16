@@ -36,6 +36,7 @@ const CreateListing = () => {
     'Clothing',
     'Sports',
     'Vehicles',
+    'Stationery',
     'Other'
   ];
 
@@ -295,7 +296,7 @@ const CreateListing = () => {
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="Describe your item in detail"
+              placeholder="Describe your item in detail, give all details about your item. Providing more detials will make chances higher of selling your item."
               className={styles.textarea}
               rows="4"
               required
