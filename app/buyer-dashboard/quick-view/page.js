@@ -418,10 +418,6 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
               {/* Product Header */}
               <div className="product-header">
                 <h1>{product.title}</h1>
-                <p className="product-subtitle">
-                  Premium over-ear headphones with active noise cancellation. 20+ features with all premium
-                  — perfect for study sessions.
-                </p>
               </div>
 
               <div className="product-container">

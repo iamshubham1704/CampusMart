@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
   Home, MessageSquare, Heart, Star, User, Bell, Settings,
   LogOut, Package, Eye, Plus, MapPin, Activity,
-  Loader2, AlertCircle
+  Loader2, AlertCircle, Menu, X
 } from 'lucide-react';
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
@@ -19,6 +19,7 @@ const SellerDashboard = () => {
   const [myListings, setMyListings] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const [editingListing, setEditingListing] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -96,6 +97,30 @@ const SellerDashboard = () => {
     return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' fill='%23667eea' rx='18'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.35em' fill='%23ffffff' font-size='14' font-family='Arial, sans-serif' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
   };
 
+  // Mobile menu handlers
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    // Prevent body scroll when menu is open
+    if (!isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    document.body.style.overflow = 'unset';
+  };
+
+  // Close mobile menu when navigating
+  const handleNavigation = (callback) => {
+    return () => {
+      closeMobileMenu();
+      if (callback) callback();
+    };
+  };
+
   // Fetch data function
   const fetchData = async () => {
     try {
@@ -135,7 +160,7 @@ const SellerDashboard = () => {
         return;
       }
 
-      ('Making API calls with valid token...');
+      console.log('Making API calls with valid token...');
 
       // Temporarily disable stats and activity APIs for debugging
       const useRealAPIs = false; // Set to true when backend is ready
@@ -176,7 +201,7 @@ const SellerDashboard = () => {
       // Handle listings response
       if (listingsResponse.success) {
         setMyListings(listingsResponse.listings || []);
-        ('Listings fetched successfully:', listingsResponse.listings.length);
+        console.log('Listings fetched successfully:', listingsResponse.listings.length);
       } else {
         console.warn('Error fetching listings:', listingsResponse.message);
         setMyListings([]);
@@ -194,7 +219,7 @@ const SellerDashboard = () => {
       
       if (statsResponse.success && statsResponse.stats) {
         sellerStats = statsResponse.stats;
-        ('Stats fetched successfully');
+        console.log('Stats fetched successfully');
       } else {
         console.warn('Stats API failed:', {
           success: statsResponse.success,
@@ -253,7 +278,7 @@ const SellerDashboard = () => {
       // Handle activity response
       if (activityResponse.success) {
         setRecentActivity(activityResponse.activities || []);
-        ('Activity fetched successfully');
+        console.log('Activity fetched successfully');
       } else {
         console.warn('Error fetching activity:', activityResponse.message);
         
@@ -334,6 +359,13 @@ const SellerDashboard = () => {
     fetchData();
   }, [router]);
 
+  // Cleanup body scroll on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/seller-login');
@@ -364,7 +396,7 @@ const SellerDashboard = () => {
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest(`.${styles.userProfile}`)) {
@@ -462,9 +494,26 @@ const SellerDashboard = () => {
 
   return (
     <div className={styles.dashboard}>
+      {/* Mobile Navigation Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className={`${styles.mobileNavOverlay} ${isMobileMenuOpen ? styles.mobileNavOpen : ''}`}
+          onClick={closeMobileMenu}
+        />
+      )}
+
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerContent}>
+          {/* Mobile Menu Toggle */}
+          <button 
+            className={styles.mobileNavToggle}
+            onClick={toggleMobileMenu}
+            aria-label="Toggle mobile menu"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
           <div className={styles.logoSection}>
             <div className={styles.logo}>
               <span className={styles.logoText}>Campus</span>
@@ -484,7 +533,7 @@ const SellerDashboard = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button className={styles.sellButton} onClick={() => router.push('/seller-dashboard/create-listing')}>
                 <Plus size={20} />
-                Sell Item
+                <span>Sell Item</span>
               </button>
 
               <div className={styles.profileSection}>
@@ -570,7 +619,7 @@ const SellerDashboard = () => {
               <button className={styles.messagesButton}
                onClick={() => router.push('/seller-dashboard/messages')}>
                 <MessageSquare size={16} />
-                Messages
+                <span>Messages</span>
               </button>
             </div>
           </div>
@@ -579,11 +628,11 @@ const SellerDashboard = () => {
 
       <div className={styles.mainLayout}>
         {/* Sidebar */}
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarMobileOpen : styles.sidebarMobile}`}>
           <nav className={styles.nav}>
             <div className={styles.navList}>
               <button
-                onClick={() => setActiveTab('home')}
+                onClick={handleNavigation(() => setActiveTab('home'))}
                 className={`${styles.navItem} ${activeTab === 'home' ? styles.active : ''}`}
               >
                 <Home size={20} />
@@ -591,7 +640,7 @@ const SellerDashboard = () => {
               </button>
 
               <button
-                onClick={() => router.push('/seller-dashboard/products')}
+                onClick={handleNavigation(() => router.push('/seller-dashboard/products'))}
                 className={`${styles.navItem} ${activeTab === 'products' ? styles.active : ''}`}
               >
                 <Package size={20} />
@@ -599,7 +648,7 @@ const SellerDashboard = () => {
               </button>
 
               <button
-                onClick={() => router.push('/seller-dashboard/notifications')}
+                onClick={handleNavigation(() => router.push('/seller-dashboard/notifications'))}
                 className={`${styles.navItem} ${activeTab === 'notifications' ? styles.active : ''}`}
               >
                 <Bell size={20} />
@@ -607,7 +656,7 @@ const SellerDashboard = () => {
               </button>
 
               <button 
-                onClick={() => router.push('/seller-dashboard/settings')}
+                onClick={handleNavigation(() => router.push('/seller-dashboard/settings'))}
                 className={`${styles.navItem} ${activeTab === 'settings' ? styles.active : ''}`}
               >
                 <Settings size={20} />
@@ -616,7 +665,7 @@ const SellerDashboard = () => {
             </div>
 
             <div className={styles.navDivider}>
-              <button className={`${styles.navItem} ${styles.logoutButton}`} onClick={handleLogout}>
+              <button className={`${styles.navItem} ${styles.logoutButton}`} onClick={handleNavigation(handleLogout)}>
                 <LogOut size={20} />
                 <span>Sign Out</span>
               </button>
@@ -722,6 +771,7 @@ const SellerDashboard = () => {
           </div>
         </main>
       </div>
+
       <EditListingModal
         listing={editingListing}
         isOpen={showEditModal}
