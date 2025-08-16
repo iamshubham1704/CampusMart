@@ -103,9 +103,9 @@ const CampusMart = () => {
 
   const handleRoleSelect = (role) => {
     if (role === 'buyer') {
-      router.push('/buyer-registration');
+      router.push('/buyer-dashboard');
     } else if (role === 'seller') {
-      router.push('/seller-registration');
+      router.push('/seller-dashboard');
     }
   };
 
