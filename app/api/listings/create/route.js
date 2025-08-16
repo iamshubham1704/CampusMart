@@ -59,7 +59,7 @@ export async function POST(request) {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-
+    
     // Insert into listings collection
     const result = await db.collection('listings').insertOne(newListing);
 

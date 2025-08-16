@@ -1536,7 +1536,7 @@ body {
   box-shadow: 0 12px 35px rgba(139, 92, 246, 0.4);
 }
 
-/* Trust Features */
+/* Trust Features - Fixed for mobile centering */
 .trust-features {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1847,15 +1847,18 @@ body {
     padding: 1.5rem;
   }
   
+  /* Mobile trust features - center icons and stack vertically */
   .trust-feature {
     flex-direction: column;
     text-align: center;
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
+    align-items: center;
   }
   
   .trust-icon {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.5rem;
   }
   
   .cta-section {
@@ -2024,12 +2027,12 @@ body {
   }
   
   .trust-feature {
-    padding: 1.25rem;
+    padding: 1.75rem 1.25rem;
   }
   
   .trust-icon {
-    width: 45px;
-    height: 45px;
+    width: 52px;
+    height: 52px;
   }
   
   .trust-content h4 {
@@ -2046,7 +2049,7 @@ body {
   }
 }
 
-/* Mobile Small (320px - 320px) */
+/* Mobile Small (320px) */
 @media (max-width: 320px) {
   :root {
     --header-height: 55px;
@@ -2111,6 +2114,15 @@ body {
   
   .product-emoji {
     font-size: 2rem;
+  }
+  
+  .trust-feature {
+    padding: 1.5rem 1rem;
+  }
+  
+  .trust-icon {
+    width: 48px;
+    height: 48px;
   }
 }
 
