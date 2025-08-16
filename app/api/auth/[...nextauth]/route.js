@@ -10,7 +10,7 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.NEXTAUTH_URL,
+      callbackURL: 'https://www.campusmart.store/api/auth/callback/',
     }),
   ],  callbacks: {
     async signIn({ user, account, profile }) {
