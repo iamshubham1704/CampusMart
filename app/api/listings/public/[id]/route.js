@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '../../../../../lib/mongo';
+import { getThumbnailUrl } from '../../../../../lib/imagekit';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request, context) {
@@ -16,6 +17,12 @@ export async function GET(request, context) {
         { status: 400 }
       );
     }
+
+    // Increment view count first
+    await db.collection('listings').updateOne(
+      { _id: new ObjectId(params.id) },
+      { $inc: { views: 1 } }
+    );
 
     const listing = await db.collection('listings')
       .aggregate([
@@ -50,15 +57,80 @@ export async function GET(request, context) {
     }
 
     const listingData = listing[0];
+    const seller = listingData.seller?.[0];
 
-    return NextResponse.json({
+    // Process images to ensure proper format
+    let processedImages = [];
+    
+    if (listingData.images && listingData.images.length > 0) {
+      processedImages = listingData.images.map((image, index) => {
+        if (typeof image === 'string') {
+          // Old format - base64 string
+          return {
+            url: image,
+            thumbnailUrl: image,
+            index
+          };
+        } else if (typeof image === 'object' && image.url) {
+          // New format - ImageKit object
+          return {
+            url: image.url,
+            thumbnailUrl: image.thumbnailUrl || getThumbnailUrl(image.url, 500),
+            fileId: image.fileId,
+            fileName: image.fileName,
+            width: image.width,
+            height: image.height,
+            index
+          };
+        }
+        return null;
+      }).filter(img => img !== null);
+    }
+
+    // Format seller data
+    const sellerInfo = seller ? {
+      _id: seller._id.toString(),
+      id: seller._id.toString(),
+      name: seller.name || seller.businessName || 'Anonymous Seller',
+      avatar: seller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name || 'User')}&size=100&background=3b82f6&color=ffffff`,
+      rating: seller.rating || 4.5,
+      verified: seller.verified || false,
+      totalSales: seller.totalSales || 0,
+      responseTime: seller.responseTime || '2 hours',
+      university: seller.university || seller.college || 'Campus',
+      joinedDate: seller.createdAt || seller.joinedDate
+    } : null;
+
+    // Format the response
+    const responseData = {
       success: true,
-      ...listingData,
-      seller: listingData.seller?.[0] || null
-    });
+      listing: {
+        id: listingData._id.toString(),
+        _id: listingData._id.toString(),
+        title: listingData.title,
+        description: listingData.description,
+        price: listingData.price,
+        originalPrice: listingData.originalPrice,
+        condition: listingData.condition,
+        category: listingData.category,
+        subcategory: listingData.subcategory,
+        location: listingData.location,
+        college: listingData.college,
+        images: processedImages,
+        tags: listingData.tags || [],
+        status: listingData.status,
+        views: (listingData.views || 0) + 1, // Include the incremented view
+        createdAt: listingData.createdAt,
+        updatedAt: listingData.updatedAt,
+        seller: sellerInfo,
+        sellerId: listingData.sellerId?.toString()
+      }
+    };
+
+    return NextResponse.json(responseData);
 
   } catch (error) {
-
+    console.error('❌ Error fetching public listing:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to fetch listing' },
       { status: 500 }

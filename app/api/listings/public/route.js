@@ -99,10 +99,8 @@ export async function GET(request) {
       return {
         id: listing._id.toString(),
         title: listing.title || 'Untitled',
-        price: parseFloat(listing.price * 1.1) || 0,
-        originalPrice: listing.originalPrice
-          ? parseFloat(listing.originalPrice)
-          : parseFloat(listing.price) * 1.3,
+        price: listing.price || 0,
+        originalPrice: listing.originalPrice || (listing.price ? listing.price * 1.3 : 0),
         image: imageUrl, // Optimized image URL
         seller: seller?.name || seller?.businessName || 'Anonymous Seller',
         rating: seller?.rating || 4.5,
@@ -113,7 +111,28 @@ export async function GET(request) {
         description: listing.description || 'No description available',
         views: listing.views || 0,
         status: listing.status || 'active',
-        sellerId: listing.sellerId
+        sellerId: listing.sellerId,
+        // Include processed images array for detailed view
+        images: listing.images ? listing.images.map((img, index) => {
+          if (typeof img === 'string') {
+            return {
+              url: img,
+              thumbnailUrl: img,
+              index
+            };
+          } else if (typeof img === 'object' && img.url) {
+            return {
+              url: img.url,
+              thumbnailUrl: img.thumbnailUrl || getThumbnailUrl(img.url, 300),
+              fileId: img.fileId,
+              fileName: img.fileName,
+              width: img.width,
+              height: img.height,
+              index
+            };
+          }
+          return null;
+        }).filter(img => img !== null) : []
       };
     });
 
