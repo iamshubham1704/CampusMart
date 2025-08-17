@@ -1,4 +1,4 @@
-// app/admin-dashboard/management/page.js
+// app/admin-dashboard/management/page.js - UPDATED VERSION
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,10 @@ export default function AdminManagementPage() {
   // Messages state
   const [messages, setMessages] = useState([]);
   const [messagesFilter, setMessagesFilter] = useState('all');
+
+  // Payment Screenshots state
+  const [paymentScreenshots, setPaymentScreenshots] = useState([]);
+  const [paymentsFilter, setPaymentsFilter] = useState('pending_verification');
 
   useEffect(() => {
     // Check if admin is logged in
@@ -46,7 +50,7 @@ export default function AdminManagementPage() {
       localStorage.removeItem('adminData');
       router.push('/admin-login');
     }
-  }, [activeTab, listingsFilter, conversationsFilter, messagesFilter, router]);
+  }, [activeTab, listingsFilter, conversationsFilter, messagesFilter, paymentsFilter, router]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -61,6 +65,8 @@ export default function AdminManagementPage() {
         await fetchConversations(token);
       } else if (activeTab === 'messages') {
         await fetchMessages(token);
+      } else if (activeTab === 'payments') {
+        await fetchPaymentScreenshots(token);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -118,6 +124,74 @@ export default function AdminManagementPage() {
     }
   };
 
+  // NEW: Fetch Payment Screenshots
+  const fetchPaymentScreenshots = async (token) => {
+    const statusParam = paymentsFilter !== 'all' ? `?status=${paymentsFilter}` : '';
+    const response = await fetch(`/api/admin/payment-screenshots${statusParam}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      setPaymentScreenshots(data.data.screenshots);
+    } else {
+      setError(data.error || 'Failed to fetch payment screenshots');
+    }
+  };
+
+  // NEW: Handle Payment Verification
+  const handlePaymentVerification = async (screenshotId, action, rejectionReason = null) => {
+    const actionText = action === 'verified' ? 'approve' : 'reject';
+    
+    if (!confirm(`Are you sure you want to ${actionText} this payment?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      
+      const response = await fetch('/api/admin/payment-screenshots/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          screenshotId,
+          status: action,
+          rejectionReason
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update the payment screenshot in local state
+        setPaymentScreenshots(paymentScreenshots.map(payment => 
+          payment._id === screenshotId 
+            ? { ...payment, status: action, verifiedAt: new Date(), rejectionReason }
+            : payment
+        ));
+        alert(`Payment ${action} successfully!`);
+      } else {
+        alert(data.error || 'Failed to update payment status');
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      alert('Network error. Please try again.');
+    }
+  };
+
+  // NEW: View Payment Screenshot
+  const viewPaymentScreenshot = (screenshotId) => {
+    const token = localStorage.getItem('adminToken');
+    const imageUrl = `/api/payment-screenshots/image/${screenshotId}?token=${token}`;
+    window.open(imageUrl, '_blank', 'width=800,height=600');
+  };
+
+  // Existing functions (handleListingStatusChange, handleConversationStatusChange, etc.)
   const handleListingStatusChange = async (listingId, newStatus) => {
     if (!confirm(`Are you sure you want to change listing status to ${newStatus}?`)) {
       return;
@@ -324,7 +398,7 @@ export default function AdminManagementPage() {
         </div>
       )}
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - UPDATED WITH PAYMENTS TAB */}
       <div style={{
         backgroundColor: 'white',
         padding: '1rem 2rem',
@@ -332,7 +406,7 @@ export default function AdminManagementPage() {
         borderRadius: '8px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveTab('listings')}
             style={{
@@ -375,9 +449,26 @@ export default function AdminManagementPage() {
           >
             Messages
           </button>
+          {/* NEW PAYMENT VERIFICATION TAB */}
+          <button
+            onClick={() => setActiveTab('payments')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: activeTab === 'payments' ? '#007bff' : '#e9ecef',
+              color: activeTab === 'payments' ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: activeTab === 'payments' ? 'bold' : 'normal'
+            }}
+          >
+            Payment Verification
+          </button>
         </div>
       </div>
 
+      {/* Existing Tabs (Listings, Conversations, Messages) - Keep existing code */}
+      
       {/* Listings Tab */}
       {activeTab === 'listings' && (
         <div style={{
@@ -502,6 +593,202 @@ export default function AdminManagementPage() {
         </div>
       )}
 
+      {/* Keep existing Conversations and Messages tabs... */}
+
+      {/* NEW PAYMENT VERIFICATION TAB */}
+      {activeTab === 'payments' && (
+        <div style={{
+          backgroundColor: 'white',
+          padding: '2rem',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2rem'
+          }}>
+            <h2 style={{ margin: 0, color: '#333' }}>Payment Verification</h2>
+            
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {['all', 'pending_verification', 'verified', 'rejected'].map(status => (
+                <button
+                  key={status}
+                  onClick={() => setPaymentsFilter(status)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: paymentsFilter === status ? '#007bff' : '#e9ecef',
+                    color: paymentsFilter === status ? 'white' : '#333',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  {status.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse',
+              border: '1px solid #dee2e6'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8f9fa' }}>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Order Details</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Buyer</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Product</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Amount</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Status</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Uploaded</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paymentScreenshots.map((payment) => (
+                  <tr key={payment._id} style={{ borderBottom: '1px solid #dee2e6' }}>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div>
+                        <strong>ID:</strong> {payment._id}
+                        <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                          <strong>Method:</strong> {payment.paymentMethod}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                          <strong>UPI:</strong> {payment.upiId}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div>
+                        <strong>{payment.buyer?.name || 'Unknown'}</strong>
+                        <div style={{ fontSize: '0.8rem', color: '#666' }}>{payment.buyerEmail}</div>
+                        {payment.buyer?.phone && (
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>{payment.buyer.phone}</div>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div>
+                        <strong>{payment.product?.title || 'Product Deleted'}</strong>
+                        {payment.product?.price && (
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>Listed: ₹{payment.product.price}</div>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <strong style={{ color: '#28a745' }}>₹{payment.amount}</strong>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: 
+                          payment.status === 'verified' ? '#d4edda' : 
+                          payment.status === 'rejected' ? '#f8d7da' : '#fff3cd',
+                        color: 
+                          payment.status === 'verified' ? '#155724' : 
+                          payment.status === 'rejected' ? '#721c24' : '#856404',
+                        borderRadius: '4px',
+                        fontSize: '0.875rem',
+                        textTransform: 'capitalize'
+                      }}>
+                        {payment.status.replace('_', ' ')}
+                      </span>
+                      {payment.rejectionReason && (
+                        <div style={{ fontSize: '0.8rem', color: '#dc3545', marginTop: '0.25rem' }}>
+                          {payment.rejectionReason}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#666' }}>
+                      {new Date(payment.uploadedAt).toLocaleDateString()}
+                      <div>{new Date(payment.uploadedAt).toLocaleTimeString()}</div>
+                      {payment.verifiedAt && (
+                        <div style={{ color: '#28a745', fontSize: '0.7rem' }}>
+                          Verified: {new Date(payment.verifiedAt).toLocaleDateString()}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column', alignItems: 'center' }}>
+                        <button
+                          onClick={() => viewPaymentScreenshot(payment._id)}
+                          style={{
+                            padding: '0.375rem 0.75rem',
+                            backgroundColor: '#17a2b8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          View Screenshot
+                        </button>
+                        
+                        {payment.status === 'pending_verification' && (
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            <button
+                              onClick={() => handlePaymentVerification(payment._id, 'verified')}
+                              style={{
+                                padding: '0.375rem 0.75rem',
+                                backgroundColor: '#28a745',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem'
+                              }}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                const reason = prompt('Enter rejection reason:');
+                                if (reason) {
+                                  handlePaymentVerification(payment._id, 'rejected', reason);
+                                }
+                              }}
+                              style={{
+                                padding: '0.375rem 0.75rem',
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem'
+                              }}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {paymentScreenshots.length === 0 && (
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: '#666'
+              }}>
+                No payment screenshots found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Keep existing Conversations and Messages tabs code here... */}
       {/* Conversations Tab */}
       {activeTab === 'conversations' && (
         <div style={{
