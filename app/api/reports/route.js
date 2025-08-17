@@ -69,7 +69,17 @@ export async function POST(request) {
       updatedAt: new Date(),
       resolvedAt: null,
       adminNotes: '',
-      reportId: `RPT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      reportId: `RPT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      // Add activity logging
+      activityLog: [{
+        action: 'created',
+        timestamp: new Date(),
+        status: 'pending',
+        actor: 'system',
+        details: `Report created with ${issueType} issue type and ${priority || 'medium'} priority`,
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown'
+      }]
     };
 
     // Insert the report into the database
@@ -102,13 +112,12 @@ export async function POST(request) {
 export async function GET(request) {
   try {
     // This endpoint could be used by admins to fetch reports
-    // For now, we'll implement basic functionality
-    
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const priority = searchParams.get('priority');
     const limit = parseInt(searchParams.get('limit')) || 50;
     const page = parseInt(searchParams.get('page')) || 1;
+    const sortBy = searchParams.get('sortBy') || 'date'; // 'date', 'priority', or 'status'
 
     // Connect to MongoDB
     const client = await clientPromise;
@@ -127,16 +136,59 @@ export async function GET(request) {
     // Calculate skip for pagination
     const skip = (page - 1) * limit;
 
-    // Fetch reports with pagination
-    const reports = await collection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
+    let reports;
+    let totalReports;
 
-    // Get total count for pagination
-    const totalReports = await collection.countDocuments(query);
+    // Use aggregation pipeline for custom priority sorting
+    if (sortBy === 'priority') {
+      const pipeline = [
+        { $match: query },
+        {
+          $addFields: {
+            priorityOrder: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ['$priority', 'critical'] }, then: 1 },
+                  { case: { $eq: ['$priority', 'high'] }, then: 2 },
+                  { case: { $eq: ['$priority', 'medium'] }, then: 3 },
+                  { case: { $eq: ['$priority', 'low'] }, then: 4 }
+                ],
+                default: 5
+              }
+            }
+          }
+        },
+        { $sort: { priorityOrder: 1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { priorityOrder: 0 } } // Remove the temporary field
+      ];
+
+      reports = await collection.aggregate(pipeline).toArray();
+      totalReports = await collection.countDocuments(query);
+    } else {
+      // Standard sorting for date or status
+      let sortOptions = {};
+      
+      switch (sortBy) {
+        case 'status':
+          sortOptions = { status: 1, createdAt: -1 };
+          break;
+        default: // 'date' or any other value
+          sortOptions = { createdAt: -1 };
+          break;
+      }
+
+      reports = await collection
+        .find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+
+      totalReports = await collection.countDocuments(query);
+    }
+
     const totalPages = Math.ceil(totalReports / limit);
 
     return NextResponse.json({
@@ -172,7 +224,7 @@ export async function PATCH(request) {
   try {
     // This endpoint could be used by admins to update report status
     const body = await request.json();
-    const { reportId, status, adminNotes } = body;
+    const { reportId, status, adminNotes, adminId } = body;
 
     if (!reportId || !status) {
       return NextResponse.json(
@@ -194,6 +246,15 @@ export async function PATCH(request) {
     const db = client.db('campusmart');
     const collection = db.collection('reports');
 
+    // Get the current report to compare status
+    const currentReport = await collection.findOne({ reportId });
+    if (!currentReport) {
+      return NextResponse.json(
+        { error: 'Report not found' },
+        { status: 404 }
+      );
+    }
+
     // Prepare update document
     const updateDoc = {
       status,
@@ -208,10 +269,24 @@ export async function PATCH(request) {
       updateDoc.resolvedAt = new Date();
     }
 
-    // Update the report
+    // Create activity log entry
+    const activityEntry = {
+      action: currentReport.status !== status ? 'status_updated' : 'updated',
+      timestamp: new Date(),
+      status: status,
+      actor: adminId || 'admin',
+      details: `Status changed from ${currentReport.status} to ${status}${adminNotes ? ` with notes: ${adminNotes}` : ''}`,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      userAgent: request.headers.get('user-agent') || 'unknown'
+    };
+
+    // Update the report with both the new fields and activity log
     const result = await collection.updateOne(
       { reportId },
-      { $set: updateDoc }
+      { 
+        $set: updateDoc,
+        $push: { activityLog: activityEntry }
+      }
     );
 
     if (result.matchedCount === 0) {

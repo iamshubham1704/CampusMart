@@ -10,6 +10,16 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all"); // all, buyer, seller
   const [adminData, setAdminData] = useState(null);
+  
+  // ADD: Reports stats state
+  const [reportsStats, setReportsStats] = useState({
+    pending: 0,
+    'in-progress': 0,
+    resolved: 0,
+    closed: 0,
+    total: 0
+  });
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -37,6 +47,23 @@ export default function AdminDashboard() {
       router.push("/admin-login");
     }
   }, [filter, router]);
+
+  // ADD: Fetch reports data function
+  const fetchReportsData = async (token) => {
+    try {
+      const response = await fetch('/api/admin/reports?limit=1', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setReportsStats(data.statistics.status);
+      }
+    } catch (error) {
+      console.error('Error fetching reports data:', error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -69,6 +96,9 @@ export default function AdminDashboard() {
       if (statsResponse.ok) {
         setStats(statsData.data);
       }
+
+      // ADD: Fetch reports data
+      await fetchReportsData(token);
     } catch (error) {
       console.error("Error fetching data:", error);
       setError("Network error. Please try again.");
@@ -337,6 +367,100 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* ADD: Reports Management Card */}
+      <div style={{
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        border: '1px solid #e0e0e0',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{
+            backgroundColor: '#6f42c1',
+            color: 'white',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            marginRight: '1rem'
+          }}>
+            📋
+          </div>
+          <div>
+            <h3 style={{ margin: 0, color: '#333' }}>Reports Management</h3>
+            <p style={{ margin: '0.25rem 0 0 0', color: '#666', fontSize: '0.9rem' }}>
+              User reports and issues
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ffc107' }}>
+              {reportsStats.pending || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              Pending
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0dcaf0' }}>
+              {reportsStats['in-progress'] || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              In Progress
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#198754' }}>
+              {reportsStats.resolved || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              Resolved
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#6c757d' }}>
+              {reportsStats.closed || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              Closed
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => router.push('/admin-dashboard/reports')}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              backgroundColor: '#6f42c1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            📋 Manage Reports
+          </button>
+          <button
+            onClick={() => router.push('/admin-dashboard/reports?status=pending')}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              backgroundColor: '#ffc107',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            🚨 Pending Issues
+          </button>
+        </div>
+      </div>
+
       {/* Users Management */}
       <div
         style={{
@@ -555,7 +679,7 @@ export default function AdminDashboard() {
             >
               No users found.
             </div>
-          )}
+            )}
         </div>
       </div>
     </div>

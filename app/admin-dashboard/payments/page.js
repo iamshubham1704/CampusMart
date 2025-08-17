@@ -1,4 +1,4 @@
-// app/admin-dashboard/payments/page.js - CREATE NEW FILE
+// app/admin-dashboard/payments/page.js - FIXED VERSION
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -133,10 +133,117 @@ export default function AdminPaymentsPage() {
     setShowModal(true);
   };
 
+  // FIX: Updated screenshot viewing function with proper token handling
   const viewPaymentScreenshot = (screenshotId) => {
     const token = localStorage.getItem('adminToken');
-    const imageUrl = `/api/payment-screenshots/image/${screenshotId}?token=${token}`;
-    window.open(imageUrl, '_blank', 'width=800,height=600,scrollbars=yes');
+    if (!token) {
+      alert('Authentication required. Please login again.');
+      return;
+    }
+    
+    // Open image in new tab with token as query parameter
+    const imageUrl = `/api/payment-screenshots/image/${screenshotId}?token=${encodeURIComponent(token)}`;
+    const newWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+    
+    if (newWindow) {
+      // Create a simple image viewer page
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Payment Screenshot - ${screenshotId}</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 20px;
+              background: #f5f5f5;
+              font-family: Arial, sans-serif;
+            }
+            .container {
+              max-width: 100%;
+              text-align: center;
+            }
+            .loading {
+              padding: 50px;
+              font-size: 18px;
+              color: #666;
+            }
+            .error {
+              padding: 50px;
+              font-size: 18px;
+              color: #d32f2f;
+              background: #ffebee;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            img {
+              max-width: 100%;
+              max-height: 80vh;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+              border-radius: 8px;
+              background: white;
+            }
+            .info {
+              margin-top: 20px;
+              padding: 15px;
+              background: white;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .close-btn {
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: #d32f2f;
+              color: white;
+              border: none;
+              padding: 10px 15px;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 14px;
+            }
+            .close-btn:hover {
+              background: #b71c1c;
+            }
+          </style>
+        </head>
+        <body>
+          <button class="close-btn" onclick="window.close()">✕ Close</button>
+          <div class="container">
+            <div class="loading" id="loading">Loading screenshot...</div>
+            <img id="screenshot" style="display: none;" onload="document.getElementById('loading').style.display='none'; this.style.display='block';" onerror="showError()">
+            <div class="info">
+              <strong>Screenshot ID:</strong> ${screenshotId}<br>
+              <small>Admin View - ${new Date().toLocaleString()}</small>
+            </div>
+          </div>
+          
+          <script>
+            function showError() {
+              document.getElementById('loading').innerHTML = '<div class="error">❌ Failed to load screenshot. Please check if the image exists and you have proper permissions.</div>';
+            }
+            
+            // Set the image source
+            document.getElementById('screenshot').src = '${imageUrl}';
+            
+            // Handle keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') {
+                window.close();
+              }
+            });
+          </script>
+        </body>
+        </html>
+      `);
+      newWindow.document.close();
+    } else {
+      // Fallback for popup blockers
+      const confirmed = confirm('Unable to open new window. Open image in current tab?');
+      if (confirmed) {
+        window.open(imageUrl, '_self');
+      }
+    }
   };
 
   const handleLogout = () => {
