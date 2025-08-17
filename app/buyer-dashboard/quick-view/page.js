@@ -65,6 +65,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
     try {
       setLoading(true);
       setError(null);
+      setSelectedImageIndex(0); // Reset image index
 
       console.log('🔍 Fetching product details for ID:', productId);
 
@@ -76,8 +77,6 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
         console.log('🔑 Using auth token');
-      } else {
-        console.log('⚠️ No auth token found');
       }
 
       console.log('📡 Making request to:', `/api/listings/public/${productId}`);
@@ -88,7 +87,6 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       });
 
       console.log('📨 Response status:', response.status);
-      console.log('📨 Response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -97,84 +95,85 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
         if (response.status === 404) {
           throw new Error('Product not found');
         }
-        throw new Error(`Failed to fetch product: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Failed to fetch product: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Received data:', data);
+      console.log('✅ Received API data:', data);
 
-      // Your API returns data in 'listing' field, not 'data'
-      const productData = data.listing || data.data || data;
-      console.log('📦 Product data:', productData);
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch product');
+      }
+
+      // Extract the listing from the API response
+      const productData = data.listing;
+      
+      if (!productData) {
+        throw new Error('No product data found');
+      }
+
+      console.log('📦 Product data extracted:', productData);
+      console.log('🖼️ Product images:', productData.images);
+
+      // Ensure images are properly formatted
+      if (productData.images && productData.images.length > 0) {
+        console.log('🎨 Processing images...');
+        productData.images.forEach((img, idx) => {
+          console.log(`Image ${idx}:`, {
+            type: typeof img,
+            hasUrl: img && img.url ? 'YES' : 'NO',
+            url: img && img.url ? img.url.substring(0, 50) + '...' : 'No URL'
+          });
+        });
+      } else {
+        console.log('⚠️ No images found in product data');
+      }
 
       setProduct(productData);
-
-      // Update view count using public endpoint (optional)
-      if (productData) {
-        console.log('👀 View already tracked by API');
-      }
 
     } catch (err) {
       console.error('❌ Error fetching product:', err);
       setError(err.message);
-
-      // Fallback to mock data for development - ONLY FOR DEV, REMOVE IN PRODUCTION
-      if (process.env.NODE_ENV === 'development') {
-        const mockProduct = {
-          id: productId,
-          _id: productId,
-          title: 'Noise-Canceling Over-Ear Headphones',
-          price: 4999,
-          originalPrice: 6999,
-          images: [
-            'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
-            'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500&h=500&fit=crop',
-            'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&h=500&fit=crop'
-          ],
-          condition: 'Like New',
-          category: 'electronics',
-          description: 'Experience unparalleled audio quality with our premium Noise-Canceling Over-Ear Headphones. Engineered for audiophiles and everyday users alike, these headphones deliver exceptional sound reproduction while blocking out the world around you.',
-          features: [
-            'Advanced noise cancellation up to 35 dB',
-            '35-hour battery life with full charge',
-            'Foldable and portable design for easy travel',
-            'Bluetooth 5.0 support with 30-foot range',
-            'Premium sound quality with deep bass',
-            '1-year warranty included with purchase'
-          ],
-          seller: {
-            _id: '654321098765432109876544',
-            id: '654321098765432109876544',
-            name: 'Aarav Patel',
-            avatar: 'https://ui-avatars.com/api/?name=Aarav+Patel&size=100&background=3b82f6&color=ffffff',
-            rating: 4.8,
-            verified: true,
-            totalSales: 47,
-            responseTime: '2 hours',
-            university: 'State University',
-            joinedDate: '2023-09-15'
-          },
-          location: 'Chennai district',
-          timePosted: '2 hours ago',
-          views: 124,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          tags: ['electronics', 'headphones', 'bluetooth', 'noise-canceling'],
-          specifications: {
-            'Brand': 'Bose',
-            'Model': 'QC45',
-            'Color': 'Black',
-            'Connectivity': 'Bluetooth 5.0',
-            'Battery Life': '35 hours',
-            'Weight': '240g'
-          }
-        };
-        setProduct(mockProduct);
-      } else {
-        setProduct(null);
-      }
+      setProduct(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get current image URL
+  const getCurrentImageUrl = () => {
+    if (!product || !product.images || product.images.length === 0) {
+      return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=500&fit=crop';
+    }
+
+    const currentImage = product.images[selectedImageIndex];
+    
+    if (!currentImage) {
+      return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=500&fit=crop';
+    }
+
+    // Handle different image formats
+    if (typeof currentImage === 'string') {
+      // Old format - direct base64 string
+      return currentImage;
+    } else if (typeof currentImage === 'object' && currentImage.url) {
+      // New format - ImageKit object
+      return currentImage.url;
+    }
+
+    return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=500&fit=crop';
+  };
+
+  // Get thumbnail URL for image navigation
+  const getThumbnailUrl = (image) => {
+    if (typeof image === 'string') {
+      return image;
+    } else if (typeof image === 'object' && image.thumbnailUrl) {
+      return image.thumbnailUrl;
+    } else if (typeof image === 'object' && image.url) {
+      return image.url;
+    }
+    return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop';
   };
 
   // Handler functions
@@ -206,16 +205,14 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
         type: uploadedScreenshot.type
       });
 
-      // Prepare form data
       const formData = new FormData();
       formData.append('screenshot', uploadedScreenshot);
       formData.append('productId', product._id || product.id);
-      formData.append('sellerId', product.seller?._id || product.sellerId || product.userId);
+      formData.append('sellerId', product.seller?._id || product.sellerId);
       formData.append('amount', product.price.toString());
       formData.append('paymentMethod', 'upi');
       formData.append('upiId', '8750471736@ptsbi');
 
-      // Get authentication token
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
       if (!token) {
         alert('Please log in again to continue');
@@ -223,7 +220,6 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
         return;
       }
 
-      // Upload screenshot
       const response = await fetch('/api/payment-screenshots/upload', {
         method: 'POST',
         headers: {
@@ -240,7 +236,6 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
 
       console.log('✅ Screenshot uploaded successfully:', result);
 
-      // Show success message with order details
       alert(`Order submitted successfully! 
 
 Order ID: ${result.data.orderId}
@@ -248,7 +243,6 @@ Status: Payment verification pending
 
 We will verify your payment and confirm your order shortly. You can track your order status in your dashboard.`);
 
-      // Reset all payment states
       setShowPaymentModal(false);
       setPaymentStep('options');
       setSelectedUpiOption('');
@@ -273,7 +267,6 @@ We will verify your payment and confirm your order shortly. You can track your o
       return;
     }
 
-    // Show payment modal starting with options
     setShowPaymentModal(true);
     setPaymentStep('options');
     setSelectedUpiOption('');
@@ -295,7 +288,7 @@ We will verify your payment and confirm your order shortly. You can track your o
       return;
     }
 
-    const listingId = product.id || product._id || product.listingId;
+    const listingId = product.id || product._id;
 
     if (!listingId) {
       console.error('❌ No valid product ID found for cart');
@@ -334,15 +327,7 @@ We will verify your payment and confirm your order shortly. You can track your o
       return;
     }
 
-    let sellerId = null;
-
-    if (product.seller && (product.seller._id || product.seller.id)) {
-      sellerId = product.seller._id || product.seller.id;
-    } else if (product.sellerId || product.seller_id) {
-      sellerId = product.sellerId || product.seller_id;
-    } else if (product.userId || product.user_id) {
-      sellerId = product.userId || product.user_id;
-    }
+    let sellerId = product.seller?._id || product.seller?.id || product.sellerId;
 
     if (!sellerId) {
       console.error('Cannot contact seller: Seller ID not found in product data.');
@@ -350,8 +335,6 @@ We will verify your payment and confirm your order shortly. You can track your o
       alert('Seller information is unavailable. Please try again later.');
       return;
     }
-
-    console.log('Attempting to contact seller:', product.seller?.name || 'Unknown', 'Seller ID:', sellerId);
 
     try {
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
@@ -427,6 +410,11 @@ We will verify your payment and confirm your order shortly. You can track your o
     return ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0);
   };
 
+  const handleImageError = (e) => {
+    console.warn('❌ Image failed to load:', e.target.src);
+    e.target.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=500&fit=crop';
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -470,38 +458,34 @@ We will verify your payment and confirm your order shortly. You can track your o
                 {/* Left Side - Product Image */}
                 <div className="product-image-section">
                   <div className="main-product-image">
-                    {product.images && product.images.length > 0 ? (
+                    <img
+                      src={getCurrentImageUrl()}
+                      alt={product.title}
+                      className="product-image"
+                      onError={handleImageError}
+                      onLoad={() => console.log('✅ Image loaded successfully:', getCurrentImageUrl())}
+                    />
+                    
+                    {/* Image Navigation */}
+                    {product.images && product.images.length > 1 && (
                       <>
-                        <img
-                          src={product.images[selectedImageIndex]}
-                          alt={product.title}
-                          className="product-image"
-                        />
-                        {/* Image Navigation */}
-                        {product.images.length > 1 && (
-                          <>
-                            <button
-                              onClick={() => setSelectedImageIndex(Math.max(0, selectedImageIndex - 1))}
-                              disabled={selectedImageIndex === 0}
-                              className="image-nav-btn prev"
-                            >
-                              <ChevronLeft size={20} />
-                            </button>
-                            <button
-                              onClick={() => setSelectedImageIndex(Math.min(product.images.length - 1, selectedImageIndex + 1))}
-                              disabled={selectedImageIndex === product.images.length - 1}
-                              className="image-nav-btn next"
-                            >
-                              <ChevronRight size={20} />
-                            </button>
-                          </>
-                        )}
+                        <button
+                          onClick={() => setSelectedImageIndex(Math.max(0, selectedImageIndex - 1))}
+                          disabled={selectedImageIndex === 0}
+                          className="image-nav-btn prev"
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+                        <button
+                          onClick={() => setSelectedImageIndex(Math.min(product.images.length - 1, selectedImageIndex + 1))}
+                          disabled={selectedImageIndex === product.images.length - 1}
+                          className="image-nav-btn next"
+                        >
+                          <ChevronRight size={20} />
+                        </button>
                       </>
-                    ) : (
-                      <div className="image-placeholder">
-                        <div className="headphone-visual">🎧</div>
-                      </div>
                     )}
+                    
                     <div className="image-tags">
                       <span className="tag">Hot Selling</span>
                       <span className="tag verified">✓ Verified</span>
@@ -518,9 +502,10 @@ We will verify your payment and confirm your order shortly. You can track your o
                           className={`thumbnail-btn ${selectedImageIndex === index ? 'active' : ''}`}
                         >
                           <img
-                            src={image}
+                            src={getThumbnailUrl(image)}
                             alt={`${product.title} ${index + 1}`}
                             className="thumbnail-image"
+                            onError={handleImageError}
                           />
                         </button>
                       ))}
@@ -531,7 +516,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                 {/* Right Side - Product Details */}
                 <div className="product-details-section">
                   <div className="price-section">
-                    <div className="price">₹ {Math.round(product.price * 1.1)}</div>
+                    <div className="price">₹ {product.price}</div>
                     {product.originalPrice && (
                       <>
                         <div className="original-price">₹{product.originalPrice}</div>
@@ -568,12 +553,16 @@ We will verify your payment and confirm your order shortly. You can track your o
                     </button>
                   </div>
 
-
-
                   {product.seller && (
                     <div className="seller-info">
                       <div className="seller-avatar">
-                        <img src={product.seller.avatar} alt={product.seller.name} />
+                        <img 
+                          src={product.seller.avatar} 
+                          alt={product.seller.name}
+                          onError={(e) => {
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller.name || 'User')}&size=100&background=3b82f6&color=ffffff`;
+                          }}
+                        />
                       </div>
                       <div className="seller-details">
                         <div className="seller-name">
@@ -588,7 +577,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                     </div>
                   )}
 
-                  {/* Product Actions - Moved below seller info */}
+                  {/* Product Actions */}
                   <div className="product-actions">
                     <div className="action-cards">
                       <button onClick={() => setShowOrderPolicyModal(true)} className="action-card">
@@ -615,13 +604,20 @@ We will verify your payment and confirm your order shortly. You can track your o
                 </div>
               </div>
 
-
-
               {/* Product Details Section */}
               <div className="details-section">
                 <div className="details-left">
                   <h3>Details</h3>
                   <p>{product.description}</p>
+                  
+                  {product.views && (
+                    <div className="product-stats">
+                      <span className="stat">
+                        <Eye size={16} />
+                        {product.views} views
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
