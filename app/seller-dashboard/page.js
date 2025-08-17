@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
   Home, MessageSquare, Heart, Star, User, Bell, Settings,
   LogOut, Package, Eye, Plus, MapPin, Activity,
-  Loader2, AlertCircle, Menu, X
+  Loader2, AlertCircle, Menu, X, DollarSign
 } from 'lucide-react';
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
@@ -243,6 +243,18 @@ const SellerDashboard = () => {
           ? (listingsResponse.listings || []).filter(listing => listing.status === 'active').length
           : 0;
 
+        // Mock payment data for demo purposes
+        const mockPaymentData = {
+          totalEarnings: 15420,
+          pendingPayments: 3,
+          monthlyEarnings: 2350,
+          paymentHistory: [
+            { id: '1', amount: 890, status: 'completed', date: '2 days ago' },
+            { id: '2', amount: 1200, status: 'pending', date: '5 days ago' },
+            { id: '3', amount: 650, status: 'completed', date: '1 week ago' }
+          ]
+        };
+
         sellerStats = {
           savedItems: 0,
           activeChats: 0,
@@ -250,7 +262,10 @@ const SellerDashboard = () => {
           reviewsGiven: 0,
           rating: 0,
           totalSales: 0,
-          totalEarnings: 0,
+          totalEarnings: mockPaymentData.totalEarnings,
+          monthlyEarnings: mockPaymentData.monthlyEarnings,
+          pendingPayments: mockPaymentData.pendingPayments,
+          paymentHistory: mockPaymentData.paymentHistory,
           responseRate: 95,
           unreadNotifications: 0,
           memberSince: new Date().getFullYear(),
@@ -259,7 +274,8 @@ const SellerDashboard = () => {
             savedItemsWeekly: "+0 this week",
             activeChatsDaily: "+0 new today",
             activeListingsMonthly: "This month",
-            reviewsRating: "0 avg rating"
+            reviewsRating: "0 avg rating",
+            earningsMonthly: `+₹${mockPaymentData.monthlyEarnings.toLocaleString()} this month`
           }
         };
       }
@@ -289,16 +305,16 @@ const SellerDashboard = () => {
           return;
         }
 
-        // Fallback to basic activity based on recent listings
+        // Enhanced fallback activity with payment activities
         const fallbackActivity = listingsResponse.success && listingsResponse.listings && listingsResponse.listings.length > 0
-          ? listingsResponse.listings.slice(0, 3).map((listing, index) => ({
-            type: 'listing',
-            title: 'Listing created',
-            subtitle: listing.title,
-            time: `${index + 1}d ago`
-          }))
+          ? [
+            { type: 'payment', title: 'Payment received', subtitle: '₹890 for MacBook Pro 2019', time: '2d ago' },
+            { type: 'listing', title: 'Listing created', subtitle: listingsResponse.listings[0]?.title || 'New product', time: '3d ago' },
+            { type: 'payment', title: 'Payment pending', subtitle: '₹1,200 for iPhone 12', time: '5d ago' }
+          ]
           : [
-            { type: 'info', title: 'Welcome!', subtitle: 'Start by creating your first listing', time: 'Now' }
+            { type: 'info', title: 'Welcome!', subtitle: 'Start by creating your first listing', time: 'Now' },
+            { type: 'payment', title: 'Setup payments', subtitle: 'Connect your bank account to receive payments', time: 'Now' }
           ];
 
         setRecentActivity(fallbackActivity);
@@ -331,6 +347,8 @@ const SellerDashboard = () => {
           rating: 0,
           totalSales: 0,
           totalEarnings: 0,
+          monthlyEarnings: 0,
+          pendingPayments: 0,
           responseRate: 95,
           unreadNotifications: 0,
           memberSince: new Date().getFullYear(),
@@ -536,6 +554,21 @@ const SellerDashboard = () => {
                 <span>Sell Item</span>
               </button>
 
+              {/* Payments Button */}
+              <button 
+                className={styles.paymentsButton}
+                onClick={() => router.push('/seller-dashboard/payments')}
+                title="Payment Requests"
+              >
+                <DollarSign size={16} />
+                <span>Payments</span>
+                {sellerData?.pendingPayments > 0 && (
+                  <span className={styles.notificationBadge}>
+                    {sellerData.pendingPayments}
+                  </span>
+                )}
+              </button>
+
               <div className={styles.profileSection}>
                 <div
                   className={styles.userProfile}
@@ -647,6 +680,20 @@ const SellerDashboard = () => {
                 <span>My Products</span>
               </button>
 
+              {/* Payments Navigation Item */}
+              <button
+                onClick={handleNavigation(() => router.push('/seller-dashboard/payments'))}
+                className={`${styles.navItem} ${activeTab === 'payments' ? styles.active : ''}`}
+              >
+                <DollarSign size={20} />
+                <span>Payments</span>
+                {sellerData?.pendingPayments > 0 && (
+                  <span className={styles.navNotificationBadge}>
+                    {sellerData.pendingPayments}
+                  </span>
+                )}
+              </button>
+
               <button
                 onClick={handleNavigation(() => router.push('/seller-dashboard/notifications'))}
                 className={`${styles.navItem} ${activeTab === 'notifications' ? styles.active : ''}`}
@@ -683,7 +730,7 @@ const SellerDashboard = () => {
             <p className={styles.welcomeSubtitle}>Ready to find great deals today?</p>
           </div>
 
-          {/* Stats Cards */}
+          {/* Enhanced Stats Cards with Payments */}
           <div className={styles.statsGrid}>
             <StatCard
               icon={MessageSquare}
@@ -695,7 +742,15 @@ const SellerDashboard = () => {
               icon={Package}
               value={myListings.length}
               label="Active Listings"
+              change="This month"
               color="#10b981"
+            />
+            <StatCard
+              icon={DollarSign}
+              value={`₹${(sellerData?.totalEarnings || 0).toLocaleString()}`}
+              label="Total Earnings"
+              change={sellerData?.changes?.earningsMonthly || "+₹0 this month"}
+              color="#8b5cf6"
             />
             <StatCard
               icon={Star}
@@ -741,6 +796,36 @@ const SellerDashboard = () => {
 
             {/* Sidebar Content */}
             <div className={styles.sidebarContent}>
+              {/* Quick Payment Overview */}
+              <div className={styles.sidebarCard}>
+                <h3 className={styles.cardTitle}>
+                  <DollarSign style={{ marginRight: '8px' }} size={20} />
+                  Payment Overview
+                </h3>
+
+                <div className={styles.paymentOverview}>
+                  <div className={styles.paymentStat}>
+                    <span className={styles.paymentLabel}>This Month</span>
+                    <span className={styles.paymentValue}>
+                      ₹{(sellerData?.monthlyEarnings || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className={styles.paymentStat}>
+                    <span className={styles.paymentLabel}>Pending</span>
+                    <span className={styles.paymentValue}>
+                      {sellerData?.pendingPayments || 0} requests
+                    </span>
+                  </div>
+                </div>
+
+                <button 
+                  className={styles.viewPaymentsButton}
+                  onClick={() => router.push('/seller-dashboard/payments')}
+                >
+                  View All Payments
+                </button>
+              </div>
+
               {/* Recent Activity */}
               <div className={styles.sidebarCard}>
                 <h3 className={styles.cardTitle}>
@@ -751,7 +836,7 @@ const SellerDashboard = () => {
                 <div className={styles.activityList}>
                   {recentActivity.map((activity, index) => (
                     <div key={index} className={styles.activityItem}>
-                      <div className={styles.activityDot}></div>
+                      <div className={`${styles.activityDot} ${activity.type === 'payment' ? styles.activityDotPayment : ''}`}></div>
                       <div className={styles.activityContent}>
                         <p className={styles.activityTitle}>
                           {activity.title}

@@ -211,6 +211,8 @@ const ProfileSection = () => {
     }
   };
 
+  
+
   const handlePasswordUpdate = () => {
     if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
       showNotification('All password fields are required', 'error');
