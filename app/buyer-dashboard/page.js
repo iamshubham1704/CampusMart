@@ -373,6 +373,24 @@ const BuyerDashboard = () => {
   });
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
+  // Location dropdown state
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const locationDropdownRef = useRef(null);
+
+  // Available locations for dropdown
+  const availableLocations = [
+    'MAIT', 'DTU', 'NSUT', 'DU', 'IIIT Delhi', 'JNU', 'Jamia Millia Islamia',
+    'IP University', 'Amity University', 'Sharda University', 'Bennett University',
+    'Other Delhi Colleges'
+  ];
+
+  // Filter locations based on search
+  const filteredLocations = availableLocations.filter(location =>
+    location.toLowerCase().includes(locationSearchQuery.toLowerCase())
+  );
+
   // Mouse tracking effect
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -390,6 +408,20 @@ const BuyerDashboard = () => {
       dashboard.addEventListener('mousemove', handleMouseMove);
       return () => dashboard.removeEventListener('mousemove', handleMouseMove);
     }
+  }, []);
+
+  // Close location dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+        setIsLocationDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -548,6 +580,7 @@ const BuyerDashboard = () => {
     });
     setSelectedCategory('all');
     setSearchQuery('');
+    setSelectedLocation('');
   };
 
   const getActiveFilterCount = () => {
@@ -557,6 +590,7 @@ const BuyerDashboard = () => {
     if (filters.priceRange.min > 0 || filters.priceRange.max < 10000) count++;
     if (selectedCategory !== 'all') count++;
     if (searchQuery) count++;
+    if (selectedLocation) count++;
     return count;
   };
 
@@ -576,6 +610,16 @@ const BuyerDashboard = () => {
     }));
   };
 
+  const handleLocationSelect = (location) => {
+    setSelectedLocation(location);
+    setFilters(prev => ({
+      ...prev,
+      locations: location ? [location] : []
+    }));
+    setIsLocationDropdownOpen(false);
+    setLocationSearchQuery('');
+  };
+
   const openProductModal = (productId) => {
     setSelectedProductId(productId);
     setIsProductModalOpen(true);
@@ -588,7 +632,24 @@ const BuyerDashboard = () => {
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
+    // Remove body scroll lock when sidebar closes
+    document.body.style.overflow = 'unset';
   };
+
+  const openSidebar = () => {
+    setIsSidebarOpen(true);
+    // Prevent body scroll when sidebar is open on mobile
+    if (window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  // Clean up body scroll lock on component unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -606,7 +667,7 @@ const BuyerDashboard = () => {
   }
 
   return (
-    <div className={`dashboard ${isDarkTheme ? 'dark' : 'light'}`} ref={dashboardRef}>
+    <div className={`dashboard ${isDarkTheme ? 'dark' : 'light'} ${isSidebarOpen ? 'sidebar-open' : ''}`} ref={dashboardRef}>
       {/* Mouse-tracking animated background */}
       <div className="animatedBackground">
         <div
@@ -624,7 +685,7 @@ const BuyerDashboard = () => {
       <header className="header">
         <div className="headerContent">
           <div className="logoSection">
-            <button className="menuToggle" onClick={() => setIsSidebarOpen(true)}>
+            <button className="menuToggle" onClick={openSidebar}>
               <Menu size={24} />
             </button>
             <div className="logo">
@@ -635,7 +696,7 @@ const BuyerDashboard = () => {
 
           <div className="searchSection">
             <div className="searchBar">
-              <Search size={20} />
+              <Search size={20} className="search-icon" />
               <input
                 type="text"
                 placeholder="Search for textbooks, electronics, furniture..."
@@ -686,19 +747,35 @@ const BuyerDashboard = () => {
         {/* Sidebar */}
         <aside className={`sidebar ${isSidebarOpen ? 'sidebarOpen' : ''}`}>
           <div className="sidebarContent">
-            <button className="closeSidebar" onClick={closeSidebar}>
+            <button className="closeSidebar js-sidebar-close" onClick={closeSidebar}>
               <X size={20} />
             </button>
 
             {buyer && (
               <div className="welcomeMessage">
-                <h3>Welcome back, {buyer.name?.split(' ')[0]}!</h3>
-                <p>{buyer.university} - {buyer.year} year</p>
+                <div className="greeting">
+                  <div className="greeting-icon">👋</div>
+                  <h3>Welcome back, {buyer.name?.split(' ')[0]}!</h3>
+                </div>
+                <div className="college-info">
+                  <BookOpen size={18} className="college-icon" />
+                  <span>{buyer.university || 'Student'}</span>
+                  {buyer.year && <span>• {buyer.year} year</span>}
+                </div>
+                <div className="member-duration">
+                  Member since {new Date(buyer.createdAt).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    year: 'numeric' 
+                  })}
+                </div>
               </div>
             )}
 
             <div className="categorySection">
-              <h3>Categories</h3>
+              <h3>
+                <Grid3X3 size={20} />
+                Categories
+              </h3>
               <div className="categoryList">
                 {categories.map(category => {
                   const IconComponent = category.icon;
@@ -708,7 +785,7 @@ const BuyerDashboard = () => {
                       className={`categoryItem ${selectedCategory === category.id ? 'active' : ''}`}
                       onClick={() => setSelectedCategory(category.id)}
                     >
-                      <IconComponent size={20} />
+                      <IconComponent size={22} className="category-icon" />
                       <span>{category.name}</span>
                     </button>
                   );
@@ -718,7 +795,10 @@ const BuyerDashboard = () => {
 
             <div className="filterSection">
               <div className="filterHeader">
-                <h3>Filters</h3>
+                <h3>
+                  <Filter size={20} />
+                  Filters
+                </h3>
                 {getActiveFilterCount() > 0 && (
                   <button className="clearFilters" onClick={clearAllFilters}>
                     Clear All ({getActiveFilterCount()})
@@ -727,7 +807,10 @@ const BuyerDashboard = () => {
               </div>
 
               <div className="filterGroup">
-                <label>Sort By</label>
+                <label>
+                  <Clock size={18} className="filter-icon" />
+                  Sort By
+                </label>
                 <select
                   value={filters.sortBy}
                   onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
@@ -741,29 +824,43 @@ const BuyerDashboard = () => {
               </div>
 
               <div className="filterGroup">
-                <label>
-                  Price Range: ₹{filters.priceRange.min} - ₹{filters.priceRange.max}
-                </label>
                 <div className="priceRange">
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    value={filters.priceRange.min}
-                    onChange={(e) => handlePriceRangeChange('min', e.target.value)}
-                  />
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    value={filters.priceRange.max}
-                    onChange={(e) => handlePriceRangeChange('max', e.target.value)}
-                  />
+                  <div className="price-label">
+                    <DollarSign size={18} className="filter-icon" />
+                    Price Range
+                  </div>
+                  <div className="priceSliderContainer">
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000"
+                      step="100"
+                      value={filters.priceRange.min}
+                      onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                      className="priceSlider"
+                    />
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000"
+                      step="100"
+                      value={filters.priceRange.max}
+                      onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                      className="priceSlider"
+                    />
+                  </div>
+                  <div className="price-display">
+                    <span className="min-price">₹{filters.priceRange.min}</span>
+                    <span className="max-price">₹{filters.priceRange.max}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="filterGroup">
-                <label>Condition ({filters.conditions.length} selected)</label>
+                <label>
+                  <Package size={18} className="filter-icon" />
+                  Condition ({filters.conditions.length} selected)
+                </label>
                 <div className="checkboxGroup">
                   {['Like New', 'Excellent', 'Good', 'Fair'].map(condition => (
                     <label key={condition} className="checkboxLabel">
@@ -777,25 +874,53 @@ const BuyerDashboard = () => {
                   ))}
                 </div>
               </div>
-              <select
-                // style={styles.dropdown}
-                value={filters.locations[0] || ""}
-                onChange={(e) => {
-                  // Update filters object properly
-                  setFilters(prev => ({
-                    ...prev,
-                    locations: e.target.value ? [e.target.value] : []
-                  }));
-                  // OR if you're mutating directly (not recommended):
-                  // filters.locations = e.target.value ? [e.target.value] : [];
-                  // forceUpdate(); // You'll need some way to trigger re-render
-                }}
-              >
-                <option value="">Select Location</option>
-                {['MAIT', 'DTU', 'NSUT', 'DU'].map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
+
+              <div className="locationGroup">
+                <label>
+                  <MapPin size={18} className="filter-icon" />
+                  College Location
+                </label>
+                <div className="locationSelector" ref={locationDropdownRef}>
+                  <input
+                    type="text"
+                    className="locationInput js-location-dropdown"
+                    placeholder="Select College Location"
+                    value={selectedLocation}
+                    onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
+                    onChange={() => {}} // Read-only for display
+                    readOnly
+                  />
+                  <div className={`locationDropdown js-location-search ${isLocationDropdownOpen ? 'show' : ''}`}>
+                    <div className="locationSearch">
+                      <input
+                        type="text"
+                        className="locationSearchInput"
+                        placeholder="Search locations..."
+                        value={locationSearchQuery}
+                        onChange={(e) => setLocationSearchQuery(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="locationOptions">
+                      <div
+                        className="locationOption"
+                        onClick={() => handleLocationSelect('')}
+                      >
+                        <span>All Locations</span>
+                      </div>
+                      {filteredLocations.map(location => (
+                        <div
+                          key={location}
+                          className="locationOption"
+                          onClick={() => handleLocationSelect(location)}
+                        >
+                          <span>{location}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
             </div>
           </div>
@@ -817,7 +942,7 @@ const BuyerDashboard = () => {
             <div className="viewControls">
               <button
                 className={`filterToggle mobileOnly ${getActiveFilterCount() > 0 ? 'active' : ''}`}
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={openSidebar}
               >
                 <Filter size={18} />
                 Filters
@@ -991,7 +1116,7 @@ const BuyerDashboard = () => {
       />
 
       {/* Sidebar Overlay for Mobile */}
-      {isSidebarOpen && <div className="sidebarOverlay" onClick={closeSidebar} />}
+      {isSidebarOpen && <div className="sidebarOverlay js-sidebar-overlay show" onClick={closeSidebar} />}
 
       <ProductViewModal
         productId={selectedProductId}
