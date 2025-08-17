@@ -1,6 +1,8 @@
+// app/api/payment-screenshots/upload/route.js - UPDATED VERSION WITH IMAGEKIT
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongo';
 import { verifyToken } from '../../../../lib/auth';
+import { uploadImageToImageKit } from '../../../../lib/imagekit';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request) {
@@ -22,23 +24,53 @@ export async function POST(request) {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(screenshot.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.' 
+      }, { status: 400 });
     }
 
     // Validate file size (10MB limit)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (screenshot.size > maxSize) {
-      return NextResponse.json({ error: 'File size too large. Maximum 10MB allowed.' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'File size too large. Maximum 10MB allowed.' 
+      }, { status: 400 });
     }
 
-    // Convert file to base64 for database storage
+    // Convert file to base64 for ImageKit upload
     const bytes = await screenshot.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const base64Data = buffer.toString('base64');
 
+    // Generate unique filename
+    const screenshotId = uuidv4();
+    const fileExtension = screenshot.type.split('/')[1];
+    const fileName = `payment-screenshot-${screenshotId}.${fileExtension}`;
+
+    console.log('📤 Starting ImageKit upload for payment screenshot:', {
+      fileName,
+      fileSize: screenshot.size,
+      mimeType: screenshot.type
+    });
+
+    // Upload to ImageKit
+    const uploadResult = await uploadImageToImageKit(
+      `data:${screenshot.type};base64,${base64Data}`,
+      fileName,
+      'campusmart/payment-screenshots'
+    );
+
+    if (!uploadResult.success) {
+      console.error('❌ ImageKit upload failed:', uploadResult.error);
+      return NextResponse.json({
+        error: 'Failed to upload image',
+        message: uploadResult.error
+      }, { status: 500 });
+    }
+
     // Connect to database
     const client = await clientPromise;
-    const db = client.db('campusmart'); // Replace with your database name
+    const db = client.db('campusmart');
     
     // Get form data
     const productId = formData.get('productId');
@@ -47,10 +79,10 @@ export async function POST(request) {
     const paymentMethod = formData.get('paymentMethod') || 'upi';
     const upiId = formData.get('upiId') || '8750471736@ptsbi';
 
-    // Store screenshot in payment_screenshots collection
+    // Store screenshot record in payment_screenshots collection
     const screenshotsCollection = db.collection('payment_screenshots');
     const screenshotData = {
-      _id: uuidv4(),
+      _id: screenshotId,
       buyerId: user.buyerId,
       buyerEmail: user.email,
       productId: productId,
@@ -60,8 +92,19 @@ export async function POST(request) {
       paymentMethod: paymentMethod,
       upiId: upiId,
       
-      // File data stored in database
-      imageData: base64Data,
+      // ImageKit data (no more base64 in database!)
+      imageKit: {
+        fileId: uploadResult.data.fileId,
+        url: uploadResult.data.url,
+        thumbnailUrl: uploadResult.data.thumbnailUrl,
+        fileName: uploadResult.data.fileName,
+        filePath: uploadResult.data.filePath,
+        size: uploadResult.data.size,
+        width: uploadResult.data.width,
+        height: uploadResult.data.height
+      },
+      
+      // Original file metadata
       originalFilename: screenshot.name,
       fileSize: screenshot.size,
       mimeType: screenshot.type,
@@ -75,6 +118,7 @@ export async function POST(request) {
       metadata: {
         userAgent: request.headers.get('user-agent'),
         ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+        uploadMethod: 'imagekit'
       }
     };
 
@@ -82,6 +126,12 @@ export async function POST(request) {
     const screenshotResult = await screenshotsCollection.insertOne(screenshotData);
 
     if (!screenshotResult.acknowledged) {
+      // If database insert fails, delete the uploaded image from ImageKit
+      try {
+        await deleteImageFromImageKit(uploadResult.data.fileId);
+      } catch (cleanupError) {
+        console.error('❌ Failed to cleanup ImageKit image after DB error:', cleanupError);
+      }
       throw new Error('Failed to save screenshot record');
     }
 
@@ -103,16 +153,21 @@ export async function POST(request) {
     const orderResult = await ordersCollection.insertOne(orderData);
 
     if (!orderResult.acknowledged) {
-      // If order creation fails, remove the screenshot
+      // If order creation fails, remove the screenshot and cleanup ImageKit
       await screenshotsCollection.deleteOne({ _id: screenshotData._id });
+      try {
+        await deleteImageFromImageKit(uploadResult.data.fileId);
+      } catch (cleanupError) {
+        console.error('❌ Failed to cleanup ImageKit image after order creation error:', cleanupError);
+      }
       throw new Error('Failed to create order record');
     }
 
-    console.log('✅ Payment screenshot uploaded to database:', {
+    console.log('✅ Payment screenshot uploaded successfully:', {
       screenshotId: screenshotData._id,
       orderId: screenshotData.orderId,
-      fileSize: screenshot.size,
-      mimeType: screenshot.type
+      imagekitFileId: uploadResult.data.fileId,
+      imageUrl: uploadResult.data.url
     });
 
     return NextResponse.json({
@@ -121,6 +176,8 @@ export async function POST(request) {
       data: {
         screenshotId: screenshotData._id,
         orderId: screenshotData.orderId,
+        imageUrl: uploadResult.data.url,
+        thumbnailUrl: uploadResult.data.thumbnailUrl,
         status: 'pending_verification',
         uploadedAt: screenshotData.uploadedAt
       }

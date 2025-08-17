@@ -16,6 +16,7 @@
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.1",
     "framer-motion": "^12.23.12",
+    "imagekit": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.536.0",
     "mongodb": "^6.18.0",
@@ -33,6 +34,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@types/imagekit": "^3.1.5",
     "autoprefixer": "^10.4.21",
     "cross-env": "^10.0.0",
     "postcss": "^8.5.6",

@@ -1,4 +1,4 @@
-// app/api/payment-screenshots/route.js
+// app/api/payment-screenshots/route.js - UPDATED VERSION WITH IMAGEKIT
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '../../../lib/mongo';
 import { verifyAdminToken } from '../../../lib/auth';
@@ -31,13 +31,10 @@ export async function GET(request) {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Get payment screenshots with pagination (exclude large imageData field for list view)
+    // Get payment screenshots with pagination
+    // No need to exclude imageData anymore since we're using ImageKit
     const screenshots = await collection
-      .find(filter, { 
-        projection: { 
-          imageData: 0 // Exclude imageData from list view for performance
-        }
-      })
+      .find(filter)
       .sort({ uploadedAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -70,13 +67,30 @@ export async function GET(request) {
           { projection: { title: 1, price: 1, images: 1 } }
         );
 
+        // Prepare image URLs based on storage method
+        let imageUrl = null;
+        let thumbnailUrl = null;
+
+        if (screenshot.imageKit && screenshot.imageKit.url) {
+          // NEW: ImageKit URLs
+          imageUrl = screenshot.imageKit.url;
+          thumbnailUrl = screenshot.imageKit.thumbnailUrl || screenshot.imageKit.url;
+        } else {
+          // FALLBACK: Old API route for base64 images
+          imageUrl = `/api/payment-screenshots/image/${screenshot._id}`;
+          thumbnailUrl = `/api/payment-screenshots/image/${screenshot._id}?thumbnail=true`;
+        }
+
         return {
           ...screenshot,
           buyer: buyer || null,
           seller: seller || null,
           product: product || null,
-          // Add image URL for viewing
-          imageUrl: `/api/payment-screenshots/image/${screenshot._id}`
+          imageUrl,
+          thumbnailUrl,
+          // Additional metadata for admin
+          storageMethod: screenshot.imageKit ? 'imagekit' : 'base64',
+          imageKit: screenshot.imageKit || null
         };
       })
     );
