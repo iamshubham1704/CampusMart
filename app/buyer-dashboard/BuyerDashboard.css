@@ -71,7 +71,7 @@
   }
 }
 
-/* Header Styles - Fixed positioning and layout */
+/* Header Styles - FIXED HEIGHT ISSUES */
 .header {
   position: sticky;
   top: 0;
@@ -81,6 +81,11 @@
   transition: all 0.3s ease;
   padding: 0.75rem 0;
   width: 100%;
+  min-height: 72px;
+  max-height: 72px;
+  height: 72px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .dark .header {
@@ -102,6 +107,8 @@
   margin: 0 auto;
   padding: 0 1rem;
   gap: 0.75rem;
+  height: 56px;
+  box-sizing: border-box;
 }
 
 .logoSection {
@@ -110,6 +117,7 @@
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+  height: 44px;
 }
 
 .menuToggle {
@@ -124,7 +132,9 @@
   border-radius: 0.5rem;
   transition: all 0.3s ease;
   min-height: 44px;
+  max-height: 44px;
   min-width: 44px;
+  box-sizing: border-box;
 }
 
 .dark .menuToggle:hover {
@@ -146,13 +156,19 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   white-space: nowrap;
+  height: 44px;
+  line-height: 1.2;
 }
 
+/* FIXED SEARCH BAR SECTION */
 .searchSection {
   grid-area: search;
   max-width: 500px;
   width: 100%;
   justify-self: stretch;
+  display: flex;
+  align-items: center;
+  height: 44px;
 }
 
 .searchBar {
@@ -161,10 +177,14 @@
   align-items: center;
   border: 2px solid;
   border-radius: 1rem;
-  padding: 0.6rem 0.8rem;
+  padding: 0 0.75rem;
   transition: all 0.3s ease;
   width: 100%;
+  height: 44px;
+  max-height: 44px;
   min-height: 44px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .dark .searchBar {
@@ -191,9 +211,20 @@
   font-size: 0.9rem;
   margin-left: 0.5rem;
   width: 100%;
+  height: 100%;
+  line-height: 1.2;
+  box-sizing: border-box;
+  padding: 0;
 }
 
 .searchBar input::placeholder {
+  color: #6b7280;
+}
+
+.searchBar .search-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
   color: #6b7280;
 }
 
@@ -203,6 +234,7 @@
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+  height: 44px;
 }
 
 .sellButton {
@@ -219,8 +251,11 @@
   white-space: nowrap;
   flex-shrink: 0;
   min-height: 44px;
+  max-height: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .sellButton:hover {
@@ -239,10 +274,13 @@
   transition: all 0.2s;
   flex-shrink: 0;
   min-height: 44px;
+  max-height: 44px;
   min-width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .dark .actionButton {
@@ -273,6 +311,7 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+  box-sizing: border-box;
 }
 
 .userAvatar {
@@ -289,7 +328,7 @@
   margin: 0 auto;
   padding: 1rem;
   gap: 1.5rem;
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 72px);
 }
 
 /* Sidebar - Fixed positioning issues */
@@ -299,7 +338,7 @@
   border-radius: 1rem;
   padding: 1rem;
   height: fit-content;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 88px);
   border: 1px solid;
   transition: all 0.3s ease;
   flex-shrink: 0;
@@ -1360,23 +1399,51 @@
     grid-template-columns: auto auto 1fr auto;
     grid-template-areas: "menu logo search actions";
     gap: 0.5rem;
+    height: 52px;
+  }
+
+  .header {
+    min-height: 68px;
+    max-height: 68px;
+    height: 68px;
   }
 
   .logoSection {
     grid-area: logo;
+    height: 40px;
   }
 
   .menuToggle {
     grid-area: menu;
+    min-height: 40px;
+    max-height: 40px;
+    min-width: 40px;
   }
 
   .searchSection {
     grid-area: search;
+    height: 40px;
+  }
+
+  .searchBar {
+    height: 40px;
+    max-height: 40px;
+    min-height: 40px;
+    padding: 0 0.6rem;
   }
 
   .headerActions {
     grid-area: actions;
     gap: 0.25rem;
+    height: 40px;
+  }
+
+  .actionButton {
+    min-height: 40px;
+    max-height: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0.5rem;
   }
 
   .sellButton {
@@ -1385,9 +1452,11 @@
 
   .mainContent {
     padding-left: 1rem;
+    min-height: calc(100vh - 68px);
   }
 
   .sidebar {
+    max-height: calc(100vh - 68px);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   }
 }
@@ -1399,6 +1468,7 @@
     gap: 1rem;
     grid-template-columns: auto auto 1fr auto auto;
     grid-template-areas: "menu logo search actions sell";
+    height: 52px;
   }
 
   .sellButton {
@@ -1406,6 +1476,9 @@
     grid-area: sell;
     font-size: 0.8rem;
     padding: 0.6rem 0.8rem;
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
   }
 
   .headerActions {
@@ -1429,22 +1502,60 @@
     gap: 0.5rem;
     grid-template-columns: auto auto 1fr auto;
     grid-template-areas: "menu logo search actions";
+    height: 48px;
+  }
+
+  .header {
+    min-height: 64px;
+    max-height: 64px;
+    height: 64px;
+    padding: 0.5rem 0;
   }
 
   .logo span {
     font-size: 1.1rem;
   }
 
+  .logo {
+    height: 36px;
+  }
+
+  .logoSection {
+    height: 36px;
+  }
+
+  .searchSection {
+    height: 36px;
+  }
+
   .searchBar {
-    padding: 0.6rem 0.8rem;
+    padding: 0 0.6rem;
+    height: 36px;
+    max-height: 36px;
+    min-height: 36px;
   }
 
   .searchBar input {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .actionButton {
-    padding: 0.5rem;
+    padding: 0.4rem;
+    min-height: 36px;
+    max-height: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .menuToggle {
+    min-height: 36px;
+    max-height: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .headerActions {
+    height: 36px;
   }
 
   .badge {
@@ -1456,6 +1567,7 @@
   .mainContent {
     padding: 1rem;
     flex-direction: column;
+    min-height: calc(100vh - 64px);
   }
 
   .contentArea {
@@ -1521,6 +1633,10 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .sidebar {
+    max-height: calc(100vh - 64px);
+  }
 }
 
 /* Small Mobile */
@@ -1528,6 +1644,14 @@
   .headerContent {
     padding: 0 0.75rem;
     gap: 0.4rem;
+    height: 44px;
+  }
+
+  .header {
+    min-height: 60px;
+    max-height: 60px;
+    height: 60px;
+    padding: 0.5rem 0;
   }
 
   .logo span {
@@ -1536,20 +1660,50 @@
 
   .logo {
     font-size: 1rem;
+    height: 32px;
+  }
+
+  .logoSection {
+    height: 32px;
+  }
+
+  .searchSection {
+    height: 32px;
   }
 
   .searchBar {
-    padding: 0.5rem 0.7rem;
+    padding: 0 0.5rem;
+    height: 32px;
+    max-height: 32px;
+    min-height: 32px;
+  }
+
+  .searchBar input {
+    font-size: 0.8rem;
   }
 
   .actionButton {
-    padding: 0.4rem;
-    min-width: 40px;
-    min-height: 40px;
+    padding: 0.3rem;
+    min-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    height: 32px;
+  }
+
+  .menuToggle {
+    min-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    height: 32px;
+  }
+
+  .headerActions {
+    height: 32px;
   }
 
   .mainContent {
     padding: 0.75rem;
+    min-height: calc(100vh - 60px);
   }
 
   .welcomeMessage {
@@ -1616,6 +1770,7 @@
     width: 260px;
     left: -280px;
     padding: 1rem 0.75rem;
+    max-height: calc(100vh - 60px);
   }
 }
 
@@ -1624,21 +1779,61 @@
   .headerContent {
     padding: 0 0.5rem;
     gap: 0.3rem;
+    height: 40px;
+  }
+
+  .header {
+    min-height: 56px;
+    max-height: 56px;
+    height: 56px;
+  }
+
+  .logo {
+    height: 28px;
+  }
+
+  .logoSection {
+    height: 28px;
+  }
+
+  .searchSection {
+    height: 28px;
   }
 
   .searchBar {
-    min-height: 40px;
-    padding: 0.4rem 0.6rem;
+    min-height: 28px;
+    max-height: 28px;
+    height: 28px;
+    padding: 0 0.4rem;
+  }
+
+  .searchBar input {
+    font-size: 0.75rem;
   }
 
   .actionButton {
-    padding: 0.35rem;
-    min-width: 36px;
-    min-height: 36px;
+    padding: 0.25rem;
+    min-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    height: 28px;
+  }
+
+  .menuToggle {
+    min-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    height: 28px;
+  }
+
+  .headerActions {
+    gap: 0.2rem;
+    height: 28px;
   }
 
   .mainContent {
     padding: 0.5rem;
+    min-height: calc(100vh - 56px);
   }
 
   .productCard {
@@ -1660,13 +1855,10 @@
     min-height: 40px;
   }
 
-  .headerActions {
-    gap: 0.2rem;
-  }
-
   .sidebar {
     width: 240px;
     left: -250px;
+    max-height: calc(100vh - 56px);
   }
 
   .welcomeMessage {
@@ -1688,6 +1880,9 @@
 @media (min-width: 1024px) {
   .header {
     padding: 1rem 0;
+    min-height: 80px;
+    max-height: 80px;
+    height: 80px;
   }
 
   .headerContent {
@@ -1695,14 +1890,27 @@
     gap: 2rem;
     grid-template-columns: auto 1fr auto auto;
     grid-template-areas: "logo search actions sell";
+    height: 56px;
   }
 
   .logo {
     font-size: 1.5rem;
+    height: 48px;
+  }
+
+  .logoSection {
+    height: 48px;
+  }
+
+  .searchSection {
+    height: 48px;
   }
 
   .searchBar {
-    padding: 0.75rem 1rem;
+    padding: 0 1rem;
+    height: 48px;
+    max-height: 48px;
+    min-height: 48px;
   }
 
   .searchBar input {
@@ -1711,6 +1919,13 @@
 
   .actionButton {
     padding: 0.75rem;
+    min-height: 48px;
+    max-height: 48px;
+    height: 48px;
+  }
+
+  .headerActions {
+    height: 48px;
   }
 
   .badge {
@@ -1723,6 +1938,9 @@
     font-size: 1rem;
     padding: 1rem;
     display: flex;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
   }
 
   .menuToggle {
@@ -1735,11 +1953,11 @@
 
   .sidebar {
     position: sticky;
-    top: 120px;
+    top: 88px;
     left: auto;
     width: 300px;
     height: fit-content;
-    max-height: calc(100vh - 140px);
+    max-height: calc(100vh - 96px);
     padding: 1.5rem;
     z-index: 10;
   }
@@ -1752,6 +1970,7 @@
     padding: 2rem;
     gap: 2rem;
     flex-direction: row;
+    min-height: calc(100vh - 80px);
   }
 
   .welcomeMessage {
@@ -2166,6 +2385,19 @@ select {
   }
 }
 
+@media (max-width: 360px) {
+  button,
+  .actionButton,
+  .categoryItem,
+  .viewButton,
+  .filterToggle,
+  input,
+  select {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
 /* Prevent horizontal scrolling */
 .dashboard {
   overflow-x: hidden;
@@ -2176,4 +2408,23 @@ select {
 .mainContent {
   width: 100%;
   max-width: 100%;
+}
+
+/* Fixed header height constraints to prevent navbar overflow */
+.header {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.headerContent {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.searchBar,
+.actionButton,
+.sellButton,
+.menuToggle {
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
