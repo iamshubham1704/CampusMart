@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   ShoppingBag,
   Store,
@@ -257,25 +258,25 @@ const CampusMart = () => {
             {!isMobile && !isTablet && (
               <div className="nav-center">
                 <ul className="nav-menu">
-                  <li className="nav-item">
-                    <a href="#" className="nav-link active">
-                      <Home size={18} />
-                      <span>Home</span>
-                    </a>
-                  </li>
-                  <li className="nav-item">
-                    <a href="#" className="nav-link">
-                      <ShoppingBag size={18} />
-                      <span>Policy</span>
-                    </a>
-                  </li>
-                  <li className="nav-item">
-                    <a href="#" className="nav-link">
-                      <Info size={18} />
-                      <span>About</span>
-                    </a>
-                  </li>
-                </ul>
+  <li className="nav-item">
+    <Link href="/" className="nav-link active">
+      <Home size={18} />
+      <span>Home</span>
+    </Link>
+  </li>
+  <li className="nav-item">
+    <Link href="/policy" className="nav-link">
+      <ShoppingBag size={18} />
+      <span>Policy</span>
+    </Link>
+  </li>
+  <li className="nav-item">
+    <Link href="/about" className="nav-link">
+      <Info size={18} />
+      <span>About</span>
+    </Link>
+  </li>
+</ul>
               </div>
             )}
 
@@ -326,12 +327,11 @@ const CampusMart = () => {
               </div>
               
               <ul className="mobile-nav-menu">
-                <li><a href="#" className="mobile-nav-link active"><Home size={20} /><span>Home</span></a></li>
-                <li><a href="#" className="mobile-nav-link"><ShoppingBag size={20} /><span>Marketplace</span></a></li>
-                <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
-                <li><a href="#" className="mobile-nav-link"><Info size={20} /><span>About</span></a></li>
-              </ul>
-              
+  <li><Link href="/" className="mobile-nav-link active"><Home size={20} /><span>Home</span></Link></li>
+  <li><Link href="/policy" className="mobile-nav-link"><ShoppingBag size={20} /><span>Policy</span></Link></li>
+  <li><Link href="/about" className="mobile-nav-link"><Info size={20} /><span>About</span></Link></li>
+  <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
+</ul>
               <div className="mobile-actions">
                 <button className="mobile-notification-btn">
                   <Bell size={20} />
@@ -479,59 +479,7 @@ const CampusMart = () => {
         </div>
       </section>
 
-      {/* Featured Products Section */}
-      <section className="featured-section">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Trending on Campus</h2>
-            <p className="section-subtitle">
-              Most popular items being traded right now
-            </p>
-          </div>
-          
-          <div className="products-grid">
-            {[
-              { emoji: '📚', name: 'Engineering Textbook', price: '₹45', originalPrice: '₹120', seller: 'Alex M.', rating: 5, location: 'North Campus', badge: 'Hot Deal' },
-              { emoji: '💻', name: 'MacBook Pro 2019', price: '₹899', originalPrice: '₹1299', seller: 'Sarah K.', rating: 5, location: 'South Dorm', badge: 'Featured' },
-              { emoji: '🪑', name: 'Study Desk & Chair', price: '₹75', originalPrice: '₹150', seller: 'Mike R.', rating: 4, location: 'West Campus', badge: 'New' },
-              { emoji: '🎧', name: 'Noise-Canceling Headphones', price: '₹120', originalPrice: '₹200', seller: 'Emma L.', rating: 5, location: 'East Hall', badge: 'Popular' },
-              { emoji: '📱', name: 'iPhone 12', price: '₹450', originalPrice: '₹699', seller: 'Josh T.', rating: 4, location: 'Central Campus', badge: 'Hot Deal' },
-              { emoji: '🛏', name: 'Twin Mattress', price: '₹80', originalPrice: '₹200', seller: 'Lisa W.', rating: 5, location: 'Graduate Housing', badge: 'Featured' }
-            ].map((product, index) => (
-              <div key={index} className="product-card">
-                <div className="product-image">
-                  <span className="product-emoji">{product.emoji}</span>
-                  <div className={`product-badge ${product.badge.toLowerCase().replace(' ', '-')}`}>{product.badge}</div>
-                  <button className="favorite-btn" aria-label="Add to favorites">
-                    <Heart size={16} />
-                  </button>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-name">{product.name}</h3>
-                  <div className="product-price">
-                    <span className="current-price">{product.price}</span>
-                    <span className="original-price">{product.originalPrice}</span>
-                    <span className="discount">{Math.round((1 - parseInt(product.price.slice(1)) / parseInt(product.originalPrice.slice(1))) * 100)}% off</span>
-                  </div>
-                  <div className="seller-info">
-                    <span className="seller-name">{product.seller}</span>
-                    <div className="rating">
-                      {[...Array(product.rating)].map((_, i) => (
-                        <Star key={i} size={14} fill="currentColor" />
-                      ))}
-                      <span className="rating-text">({product.rating})</span>
-                    </div>
-                  </div>
-                  <div className="product-location">
-                    <MapPin size={14} />
-                    <span>{product.location}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      
 
       {/* Trust Section */}
       <section className="trust-section">
