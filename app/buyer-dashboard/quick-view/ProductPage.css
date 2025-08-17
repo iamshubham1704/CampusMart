@@ -208,6 +208,120 @@
   }
 }
 
+/* QR Code Fullscreen Modal */
+.qr-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+  padding: 20px;
+  animation: modalFadeIn 0.4s ease-out;
+  cursor: pointer;
+}
+
+.qr-fullscreen-container {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: linear-gradient(145deg, #1e293b, #334155);
+  border: 2px solid #3b82f6;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 
+    0 50px 100px rgba(0, 0, 0, 0.8),
+    0 20px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(59, 130, 246, 0.3);
+  animation: slideInUp 0.5s ease-out;
+  cursor: default;
+}
+
+.qr-fullscreen-container::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #3b82f6, #10b981, #8b5cf6, #3b82f6);
+  border-radius: 24px;
+  z-index: -1;
+  animation: rotate 4s linear infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.qr-fullscreen-image {
+  width: 100%;
+  height: auto;
+  max-width: 400px;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: block;
+  margin: 0 auto;
+}
+
+.qr-fullscreen-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+.qr-fullscreen-close:hover {
+  background: linear-gradient(145deg, rgba(239, 68, 68, 1), rgba(220, 38, 38, 1));
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+}
+
+.qr-fullscreen-title {
+  text-align: center;
+  color: #f1f5f9;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.qr-fullscreen-subtitle {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  margin-top: 20px;
+  opacity: 0.8;
+}
+
 /* Modal Overlay */
 .product-modal-overlay {
   position: fixed;
@@ -626,6 +740,14 @@
   height: 100%;
   object-fit: contain;
   border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.qr-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+  border: 2px solid #3b82f6;
 }
 
 .qr-instruction {
@@ -633,6 +755,14 @@
   font-weight: 500;
   color: #e2e8f0;
   margin: 0;
+}
+
+.qr-tap-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 8px;
+  opacity: 0.7;
+  font-style: italic;
 }
 
 /* Payment Details */
@@ -1375,7 +1505,6 @@
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-
 /* Details Section */
 .details-section {
   display: grid;
@@ -1422,9 +1551,9 @@
 
 /* Product Actions Section - Right Sidebar */
 .product-actions {
- background: linear-gradient(145deg, #334155, #475569);
-   border: 1px solid #64748b;
-   border-radius: 16px;
+  background: linear-gradient(145deg, #334155, #475569);
+  border: 1px solid #64748b;
+  border-radius: 16px;
   padding: 48px;
   height: fit-content;
   margin-top: 20px;
@@ -1697,59 +1826,199 @@
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
-/* Responsive Design */
-@media (max-width: 968px) {
+/* RESPONSIVE DESIGN STARTS HERE */
+
+/* Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+  .product-page {
+    padding: 40px;
+  }
+
   .product-container {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-  
-  .details-section {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 60px;
   }
 
-  .payment-options-grid {
-    gap: 12px;
+  .product-header h1 {
+    font-size: 32px;
   }
 
-  .payment-option-card {
-    padding: 20px;
+  .price {
+    font-size: 36px;
   }
 
-  .payment-option-icon {
-    width: 56px;
-    height: 56px;
+  .product-image-section,
+  .product-details-section,
+  .details-left {
+    padding: 40px;
+  }
+
+  .product-actions {
+    padding: 60px;
   }
 }
 
-@media (max-width: 768px) {
+/* Desktop (1200px - 1439px) */
+@media (max-width: 1439px) and (min-width: 1200px) {
+  .product-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+/* Laptop/Tablet Landscape (992px - 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
   .product-page {
+    padding: 24px;
+  }
+
+  .product-container {
+    gap: 30px;
+  }
+
+  .product-image-section,
+  .product-details-section,
+  .details-left {
+    padding: 24px;
+  }
+
+  .product-actions {
+    padding: 32px;
+  }
+
+  .qr-placeholder {
+    width: 240px;
+    height: 280px;
+  }
+}
+
+/* Tablet Portrait (768px - 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+  .product-page {
+    padding: 20px;
+  }
+
+  .product-container {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .product-image-section,
+  .product-details-section,
+  .details-left {
+    padding: 24px;
+  }
+
+  .product-actions {
+    padding: 24px;
+    margin-top: 0;
+  }
+
+  .action-cards {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .action-card {
     padding: 16px;
   }
-  
-  .product-container {
-    gap: 20px;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
+
+  .thumbnail-images {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .product-modal {
-    margin: 0.5rem;
-    border-radius: 12px;
-  }
-
-  .modal-close-btn {
-    top: 0.5rem;
-    right: 0.5rem;
+  .thumbnail-btn {
+    width: 60px;
+    height: 60px;
   }
 
   .payment-modal-popup {
-    margin: 1rem;
+    max-width: 520px;
+  }
+
+  .qr-placeholder {
+    width: 200px;
+    height: 240px;
+  }
+
+  .qr-fullscreen-container {
+    padding: 32px;
+  }
+
+  .qr-fullscreen-image {
+    max-width: 320px;
+    max-height: 320px;
+  }
+}
+
+/* Mobile Landscape (481px - 767px) */
+@media (max-width: 767px) and (min-width: 481px) {
+  .product-page {
+    padding: 16px;
+  }
+
+  .product-container {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .product-header h1 {
+    font-size: 24px;
+  }
+
+  .price {
+    font-size: 28px;
+  }
+
+  .product-image-section,
+  .product-details-section,
+  .details-left {
+    padding: 20px;
+  }
+
+  .product-actions {
+    padding: 20px;
+    margin-top: 0;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .action-cards {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .action-card {
+    padding: 14px;
+  }
+
+  .action-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .thumbnail-images {
+    gap: 8px;
+  }
+
+  .thumbnail-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .image-nav-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .payment-modal-popup {
+    max-width: 90vw;
     border-radius: 16px;
-    max-width: calc(100vw - 2rem);
   }
 
   .payment-modal-popup .modal-header {
@@ -1764,23 +2033,28 @@
   }
 
   .payment-option-card {
-    flex-direction: column;
-    text-align: center;
+    flex-direction: row;
+    padding: 16px;
     gap: 16px;
-    padding: 24px 16px;
-  }
-
-  .payment-option-content {
-    order: 1;
   }
 
   .payment-option-icon {
-    order: 0;
-    margin: 0 auto;
+    width: 48px;
+    height: 48px;
   }
 
-  .payment-option-arrow {
-    display: none;
+  .qr-placeholder {
+    width: 180px;
+    height: 220px;
+  }
+
+  .qr-fullscreen-container {
+    padding: 24px;
+  }
+
+  .qr-fullscreen-image {
+    max-width: 280px;
+    max-height: 280px;
   }
 
   .upi-id-box {
@@ -1793,13 +2067,8 @@
     justify-content: center;
   }
 
-  .qr-placeholder {
-    width: 140px;
-    height: 140px;
-  }
-
   .upload-label {
-    padding: 36px 20px;
+    padding: 32px 20px;
   }
 
   .report-modal,
@@ -1808,29 +2077,7 @@
     margin: 10px;
   }
 
-  .product-actions {
-    margin-top: 24px;
-  }
-  
-  .action-card {
-    padding: 12px;
-    gap: 10px;
-  }
-  
-  .action-icon {
-    width: 35px;
-    height: 35px;
-  }
-  
-  .action-content h5 {
-    font-size: 13px;
-  }
-  
-  .action-content p {
-    font-size: 11px;
-  }
-
-  /* Disable parallax effects on mobile */
+  /* Disable parallax effects on smaller screens */
   .product-page::after,
   .product-page .bg-layer-1,
   .product-page .bg-layer-2 {
@@ -1842,64 +2089,722 @@
   }
 }
 
+/* Mobile Portrait (320px - 480px) - Main Mobile Optimization */
 @media (max-width: 480px) {
-  .payment-modal-popup .modal-header h3 {
+  .product-page {
+    padding: 8px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  }
+
+  .product-container {
+    gap: 16px;
+    margin-bottom: 24px;
+    grid-template-columns: 1fr;
+  }
+
+  .product-header {
+    margin-bottom: 16px;
+    padding: 0 8px;
+  }
+
+  .product-header h1 {
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  .product-subtitle {
+    font-size: 13px;
+  }
+
+  /* Mobile Product Image Section */
+  .product-image-section {
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .main-product-image {
+    border-radius: 8px;
+  }
+
+  .headphone-visual {
+    font-size: 80px;
+  }
+
+  .image-tags {
+    bottom: 12px;
+    left: 12px;
+    gap: 6px;
+  }
+
+  .tag {
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 8px;
+  }
+
+  .image-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .image-nav-btn.prev {
+    left: 8px;
+  }
+
+  .image-nav-btn.next {
+    right: 8px;
+  }
+
+  .thumbnail-images {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .thumbnail-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 6px;
+  }
+
+  /* Mobile Product Details Section */
+  .product-details-section {
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .price-section {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .price {
+    font-size: 24px;
+  }
+
+  .original-price {
+    font-size: 16px;
+  }
+
+  .discount {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .delivery-section {
+    padding: 12px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+  }
+
+  .delivery-info strong {
+    font-size: 14px;
+  }
+
+  .delivery-option {
+    font-size: 12px;
+  }
+
+  /* Mobile Action Buttons */
+  .action-buttons {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .buy-now-btn,
+  .add-cart-btn {
+    padding: 14px 20px;
+    font-size: 14px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .seller-info {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  .seller-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .seller-rating {
+    font-size: 12px;
+  }
+
+  .message-seller {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  .additional-info {
+    padding: 10px 12px;
+    font-size: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  /* Mobile Details Section */
+  .details-left {
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .details-left h3 {
     font-size: 18px;
+  }
+
+  .details-left p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Mobile Product Actions */
+  .product-actions {
+    padding: 16px;
+    border-radius: 12px;
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+
+  .product-actions h4 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+
+  .action-cards {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-card {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 8px;
+  }
+
+  .action-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .action-content h5 {
+    font-size: 12px;
+  }
+
+  .action-content p {
+    font-size: 10px;
+  }
+
+  /* Mobile Payment Modal */
+  .payment-modal-popup {
+    max-width: calc(100vw - 16px);
+    margin: 8px;
+    border-radius: 12px;
+    max-height: 92vh;
+  }
+
+  .payment-modal-popup .modal-header {
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .payment-modal-popup .modal-header h3 {
+    font-size: 16px;
+  }
+
+  .modal-close-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .payment-options-step,
+  .payment-qr-step,
+  .payment-upi-step,
+  .payment-screenshot-step {
+    padding: 16px 12px;
   }
 
   .payment-step-header h4 {
-    font-size: 18px;
+    font-size: 16px;
+    margin-bottom: 6px;
   }
 
+  .payment-step-header p {
+    font-size: 13px;
+  }
+
+  .back-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+
+  /* Mobile Payment Options */
   .payment-option-card {
-    padding: 20px 12px;
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .payment-option-content {
+    order: 1;
+  }
+
+  .payment-option-icon {
+    order: 0;
+    margin: 0 auto;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+
+  .payment-option-arrow {
+    display: none;
   }
 
   .payment-option-content h5 {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .payment-option-content p {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .payment-option-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .payment-summary {
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 16px;
+  }
+
+  .summary-row {
+    font-size: 12px;
+    padding: 6px 0;
+  }
+
+  .summary-row.total {
+    font-size: 14px;
+    padding-top: 8px;
+  }
+
+  /* Mobile QR Code Display */
+  .qr-code-display {
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .qr-placeholder {
+    width: 160px;
+    height: 200px;
+    margin: 0 auto 12px auto;
+    border-radius: 8px;
+  }
+
+  .qr-image {
+    border-radius: 8px;
+  }
+
+  .qr-instruction {
+    font-size: 14px;
+  }
+
+  .qr-tap-hint {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  /* Mobile QR Fullscreen */
+  .qr-fullscreen-overlay {
+    padding: 10px;
+  }
+
+  .qr-fullscreen-container {
+    padding: 20px;
+    border-radius: 16px;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .qr-fullscreen-image {
+    max-width: 250px;
+    max-height: 250px;
+    border-radius: 12px;
+  }
+
+  .qr-fullscreen-close {
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .qr-fullscreen-title {
     font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  .qr-fullscreen-subtitle {
+    font-size: 12px;
+    margin-top: 12px;
+  }
+
+  /* Mobile Payment Details */
+  .payment-details {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  .detail-row {
+    padding: 6px 0;
+  }
+
+  .detail-label,
+  .detail-value {
+    font-size: 12px;
   }
 
   .detail-value.amount {
     font-size: 14px;
   }
 
+  /* Mobile Payment Instructions */
+  .payment-instructions {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  .payment-instructions h5 {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .payment-instructions ol {
+    padding-left: 16px;
+  }
+
+  .payment-instructions li {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  /* Mobile UPI Payment */
+  .upi-id-display h5 {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .upi-id-box {
+    padding: 12px;
+    border-radius: 8px;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .upi-id-text {
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 6px;
+  }
+
+  .copy-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Mobile Upload Section */
+  .upload-label {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .upload-placeholder span {
+    font-size: 14px;
+  }
+
+  .upload-placeholder p {
+    font-size: 12px;
+  }
+
+  .upload-instructions {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  .upload-instructions h5 {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .upload-instructions ul {
+    padding-left: 16px;
+  }
+
+  .upload-instructions li {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  /* Mobile Action Buttons */
   .payment-done-btn,
   .submit-order-btn {
-    padding: 14px 20px;
+    padding: 12px 18px;
+    font-size: 13px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* Mobile Modal Adjustments */
+  .report-modal,
+  .policy-modal {
+    width: calc(100vw - 16px);
+    margin: 8px;
+    border-radius: 12px;
+    max-height: 85vh;
+  }
+
+  .modal-header {
+    padding: 14px 16px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header h3 {
+    font-size: 15px;
+  }
+
+  .modal-content {
+    padding: 16px;
+  }
+
+  .modal-content p {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .report-option {
+    padding: 8px 0;
+  }
+
+  .report-option label {
+    font-size: 12px;
+  }
+
+  .policy-section {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .policy-section h4 {
     font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .policy-section ul {
+    padding-left: 16px;
+  }
+
+  .policy-section li {
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+
+  .report-details {
+    padding: 10px;
+    font-size: 12px;
+    min-height: 80px;
+    margin-top: 8px;
+    border-radius: 6px;
+  }
+
+  .submit-report-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    margin-top: 12px;
+    border-radius: 6px;
+  }
+
+  /* Disable complex animations and effects on mobile */
+  .product-page::before,
+  .product-page::after,
+  .product-page .floating-particles,
+  .product-page .bg-layer,
+  .payment-option-card::before,
+  .qr-fullscreen-container::before {
+    display: none !important;
+  }
+
+  .product-page .particle {
+    display: none !important;
+  }
+
+  /* Optimize scrolling on mobile */
+  .modal-body,
+  .product-modal-content {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-body::-webkit-scrollbar,
+  .product-modal-content::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  /* Fix mobile tap targets */
+  .buy-now-btn,
+  .add-cart-btn,
+  .payment-option-card,
+  .action-card,
+  .copy-btn,
+  .payment-done-btn,
+  .submit-order-btn,
+  .qr-image {
+    min-height: 44px;
+    touch-action: manipulation;
   }
 }
 
-/* Additional Premium Effects and Mouse Tracking Features */
+/* Extra Small Mobile (280px - 319px) */
+@media (max-width: 319px) {
+  .product-page {
+    padding: 6px;
+  }
 
-/* Interactive Hover Effects for Cards */
-.product-image-section,
-.product-details-section,
-.details-left,
-.product-actions {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  .product-header h1 {
+    font-size: 18px;
+  }
+
+  .price {
+    font-size: 20px;
+  }
+
+  .product-image-section,
+  .product-details-section,
+  .details-left,
+  .product-actions {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .payment-modal-popup {
+    max-width: calc(100vw - 12px);
+    margin: 6px;
+  }
+
+  .payment-options-step,
+  .payment-qr-step,
+  .payment-upi-step,
+  .payment-screenshot-step {
+    padding: 14px 10px;
+  }
+
+  .payment-option-card {
+    padding: 10px 8px;
+  }
+
+  .payment-option-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .qr-placeholder {
+    width: 140px;
+    height: 180px;
+  }
+
+  .qr-fullscreen-container {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .qr-fullscreen-image {
+    max-width: 200px;
+    max-height: 200px;
+  }
+
+  .thumbnail-btn {
+    width: 35px;
+    height: 35px;
+  }
+
+  .action-card {
+    padding: 8px;
+  }
+
+  .action-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .action-content h5 {
+    font-size: 11px;
+  }
+
+  .action-content p {
+    font-size: 9px;
+  }
 }
 
-.product-image-section:hover,
-.product-details-section:hover,
-.details-left:hover,
-.product-actions:hover {
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.3),
-    0 8px 16px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 0 0 1px rgba(59, 130, 246, 0.1);
+/* Interactive Hover Effects - Desktop Only */
+@media (min-width: 768px) {
+  .product-image-section,
+  .product-details-section,
+  .details-left,
+  .product-actions {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .product-image-section:hover,
+  .product-details-section:hover,
+  .details-left:hover,
+  .product-actions:hover {
+    box-shadow: 
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 8px 16px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
 }
 
-/* Mouse Tracking Cursor Effect */
-.product-page * {
-  transition: transform 0.1s ease;
-}
+/* Mouse Tracking Cursor Effect - Desktop Only */
+@media (min-width: 1024px) {
+  .product-page * {
+    transition: transform 0.1s ease;
+  }
 
-.product-page .trackable:hover {
-  transform: translate3d(calc(var(--mouse-x-local, 0) * 0.02), calc(var(--mouse-y-local, 0) * 0.02), 0);
+  .product-page .trackable:hover {
+    transform: translate3d(calc(var(--mouse-x-local, 0) * 0.02), calc(var(--mouse-y-local, 0) * 0.02), 0);
+  }
 }
 
 /* Subtle animations for interactive elements */
@@ -1914,7 +2819,11 @@
 .buy-now-btn:focus,
 .add-cart-btn:focus,
 .message-seller:focus,
-.action-card:focus {
+.action-card:focus,
+.payment-option-card:focus,
+.copy-btn:focus,
+.payment-done-btn:focus,
+.submit-order-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
@@ -1937,13 +2846,172 @@
   .product-page::after,
   .product-page .particle,
   .product-page .bg-layer-1,
-  .product-page .bg-layer-2 {
+  .product-page .bg-layer-2,
+  .qr-fullscreen-container::before {
     animation: none !important;
     transition: none !important;
   }
   
-  .product-page * {
+  .product-page *,
+  .payment-option-card,
+  .action-card,
+  .qr-image,
+  .buy-now-btn,
+  .add-cart-btn,
+  .payment-done-btn,
+  .submit-order-btn {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .product-page {
+    background: #000;
+    color: #fff;
+  }
+
+  .product-image-section,
+  .product-details-section,
+  .details-left,
+  .product-actions,
+  .payment-modal-popup,
+  .qr-fullscreen-container {
+    background: #1a1a1a;
+    border: 2px solid #fff;
+  }
+
+  .buy-now-btn,
+  .payment-done-btn,
+  .submit-order-btn {
+    background: #0066cc;
+    border: 2px solid #fff;
+  }
+
+  .add-cart-btn {
+    background: transparent;
+    border: 2px solid #0066cc;
+    color: #0066cc;
+  }
+}
+
+/* Print styles */
+@media print {
+  .product-page::before,
+  .product-page::after,
+  .product-page .floating-particles,
+  .product-page .bg-layer,
+  .image-nav-btn,
+  .modal-close-btn,
+  .qr-fullscreen-close {
+    display: none !important;
+  }
+
+  .product-page {
+    background: white !important;
+    color: black !important;
+  }
+
+  .product-container {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .action-buttons,
+  .product-actions {
+    display: none !important;
+  }
+}
+
+/* Dark mode support for systems that prefer it */
+@media (prefers-color-scheme: dark) {
+  /* Already implemented as default dark theme */
+}
+
+/* Light mode override if needed */
+@media (prefers-color-scheme: light) {
+  .product-page {
+    background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+    color: #1e293b;
+  }
+  
+  /* Add light mode styles here if needed */
+}
+
+/* Additional Mobile-Specific Optimizations */
+
+/* Fix iOS Safari viewport issues */
+@supports (-webkit-touch-callout: none) {
+  .payment-modal-popup,
+  .qr-fullscreen-container {
+    max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
+
+/* Improve touch targets on small screens */
+@media (max-width: 480px) {
+  .thumbnail-btn,
+  .image-nav-btn,
+  .modal-close-btn,
+  .qr-fullscreen-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Ensure text is readable on small screens */
+  .payment-option-content p,
+  .action-content p,
+  .detail-value,
+  .summary-row {
+    line-height: 1.4;
+  }
+
+  /* Optimize modal scrolling */
+  .modal-body {
+    max-height: calc(85vh - 70px);
+  }
+}
+
+/* Enhanced Mobile QR Image Fullscreen Functionality */
+@media (max-width: 768px) {
+  .qr-image {
+    position: relative;
+  }
+  
+  .qr-image::after {
+    content: '👆 Tap to enlarge';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  .qr-image:hover::after {
+    opacity: 1;
+  }
+
+  /* Make uploaded images also clickable for fullscreen */
+  .uploaded-file img,
+  .upload-preview img {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .uploaded-file img:hover,
+  .upload-preview img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 }
