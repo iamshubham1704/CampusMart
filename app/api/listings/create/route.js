@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongo';
 import { verifyToken } from '../../../../lib/auth';
+import { uploadMultipleImages } from '../../../../lib/imagekit';
+import { validateMultipleImages, generateSafeFileName } from '../../../../lib/imageValidation';
 import { ObjectId } from 'mongodb';
 
 export async function POST(request) {
@@ -23,7 +25,7 @@ export async function POST(request) {
       subcategory,
       location,
       college,
-      images,
+      images, // This will now be an array of base64 images
       tags
     } = body;
 
@@ -35,9 +37,66 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
+    let uploadedImages = [];
+    
+    // Handle image uploads if images are provided
+    if (images && images.length > 0) {
+      console.log(`📤 Processing ${images.length} images for listing: ${title}`);
+      
+      // Validate images first
+      const validationResult = await validateMultipleImages(images);
+      
+      if (!validationResult.valid) {
+        return NextResponse.json({
+          success: false,
+          message: 'Image validation failed',
+          errors: validationResult.invalidImages.map(img => img.error)
+        }, { status: 400 });
+      }
+
+      // Prepare images for upload with safe filenames
+      const imagesToUpload = validationResult.validImages.map((imageData, index) => ({
+        base64Data: images[imageData.index],
+        fileName: generateSafeFileName(`listing-image-${index + 1}.jpg`, userId)
+      }));
+
+      // Upload to ImageKit
+      const uploadResult = await uploadMultipleImages(
+        imagesToUpload, 
+        `listings/${userId}` // Organize by user folder
+      );
+
+      if (uploadResult.success && uploadResult.successful.length > 0) {
+        // Extract URLs from successful uploads
+        uploadedImages = uploadResult.successful.map(result => ({
+          url: result.data.url,
+          thumbnailUrl: result.data.thumbnailUrl,
+          fileId: result.data.fileId,
+          fileName: result.data.fileName,
+          width: result.data.width,
+          height: result.data.height
+        }));
+        
+        console.log(`✅ Successfully uploaded ${uploadedImages.length} images`);
+      } else {
+        console.error('❌ Image upload failed:', uploadResult.error);
+        return NextResponse.json({
+          success: false,
+          message: 'Failed to upload images',
+          error: uploadResult.error
+        }, { status: 500 });
+      }
+
+      // Log any failed uploads
+      if (uploadResult.failed && uploadResult.failed.length > 0) {
+        console.warn(`⚠️ ${uploadResult.failed.length} images failed to upload:`, 
+          uploadResult.failed.map(f => f.error));
+      }
+    }
+
     // Connect to MongoDB
     const client = await clientPromise;
-    const db = client.db('campusmart'); // replace with your database name
+    const db = client.db('campusmart');
 
     // Create new listing document
     const newListing = {
@@ -51,7 +110,7 @@ export async function POST(request) {
       subcategory: subcategory || null,
       location,
       college: college || null,
-      images: images || [],
+      images: uploadedImages, // Store ImageKit URLs and metadata
       tags: tags || [],
       status: 'active',
       views: 0,
@@ -72,12 +131,13 @@ export async function POST(request) {
         price: Number(price),
         condition,
         status: 'active',
+        imagesUploaded: uploadedImages.length,
         createdAt: newListing.createdAt
       }
     }, { status: 201 });
 
   } catch (error) {
-
+    console.error('❌ Create listing error:', error);
     return NextResponse.json({
       success: false,
       message: 'Failed to create listing'

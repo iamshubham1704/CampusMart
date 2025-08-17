@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongo';
+import { getThumbnailUrl } from '../../../../lib/imagekit';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request) {
@@ -10,7 +11,7 @@ export async function GET(request) {
       throw new Error('MongoDB client is undefined');
     }
     
-    const db = client.db('campusmart'); // Use your database name
+    const db = client.db('campusmart');
     
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
@@ -21,8 +22,7 @@ export async function GET(request) {
     const condition = searchParams.get('condition');
     const location = searchParams.get('location');
     
-
-    let filter = { status: { $in: ['active', null] } }; // Include null for backward compatibility
+    let filter = { status: { $in: ['active', null] } };
     
     // Add category filter
     if (category && category !== 'all') {
@@ -59,7 +59,7 @@ export async function GET(request) {
         { $match: filter },
         {
           $lookup: {
-            from: 'sellers', // Join with sellers collection
+            from: 'sellers',
             let: { sellerId: '$sellerId' },
             pipeline: [
               {
@@ -81,6 +81,21 @@ export async function GET(request) {
     const transformedListings = listings.map(listing => {
       const seller = listing.sellerInfo && listing.sellerInfo[0];
       
+      // Handle both old base64 format and new ImageKit format for images
+      let imageUrl = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop';
+      
+      if (listing.images && listing.images.length > 0) {
+        const firstImage = listing.images[0];
+        
+        if (typeof firstImage === 'string') {
+          // Old format - base64 string
+          imageUrl = firstImage;
+        } else if (typeof firstImage === 'object' && firstImage.url) {
+          // New format - ImageKit object, use thumbnail for performance
+          imageUrl = firstImage.thumbnailUrl || getThumbnailUrl(firstImage.url, 300);
+        }
+      }
+      
       return {
         id: listing._id.toString(),
         title: listing.title || 'Untitled',
@@ -88,9 +103,7 @@ export async function GET(request) {
         originalPrice: listing.originalPrice
           ? parseFloat(listing.originalPrice)
           : parseFloat(listing.price) * 1.3,
-        image: listing.images && listing.images[0]
-          ? listing.images[0]
-          : 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+        image: imageUrl, // Optimized image URL
         seller: seller?.name || seller?.businessName || 'Anonymous Seller',
         rating: seller?.rating || 4.5,
         location: listing.location || 'Campus',
@@ -111,7 +124,7 @@ export async function GET(request) {
     });
     
   } catch (error) {
-
+    console.error('❌ Fetch public listings error:', error);
     return NextResponse.json(
       { 
         success: false, 
