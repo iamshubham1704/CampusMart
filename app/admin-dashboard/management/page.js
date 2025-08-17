@@ -398,7 +398,7 @@ export default function AdminManagementPage() {
         </div>
       )}
 
-      {/* Tab Navigation - UPDATED WITH PAYMENTS TAB */}
+      {/* Tab Navigation - UPDATED WITH PAYMENTS TAB AND REPORTS TAB */}
       <div style={{
         backgroundColor: 'white',
         padding: '1rem 2rem',
@@ -449,7 +449,7 @@ export default function AdminManagementPage() {
           >
             Messages
           </button>
-          {/* NEW PAYMENT VERIFICATION TAB */}
+          {/* PAYMENT VERIFICATION TAB */}
           <button
             onClick={() => setActiveTab('payments')}
             style={{
@@ -463,6 +463,21 @@ export default function AdminManagementPage() {
             }}
           >
             Payment Verification
+          </button>
+          {/* REPORTS TAB */}
+          <button
+            onClick={() => router.push('/admin-dashboard/reports')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#e9ecef',
+              color: '#333',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'normal'
+            }}
+          >
+            📋 Reports
           </button>
         </div>
       </div>
