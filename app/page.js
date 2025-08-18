@@ -234,8 +234,6 @@ const CampusMart = () => {
                 </div>
               </button>
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
               {/* Notifications - Hidden on small mobile */}
               {/* {windowSize.width > 480 && (
                 <button className="notification-btn" title="Notifications" aria-label="Notifications">
@@ -243,12 +241,6 @@ const CampusMart = () => {
                   <span className="notification-badge">3</span>
                 </button>
               )} */}
-=======
-              
->>>>>>> Stashed changes
-=======
-              
->>>>>>> Stashed changes
 
               <button 
                 className="mobile-menu-btn" 
@@ -281,19 +273,11 @@ const CampusMart = () => {
   <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
 </ul>
               <div className="mobile-actions">
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
                 {/* <button className="mobile-notification-btn">
                   <Bell size={20} />
                   <span>Notifications</span>
                   <span className="notification-badge">3</span>
                 </button> */}
-=======
-                
->>>>>>> Stashed changes
-=======
-                
->>>>>>> Stashed changes
                 <button className="mobile-favorites-btn">
                   <Heart size={20} />
                   <span>Favorites</span>
