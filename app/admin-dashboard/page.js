@@ -34,6 +34,11 @@ export default function AdminDashboard() {
     total: 0
   });
 
+  // Commission settings state
+  const [commissionPercent, setCommissionPercent] = useState(10);
+  const [commissionLoading, setCommissionLoading] = useState(false);
+  const [commissionSaving, setCommissionSaving] = useState(false);
+
   const router = useRouter();
 
   // Auto-refresh every 30 seconds
@@ -71,6 +76,7 @@ export default function AdminDashboard() {
       setAdminData(adminInfo);
       fetchDashboardStats();
       fetchData();
+      fetchCommission();
     } catch (error) {
       console.error('Error initializing admin:', error);
       clearAuthData();
@@ -238,6 +244,56 @@ export default function AdminDashboard() {
       setRefreshing(false);
     }
   }, [router]);
+
+  const fetchCommission = async () => {
+    try {
+      setCommissionLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/settings', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCommissionPercent(data.data.commissionPercent ?? 10);
+      }
+    } catch (e) {
+      console.error('Error fetching commission settings:', e);
+    } finally {
+      setCommissionLoading(false);
+    }
+  };
+
+  const handleUpdateCommission = async () => {
+    try {
+      const parsed = parseFloat(commissionPercent);
+      if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
+        alert('Commission must be between 0 and 100');
+        return;
+      }
+      setCommissionSaving(true);
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ commissionPercent: parsed })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Commission updated successfully');
+        setCommissionPercent(parsed);
+      } else {
+        alert(data.error || 'Failed to update commission');
+      }
+    } catch (e) {
+      console.error('Error updating commission:', e);
+      alert('Network error. Please try again.');
+    } finally {
+      setCommissionSaving(false);
+    }
+  };
 
   const handleStatusChange = async (userId, userType, currentStatus) => {
     const newStatus = !currentStatus;
@@ -824,6 +880,59 @@ export default function AdminDashboard() {
           >
             🚨 Pending Issues
           </button>
+        </div>
+      </div>
+
+      {/* Commission Settings */}
+      <div style={{
+        backgroundColor: 'white',
+        padding: '1.5rem',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e9ecef',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div>
+            <h3 style={{ margin: 0, color: '#212529' }}>Commission Settings</h3>
+            <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.9rem' }}>
+              Set global commission applied on each listing (default 10%).
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={commissionPercent}
+              onChange={(e) => setCommissionPercent(e.target.value)}
+              disabled={commissionLoading || commissionSaving}
+              style={{
+                width: '120px',
+                padding: '0.5rem',
+                border: '1px solid #ced4da',
+                borderRadius: '6px'
+              }}
+            />
+            <span style={{ color: '#6c757d' }}>%</span>
+            <button
+              onClick={handleUpdateCommission}
+              disabled={commissionLoading || commissionSaving}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: commissionSaving ? '#6c757d' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: commissionSaving ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: 500
+              }}
+            >
+              {commissionSaving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
 

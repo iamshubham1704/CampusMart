@@ -98,6 +98,15 @@ export async function POST(request) {
     const client = await clientPromise;
     const db = client.db('campusmart');
 
+    // Get global commission percent (default 10)
+    let commissionPercent = 10;
+    try {
+      const settingsDoc = await db.collection('settings').findOne({ _id: 'global_settings' });
+      if (settingsDoc && typeof settingsDoc.commissionPercent === 'number') {
+        commissionPercent = settingsDoc.commissionPercent;
+      }
+    } catch (_) {}
+
     // Create new listing document
     const newListing = {
       sellerId: new ObjectId(userId),
@@ -105,6 +114,7 @@ export async function POST(request) {
       description,
       price: Number(price),
       originalPrice: originalPrice ? Number(originalPrice) : null,
+      commission: commissionPercent, // store commission snapshot on listing
       condition,
       category,
       subcategory: subcategory || null,
@@ -129,6 +139,7 @@ export async function POST(request) {
         id: result.insertedId.toString(),
         title,
         price: Number(price),
+        commission: commissionPercent,
         condition,
         status: 'active',
         imagesUploaded: uploadedImages.length,

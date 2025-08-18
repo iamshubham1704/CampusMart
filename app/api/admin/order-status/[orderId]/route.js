@@ -220,8 +220,21 @@ export async function PUT(request, { params }) {
       if (stepNum === 6) {
         // Step 6: Create seller payment record
         try {
-          const commission = 10; // Default 10% commission
-          const adminFee = (currentOrderStatus.orderAmount * commission) / 100;
+          // Try to read commission from listing; fallback to global settings; fallback to 10
+          let commissionPercent = 10;
+          try {
+            const listing = await db.collection('listings').findOne({ _id: (typeof currentOrderStatus.productId === 'string' ? new ObjectId(currentOrderStatus.productId) : currentOrderStatus.productId) }, { projection: { commission: 1 } });
+            if (listing && typeof listing.commission === 'number') {
+              commissionPercent = listing.commission;
+            } else {
+              const settingsDoc = await db.collection('settings').findOne({ _id: 'global_settings' });
+              if (settingsDoc && typeof settingsDoc.commissionPercent === 'number') {
+                commissionPercent = settingsDoc.commissionPercent;
+              }
+            }
+          } catch (_) {}
+
+          const adminFee = (currentOrderStatus.orderAmount * commissionPercent) / 100;
           const sellerAmount = currentOrderStatus.orderAmount - adminFee;
 
           await db.collection('seller_transactions').insertOne({
@@ -231,6 +244,7 @@ export async function PUT(request, { params }) {
             productId: currentOrderStatus.productId,
             amount: sellerAmount,
             commission: adminFee,
+            commissionPercent,
             status: 'completed',
             paymentMethod: 'admin_release',
             transactionDetails: details,
