@@ -95,7 +95,8 @@ export async function POST(req) {
       { 
         buyerId: buyer._id.toString(),
         email: buyer.email,
-        name: buyer.name
+        name: buyer.name,
+        role: 'buyer'
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
