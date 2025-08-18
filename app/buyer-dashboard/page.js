@@ -1114,16 +1114,7 @@ const BuyerDashboard = () => {
                     <div className="productInfo">
                       <h3 className="productTitle">{product.title}</h3>
 
-                      <div className="sellerInfo">
-                        <div className="sellerDetails">
-                          <User size={14} />
-                          <span>{product.seller?.name || product.seller || 'Unknown Seller'}</span>
-                          <div className="rating">
-                            <Star size={12} />
-                            <span>{product.rating}</span>
-                          </div>
-                        </div>
-                      </div>
+                     
 
                       <div className="productMeta">
                         <div className="productMetaItem">

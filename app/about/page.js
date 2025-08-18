@@ -108,12 +108,7 @@ const CampusMartAbout = () => {
                     <span>Policy</span>
                   </Link>
                 </li>
-                <li className="nav-item">
-                  <Link href="/contact" className="nav-link">
-                    <Phone size={18} />
-                    <span>Contact</span>
-                  </Link>
-                </li>
+                
               </ul>
             </div>
 
@@ -145,7 +140,7 @@ const CampusMartAbout = () => {
                 <li><Link href="/" className="mobile-nav-link"><Home size={20} /><span>Home</span></Link></li>
                 <li><Link href="/about" className="mobile-nav-link active"><Users size={20} /><span>About</span></Link></li>
                 <li><Link href="/policy" className="mobile-nav-link"><Shield size={20} /><span>Policy</span></Link></li>
-                <li><Link href="/contact" className="mobile-nav-link"><Phone size={20} /><span>Contact</span></Link></li>
+                
               </ul>
             </div>
           </div>

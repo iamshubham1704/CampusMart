@@ -556,31 +556,12 @@ We will verify your payment and confirm your order shortly. You can track your o
                         <>🛒 {isInCart(product.id || product._id) ? 'In Cart' : 'Add to Cart'}</>
                       )}
                     </button>
-                  </div>
-
-                  {product.seller && (
-                    <div className="seller-info">
-                      <div className="seller-avatar">
-                        <img 
-                          src={product.seller.avatar} 
-                          alt={product.seller.name}
-                          onError={(e) => {
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller.name || 'User')}&size=100&background=3b82f6&color=ffffff`;
-                          }}
-                        />
-                      </div>
-                      <div className="seller-details">
-                        <div className="seller-name">
-                          <span>{product.seller.name}</span>
-                          {product.seller.verified && <span className="verified-badge">Verified</span>}
-                        </div>
-                        <div className="seller-rating">★★★★★</div>
-                      </div>
-                      <button onClick={handleContactSeller} className="message-seller">
-                        💬 Message seller
-                      </button>
+                 
+                      
+                      
+                      
                     </div>
-                  )}
+                  
 
                   {/* Product Actions */}
                   <div className="product-actions">

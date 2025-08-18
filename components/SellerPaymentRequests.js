@@ -960,112 +960,106 @@ const SellerPaymentRequests = () => {
               </button>
             </div>
 
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4">
+            <div className="order-summary">
+              <div className="order-summary-content">
                 <img
                   src={getProductImage(selectedOrder.product)}
                   alt={selectedOrder.product?.title}
-                  className="w-16 h-16 object-cover rounded-lg"
+                  className="order-summary-image"
                 />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{selectedOrder.product?.title}</h4>
-                  <p className="text-sm text-gray-600">Buyer: {selectedOrder.buyer?.name}</p>
-                  <p className="text-sm text-gray-600">Order: #{selectedOrder._id.substring(selectedOrder._id.length - 8)}</p>
+                <div className="order-summary-details">
+                  <h4 className="order-summary-title">{selectedOrder.product?.title}</h4>
+                  <p className="order-summary-meta">Buyer: {selectedOrder.buyer?.name}</p>
+                  <p className="order-summary-meta">Order: #{selectedOrder._id.substring(selectedOrder._id.length - 8)}</p>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium text-gray-700">Amount to receive:</span>
-                  <span className="text-2xl font-bold text-green-600">{formatCurrency(selectedOrder.amount)}</span>
+              <div className="order-amount-section">
+                <div className="order-amount-row">
+                  <span className="order-amount-label">Amount to receive</span>
+                  <span className="order-amount-value">{formatCurrency(selectedOrder.amount)}</span>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleSubmitRequest} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  UPI ID <span className="text-red-500">*</span>
+            <form onSubmit={handleSubmitRequest} className="payment-form">
+              <div className="form-group">
+                <label className="form-label">
+                  UPI ID <span className="required">*</span>
                 </label>
-                <div className="relative">
-                  <Smartphone size={18} className="absolute left-3 top-3 text-gray-400" />
+                <div className="form-input-wrapper">
+                  <Smartphone size={18} className="form-input-icon" />
                   <input
                     type="text"
                     value={formData.upiId}
                     onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
                     placeholder="yourname@paytm"
-                    className="w-full pl-11 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="form-input with-icon"
                     required
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Enter your UPI ID for direct payment transfer</p>
+                <p className="form-help-text">Enter your UPI ID for direct payment transfer</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Holder Name
-                </label>
+              <div className="form-group">
+                <label className="form-label">Account Holder Name</label>
                 <input
                   type="text"
                   value={formData.accountHolderName}
                   onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
                   placeholder="Full name as per bank account"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="form-input"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bank Name
-                </label>
+              <div className="form-group">
+                <label className="form-label">Bank Name</label>
                 <input
                   type="text"
                   value={formData.bankName}
                   onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                   placeholder="Bank name (optional)"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="form-input"
                 />
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    <div className="w-4 h-4 bg-blue-400 rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
+              <div className="form-info-box">
+                <div className="form-info-content">
+                  <div className="form-info-icon">
+                    <div className="form-info-dot"></div>
                   </div>
-                  <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-2">Payment Processing Information:</p>
-                    <ul className="space-y-1 text-xs">
-                      <li>• Payment will be processed within 2-3 business days</li>
-                      <li>• You'll receive notifications at each stage</li>
-                      <li>• Ensure your UPI ID is active and correct</li>
-                      <li>• Contact support if you face any issues</li>
+                  <div className="form-info-text">
+                    <p className="form-info-title">Payment Processing Information</p>
+                    <ul className="form-info-list">
+                      <li>Payment will be processed within 2-3 business days</li>
+                      <li>You'll receive notifications at each stage</li>
+                      <li>Ensure your UPI ID is active and correct</li>
+                      <li>Contact support if you face any issues</li>
                     </ul>
                   </div>
                 </div>
               </div>
 
-              <div className="flex space-x-3 pt-4">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={() => setShowRequestModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  className="form-button secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium"
+                  className="form-button primary"
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={18} className="animate-spin mr-2" />
+                      <Loader2 size={18} className="animate-spin" />
                       Submitting...
                     </>
                   ) : (
                     <>
-                      <DollarSign size={18} className="mr-2" />
+                      <DollarSign size={18} />
                       Submit Request
                     </>
                   )}
