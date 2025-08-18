@@ -1,4 +1,4 @@
-// app/api/seller/orders/route.js - NEW FILE
+// app/api/seller/orders/route.js - UPDATED VERSION
 import { verifyToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
 
@@ -15,6 +15,13 @@ export async function GET(request) {
     const status = searchParams.get('status');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
+
+    console.log('🔍 Seller orders request:', {
+      sellerId: decoded.sellerId,
+      status,
+      page,
+      limit
+    });
 
     const client = await clientPromise;
     const db = client.db('campusmart');
@@ -37,6 +44,8 @@ export async function GET(request) {
       .limit(limit)
       .toArray();
 
+    console.log(`📦 Found ${orders.length} orders for seller ${decoded.sellerId}`);
+
     // Get total count
     const totalCount = await db.collection('orders').countDocuments(filter);
 
@@ -47,7 +56,7 @@ export async function GET(request) {
           // Get product details
           const product = await db.collection('listings').findOne({
             _id: order.productId
-          }, { projection: { title: 1, price: 1, images: 1 } });
+          }, { projection: { title: 1, price: 1, images: 1, category: 1 } });
 
           // Get buyer details
           const buyer = await db.collection('buyers').findOne({
@@ -70,25 +79,27 @@ export async function GET(request) {
 
           return {
             ...order,
-            product: product || null,
-            buyer: buyer || null,
+            product: product || { title: 'Product Deleted', price: 0, images: [], category: 'Unknown' },
+            buyer: buyer || { name: 'Unknown Buyer', email: '', phone: '' },
             sellerTransaction: sellerTransaction || null,
             paymentScreenshot: paymentScreenshot || null,
             canRequestPayment: order.status === 'payment_verified' && !sellerTransaction,
             paymentRequested: !!sellerTransaction,
-            paymentRequestStatus: sellerTransaction?.status || null
+            paymentRequestStatus: sellerTransaction?.status || null,
+            hasPaymentRequest: !!sellerTransaction
           };
         } catch (error) {
           console.error('Error fetching order details:', error);
           return {
             ...order,
-            product: null,
-            buyer: null,
+            product: { title: 'Error Loading Product', price: 0, images: [], category: 'Unknown' },
+            buyer: { name: 'Error Loading Buyer', email: '', phone: '' },
             sellerTransaction: null,
             paymentScreenshot: null,
             canRequestPayment: false,
             paymentRequested: false,
-            paymentRequestStatus: null
+            paymentRequestStatus: null,
+            hasPaymentRequest: false
           };
         }
       })
@@ -96,6 +107,12 @@ export async function GET(request) {
 
     // Separate orders that can request payment (payment_verified status)
     const verifiedOrders = ordersWithDetails.filter(order => order.canRequestPayment);
+    
+    console.log('✅ Order processing complete:', {
+      totalOrders: ordersWithDetails.length,
+      verifiedOrders: verifiedOrders.length,
+      withPaymentRequests: ordersWithDetails.filter(o => o.paymentRequested).length
+    });
 
     return Response.json({
       success: true,
@@ -112,7 +129,10 @@ export async function GET(request) {
           total: ordersWithDetails.length,
           pendingPaymentRequest: verifiedOrders.length,
           paymentRequested: ordersWithDetails.filter(o => o.paymentRequested).length,
-          completed: ordersWithDetails.filter(o => o.paymentRequestStatus === 'completed').length
+          completed: ordersWithDetails.filter(o => o.paymentRequestStatus === 'completed').length,
+          totalEarnings: ordersWithDetails
+            .filter(o => o.paymentRequestStatus === 'completed')
+            .reduce((sum, o) => sum + (o.amount || 0), 0)
         }
       }
     }, { status: 200 });
@@ -192,7 +212,8 @@ export async function POST(request) {
       sellerTransaction: sellerTransaction || null,
       canRequestPayment: order.status === 'payment_verified' && !sellerTransaction,
       paymentRequested: !!sellerTransaction,
-      paymentRequestStatus: sellerTransaction?.status || null
+      paymentRequestStatus: sellerTransaction?.status || null,
+      hasPaymentRequest: !!sellerTransaction
     };
 
     return Response.json({
