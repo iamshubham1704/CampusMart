@@ -25,6 +25,7 @@ export default function AdminManagementPage() {
   // Payment Screenshots state
   const [paymentScreenshots, setPaymentScreenshots] = useState([]);
   const [paymentsFilter, setPaymentsFilter] = useState('pending_verification');
+  const [commissionEdits, setCommissionEdits] = useState({});
 
   useEffect(() => {
     // Check if admin is logged in
@@ -226,6 +227,40 @@ export default function AdminManagementPage() {
       }
     } catch (error) {
       console.error('Error updating listing status:', error);
+      alert('Network error. Please try again.');
+    }
+  };
+
+  const handleListingCommissionSave = async (listingId) => {
+    const value = commissionEdits[listingId];
+    const commissionNum = parseFloat(value);
+    if (Number.isNaN(commissionNum) || commissionNum < 0 || commissionNum > 100) {
+      alert('Commission must be a number between 0 and 100');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/listings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ listingId, commission: commissionNum })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setListings(listings.map(listing =>
+          listing._id === listingId ? { ...listing, commission: commissionNum } : listing
+        ));
+        alert('Commission updated');
+      } else {
+        alert(data.error || 'Failed to update commission');
+      }
+    } catch (error) {
+      console.error('Error updating commission:', error);
       alert('Network error. Please try again.');
     }
   };
@@ -535,6 +570,7 @@ export default function AdminManagementPage() {
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Category</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Status</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Views</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Commission (%)</th>
                   <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Action</th>
                 </tr>
               </thead>
@@ -572,6 +608,29 @@ export default function AdminManagementPage() {
                       </span>
                     </td>
                     <td style={{ padding: '0.75rem' }}>{listing.views || 0}</td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={
+                            commissionEdits[listing._id] !== undefined
+                              ? commissionEdits[listing._id]
+                              : (listing.commission ?? 10)
+                          }
+                          onChange={(e) => setCommissionEdits(prev => ({ ...prev, [listing._id]: e.target.value }))}
+                          style={{ width: '90px', padding: '0.25rem 0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                        />
+                        <button
+                          onClick={() => handleListingCommissionSave(listing._id)}
+                          style={{ padding: '0.375rem 0.75rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                       <select
                         value={listing.status || 'active'}

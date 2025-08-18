@@ -517,6 +517,11 @@ We will verify your payment and confirm your order shortly. You can track your o
                 <div className="product-details-section">
                   <div className="price-section">
                     <div className="price">₹ {product.price}</div>
+                    {product.commission !== undefined && (
+                      <div className="commission-note" style={{ marginTop: '4px', fontSize: '0.85rem', color: '#6c757d' }}>
+                        + {product.commission}% admin fee → total ₹{Math.round((product.price || 0) + ((product.price || 0) * ((product.commission || 0) / 100)))}
+                      </div>
+                    )}
                     {product.originalPrice && (
                       <>
                         <div className="original-price">₹{product.originalPrice}</div>

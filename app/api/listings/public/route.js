@@ -101,6 +101,8 @@ export async function GET(request) {
         title: listing.title || 'Untitled',
         price: listing.price || 0,
         originalPrice: listing.originalPrice || (listing.price ? listing.price * 1.3 : 0),
+        commission: listing.commission ?? 10,
+        finalPrice: (listing.price || 0) + ((listing.price || 0) * ((listing.commission ?? 10) / 100)),
         image: imageUrl, // Optimized image URL
         seller: seller?.name || seller?.businessName || 'Anonymous Seller',
         rating: seller?.rating || 4.5,
