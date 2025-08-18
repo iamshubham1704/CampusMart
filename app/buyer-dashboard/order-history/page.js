@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import styles from './OrderHistory.module.css'; // Correct import for CSS Modules
 import {
   Package,
   Clock,
@@ -20,7 +21,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
-import './OrderHistory.module.css';
+// Removed the duplicate/incorrect CSS import: './OrderHistory.module.css'
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -99,12 +100,6 @@ const OrderHistory = () => {
   const refreshOrders = async () => {
     setRefreshing(true);
     await fetchOrders(1, selectedStatus);
-    
-    // Refresh the pending order count in the main dashboard
-    if (typeof window !== 'undefined' && window.refreshPendingOrderCount) {
-      window.refreshPendingOrderCount();
-    }
-    
     setRefreshing(false);
   };
 
@@ -113,11 +108,6 @@ const OrderHistory = () => {
     setSelectedStatus(status);
     setCurrentPage(1);
     fetchOrders(1, status);
-    
-    // Refresh the pending order count in the main dashboard
-    if (typeof window !== 'undefined' && window.refreshPendingOrderCount) {
-      window.refreshPendingOrderCount();
-    }
   };
 
   // Handle search
@@ -183,9 +173,9 @@ const OrderHistory = () => {
 
   if (loading && orders.length === 0) {
     return (
-      <div className="orderHistoryContainer">
-        <div className="loadingContainer">
-          <Loader2 size={48} className="spinner" />
+      <div className={styles.orderHistoryContainer}>
+        <div className={styles.loadingContainer}>
+          <Loader2 size={48} className={styles.spinner} />
           <p>Loading your order history...</p>
         </div>
       </div>
@@ -193,11 +183,11 @@ const OrderHistory = () => {
   }
 
   return (
-    <div className="orderHistoryContainer">
+    <div className={styles.orderHistoryContainer}>
       {/* Header */}
-      <div className="orderHistoryHeader">
-        <div className="headerLeft">
-          <Link href="/buyer-dashboard" className="backButton">
+      <div className={styles.orderHistoryHeader}>
+        <div className={styles.headerLeft}>
+          <Link href="/buyer-dashboard" className={styles.backButton}>
             <ChevronLeft size={20} />
             Back to Dashboard
           </Link>
@@ -205,21 +195,21 @@ const OrderHistory = () => {
           <p>Track all your orders and their current status</p>
         </div>
         
-        <div className="headerRight">
+        <div className={styles.headerRight}>
           <button 
-            className={`refreshButton ${refreshing ? 'refreshing' : ''}`}
+            className={`${styles.refreshButton} ${refreshing ? styles.refreshing : ''}`}
             onClick={refreshOrders}
             disabled={refreshing}
           >
-            <RefreshCw size={20} className={refreshing ? 'spinning' : ''} />
+            <RefreshCw size={20} className={refreshing ? styles.spinning : ''} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="filtersSection">
-        <div className="searchBar">
+      <div className={styles.filtersSection}>
+        <div className={styles.searchBar}>
           <Search size={20} />
           <input
             type="text"
@@ -229,13 +219,13 @@ const OrderHistory = () => {
           />
         </div>
 
-        <div className="statusFilters">
+        <div className={styles.statusFilters}>
           {statusOptions.map((option) => {
             const IconComponent = option.icon;
             return (
               <button
                 key={option.value}
-                className={`statusFilter ${selectedStatus === option.value ? 'active' : ''} ${option.color}`}
+                className={`${styles.statusFilter} ${selectedStatus === option.value ? styles.active : ''} ${styles[option.color]}`}
                 onClick={() => handleStatusChange(option.value)}
               >
                 <IconComponent size={18} />
@@ -248,16 +238,16 @@ const OrderHistory = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="errorBanner">
+        <div className={styles.errorBanner}>
           <AlertCircle size={20} />
           <span>{error}</span>
         </div>
       )}
 
       {/* Orders List */}
-      <div className="ordersList">
+      <div className={styles.ordersList}>
         {filteredOrders.length === 0 ? (
-          <div className="noOrders">
+          <div className={styles.noOrders}>
             <Package size={64} />
             <h3>No orders found</h3>
             <p>
@@ -268,7 +258,7 @@ const OrderHistory = () => {
             </p>
             {searchQuery || selectedStatus !== 'all' ? (
               <button 
-                className="clearFiltersButton"
+                className={styles.clearFiltersButton}
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedStatus('all');
@@ -278,28 +268,28 @@ const OrderHistory = () => {
                 Clear All Filters
               </button>
             ) : (
-              <Link href="/buyer-dashboard" className="startShoppingButton">
+              <Link href="/buyer-dashboard" className={styles.startShoppingButton}>
                 Start Shopping
               </Link>
             )}
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <div key={order._id} className="orderCard">
+            <div key={order._id} className={styles.orderCard}>
               {/* Order Header */}
-              <div className="orderHeader">
-                <div className="orderInfo">
-                  <div className="orderId">
+              <div className={styles.orderHeader}>
+                <div className={styles.orderInfo}>
+                  <div className={styles.orderId}>
                     <Package size={18} />
                     Order #{order._id.toString().slice(-8).toUpperCase()}
                   </div>
-                  <div className="orderDate">
+                  <div className={styles.orderDate}>
                     <Calendar size={16} />
                     {formatDate(order.createdAt)}
                   </div>
                 </div>
-                <div className="orderStatus">
-                  <div className={`statusBadge ${getStatusColor(order.status)}`}>
+                <div className={styles.orderStatus}>
+                  <div className={`${styles.statusBadge} ${styles[getStatusColor(order.status)]}`}>
                     {React.createElement(getStatusIcon(order.status), { size: 18 })}
                     {order.statusMessage}
                   </div>
@@ -307,9 +297,9 @@ const OrderHistory = () => {
               </div>
 
               {/* Order Content */}
-              <div className="orderContent">
-                <div className="productSection">
-                  <div className="productImage">
+              <div className={styles.orderContent}>
+                <div className={styles.productSection}>
+                  <div className={styles.productImage}>
                     {order.product.image ? (
                       <img 
                         src={order.product.image} 
@@ -319,17 +309,17 @@ const OrderHistory = () => {
                         }}
                       />
                     ) : (
-                      <div className="noImage">
+                      <div className={styles.noImage}>
                         <Package size={32} />
                       </div>
                     )}
                   </div>
                   
-                  <div className="productDetails">
-                    <h3 className="productTitle">{order.product.title}</h3>
-                    <div className="productMeta">
-                      <span className="category">{order.product.category}</span>
-                      <span className="paymentMethod">
+                  <div className={styles.productDetails}>
+                    <h3 className={styles.productTitle}>{order.product.title}</h3>
+                    <div className={styles.productMeta}>
+                      <span className={styles.category}>{order.product.category}</span>
+                      <span className={styles.paymentMethod}>
                         <DollarSign size={14} />
                         {order.paymentMethod?.toUpperCase() || 'UPI'}
                       </span>
@@ -337,26 +327,26 @@ const OrderHistory = () => {
                   </div>
                 </div>
 
-                <div className="orderDetails">
-                  <div className="detailRow">
-                    <span className="label">Amount:</span>
-                    <span className="value amount">₹{order.amount}</span>
+                <div className={styles.orderDetails}>
+                  <div className={styles.detailRow}>
+                    <span className={styles.label}>Amount:</span>
+                    <span className={`${styles.value} ${styles.amount}`}>₹{order.amount}</span>
                   </div>
                   
-                  <div className="detailRow">
-                    <span className="label">Seller:</span>
-                    <span className="value sellerName">{order.seller.name}</span>
+                  <div className={styles.detailRow}>
+                    <span className={styles.label}>Seller:</span>
+                    <span className={`${styles.value} ${styles.sellerName}`}>{order.seller.name}</span>
                   </div>
                   
-                  <div className="detailRow">
-                    <span className="label">Contact:</span>
-                    <div className="contactInfo">
-                      <a href={`mailto:${order.seller.email}`} className="contactLink">
+                  <div className={styles.detailRow}>
+                    <span className={styles.label}>Contact:</span>
+                    <div className={styles.contactInfo}>
+                      <a href={`mailto:${order.seller.email}`} className={styles.contactLink}>
                         <Mail size={14} />
                         {order.seller.email}
                       </a>
                       {order.seller.phone && (
-                        <a href={`tel:${order.seller.phone}`} className="contactLink">
+                        <a href={`tel:${order.seller.phone}`} className={styles.contactLink}>
                           <Phone size={14} />
                           {order.seller.phone}
                         </a>
@@ -367,17 +357,17 @@ const OrderHistory = () => {
               </div>
 
               {/* Order Actions */}
-              <div className="orderActions">
+              <div className={styles.orderActions}>
                 {order.status === 'payment_rejected' && (
-                  <div className="adminContactInfo">
+                  <div className={styles.adminContactInfo}>
                     <AlertCircle size={16} />
                     <span>Payment was rejected. Contact admin for assistance:</span>
-                    <div className="adminContacts">
-                      <a href={`mailto:${adminContact.email}`} className="adminContact">
+                    <div className={styles.adminContacts}>
+                      <a href={`mailto:${adminContact.email}`} className={styles.adminContact}>
                         <Mail size={14} />
                         {adminContact.email}
                       </a>
-                      <a href={`tel:${adminContact.phone}`} className="adminContact">
+                      <a href={`tel:${adminContact.phone}`} className={styles.adminContact}>
                         <Phone size={14} />
                         {adminContact.phone}
                       </a>
@@ -386,14 +376,14 @@ const OrderHistory = () => {
                 )}
                 
                 {order.status === 'will_be_delivered_soon' && (
-                  <div className="deliveryInfo">
+                  <div className={styles.deliveryInfo}>
                     <Info size={16} />
                     <span>Your order will be delivered soon. Admin will contact you for coordination.</span>
                   </div>
                 )}
                 
                 {order.status === 'delivered' && (
-                  <div className="deliverySuccess">
+                  <div className={styles.deliverySuccess}>
                     <CheckCircle size={16} />
                     <span>Order successfully delivered! Thank you for shopping with CampusMart.</span>
                   </div>
@@ -406,9 +396,9 @@ const OrderHistory = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="pagination">
+        <div className={styles.pagination}>
           <button
-            className="paginationButton"
+            className={styles.paginationButton}
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
           >
@@ -416,12 +406,12 @@ const OrderHistory = () => {
             Previous
           </button>
           
-          <div className="pageInfo">
+          <div className={styles.pageInfo}>
             Page {currentPage} of {totalPages}
           </div>
           
           <button
-            className="paginationButton"
+            className={styles.paginationButton}
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
           >
