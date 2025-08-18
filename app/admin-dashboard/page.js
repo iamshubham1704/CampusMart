@@ -828,6 +828,76 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
+      
+
+          {/* Order Management */}
+          <div style={{ 
+            padding: '1.5rem', 
+            border: '1px solid #e9ecef', 
+            borderRadius: '12px',
+            backgroundColor: '#f8f9fa'
+          }}>
+            <h3 style={{ color: '#212529', marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>
+              📦 Order Management
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                onClick={() => navigateWithErrorHandler('/admin-dashboard/order-status')}
+                style={{
+                  padding: '0.875rem 1rem',
+                  backgroundColor: '#fd7e14',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  position: 'relative',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  fontSize: '0.9rem'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#e8610c'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#fd7e14'}
+              >
+                📦 Order Status Tracking
+                <span style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  borderRadius: '12px',
+                  padding: '4px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600'
+                }}>
+                  NEW
+                </span>
+              </button>
+              <button
+                onClick={() => alert('📋 Order analytics coming soon!\n\n• Order completion rates\n• Average processing time\n• Step-wise analytics\n• Performance metrics')}
+                style={{
+                  padding: '0.875rem 1rem',
+                  backgroundColor: '#20c997',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  fontSize: '0.9rem'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#1ba085'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#20c997'}
+              >
+                📊 Order Analytics
+              </button>
+            </div>
+          </div>
+
+
       <div style={{
         backgroundColor: 'white',
         padding: '2rem',
