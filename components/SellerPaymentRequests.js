@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './PaymentRequests.css';
 import { 
   DollarSign, 
   CreditCard, 
@@ -17,7 +18,6 @@ import {
   Download,
   Filter,
   RefreshCw,
-  TrendingUp,
   FileText,
   Mail,
   Phone
@@ -402,19 +402,18 @@ const SellerPaymentRequests = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, text: 'Pending' },
-      processing: { color: 'bg-blue-100 text-blue-800', icon: Loader2, text: 'Processing' },
-      completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle, text: 'Completed' },
-      failed: { color: 'bg-red-100 text-red-800', icon: AlertCircle, text: 'Failed' }
+      pending: { cls: 'pending', icon: Clock, text: 'Pending' },
+      processing: { cls: 'processing', icon: Loader2, text: 'Processing' },
+      completed: { cls: 'completed', icon: CheckCircle, text: 'Completed' },
+      failed: { cls: 'failed', icon: AlertCircle, text: 'Failed' }
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
-    const Icon = config.icon;
-
+    const cfg = statusConfig[status] || statusConfig.pending;
+    const Icon = cfg.icon;
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
-        <Icon size={12} className="mr-1" />
-        {config.text}
+      <span className={`status-badge ${cfg.cls}`}>
+        <Icon size={12} />
+        {cfg.text}
       </span>
     );
   };
@@ -435,6 +434,21 @@ const SellerPaymentRequests = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Safer formatters to avoid displaying "Invalid Date"
+  const safeFormatDate = (dateString, fallbackText = '-') => {
+    if (!dateString) return fallbackText;
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return fallbackText;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const safeFormatDateTime = (dateString, fallbackText = '-') => {
+    if (!dateString) return fallbackText;
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return fallbackText;
+    return date.toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const formatCurrency = (amount) => {
@@ -458,18 +472,15 @@ const SellerPaymentRequests = () => {
   };
 
   const getConditionBadge = (condition) => {
-    const conditionColors = {
-      'Like New': 'bg-green-100 text-green-800',
-      'Excellent': 'bg-blue-100 text-blue-800',
-      'Good': 'bg-yellow-100 text-yellow-800',
-      'Fair': 'bg-orange-100 text-orange-800'
-    };
-
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${conditionColors[condition] || 'bg-gray-100 text-gray-800'}`}>
-        {condition}
-      </span>
-    );
+    const slug = String(condition || '')
+      .toLowerCase()
+      .replace(/[^a-z\s-]/g, '')
+      .replace(/\s+/g, '-');
+    const supported = ['like-new', 'excellent', 'good', 'fair'];
+    const className = supported.includes(slug)
+      ? `condition-badge ${slug}`
+      : 'condition-badge';
+    return <span className={className}>{condition || 'Unknown'}</span>;
   };
 
   const exportData = () => {
@@ -501,15 +512,7 @@ const SellerPaymentRequests = () => {
   });
 
   const pendingOrdersCount = verifiedOrders.filter(order => !order.hasPaymentRequest && !order.paymentRequested).length;
-  const totalEarnings = transactions
-    .filter(t => t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const pendingAmount = transactions
-    .filter(t => t.status === 'pending' || t.status === 'processing')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const thisMonthEarnings = transactions
-    .filter(t => t.status === 'completed' && new Date(t.completedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-    .reduce((sum, t) => sum + t.amount, 0);
+  
 
   if (loading) {
     return (
@@ -540,27 +543,27 @@ const SellerPaymentRequests = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+    <div className="payment-requests-container">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
+      <div className="payment-header">
+        <div className="header-top">
+          <div className="header-left">
             <button 
               onClick={() => window.history.back()}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="back-button"
               title="Go Back"
             >
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Payment Requests</h1>
-              <p className="text-gray-600 mt-1">Manage your seller payments and transactions</p>
+              <h1 className="header-title">Payment Requests</h1>
+              <p className="header-subtitle">Manage your seller payments and transactions</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="header-actions">
             <button 
               onClick={() => window.location.href = '/seller-dashboard'}
-              className="flex items-center space-x-2 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="action-button secondary"
             >
               <ArrowLeft size={16} />
               <span>Dashboard</span>
@@ -568,7 +571,7 @@ const SellerPaymentRequests = () => {
             <button 
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="action-button"
               title="Refresh Data"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
@@ -576,7 +579,7 @@ const SellerPaymentRequests = () => {
             </button>
             <button 
               onClick={exportData}
-              className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="action-button"
               title="Export CSV"
             >
               <Download size={16} />
@@ -585,83 +588,22 @@ const SellerPaymentRequests = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Ready for Request</p>
-                <p className="text-2xl font-bold text-yellow-600">{pendingOrdersCount}</p>
-                <p className="text-xs text-gray-500 mt-1">Verified orders</p>
-              </div>
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Clock size={24} className="text-yellow-600" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(totalEarnings)}</p>
-                <p className="text-xs text-gray-500 mt-1">All time</p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle size={24} className="text-green-600" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Amount</p>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(pendingAmount)}</p>
-                <p className="text-xs text-gray-500 mt-1">In process</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <DollarSign size={24} className="text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">This Month</p>
-                <p className="text-2xl font-bold text-purple-600">{formatCurrency(thisMonthEarnings)}</p>
-                <p className="text-xs text-gray-500 mt-1">30 days</p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <TrendingUp size={24} className="text-purple-600" />
-              </div>
-            </div>
-          </div>
-        </div>
+        
       </div>
 
       {/* Tab Navigation */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+      <div className="tab-navigation">
+        <div className="tab-border">
+          <nav className="tab-nav">
             <button
               onClick={() => setActiveTab('pending')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'pending'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`tab-button ${activeTab === 'pending' ? 'active' : ''}`}
             >
               Ready for Request ({pendingOrdersCount})
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'history'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
             >
               Transaction History ({transactions.length})
             </button>
@@ -671,17 +613,17 @@ const SellerPaymentRequests = () => {
 
       {/* Content based on active tab */}
       {activeTab === 'pending' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+        <div className="content-card">
+          <div className="content-header">
+            <div className="content-header-top">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Orders Ready for Payment Request</h2>
-                <p className="text-sm text-gray-600 mt-1">These orders have verified buyer payments and are ready for your payment request.</p>
+                <h2>Orders Ready for Payment Request</h2>
+                <p>These orders have verified buyer payments and are ready for your payment request.</p>
               </div>
               {pendingOrdersCount > 0 && (
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Total pending amount</p>
-                  <p className="text-xl font-bold text-gray-900">
+                <div className="content-header-right">
+                  <p>Total pending amount</p>
+                  <p className="total-amount">
                     {formatCurrency(verifiedOrders
                       .filter(order => !order.hasPaymentRequest && !order.paymentRequested)
                       .reduce((sum, order) => sum + order.amount, 0)
@@ -708,15 +650,15 @@ const SellerPaymentRequests = () => {
               </button>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
+            <div className="items-list">
               {verifiedOrders.map((order) => (
-                <div key={order._id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4 flex-1">
+                <div key={order._id} className="item-row">
+                  <div className="item-content">
+                    <div className="item-left">
                       <img
                         src={getProductImage(order.product)}
                         alt={order.product?.title || 'Product'}
-                        className="w-20 h-20 object-cover rounded-lg border"
+                        className="product-image"
                         onError={(e) => {
                           e.target.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop';
                         }}
@@ -724,12 +666,13 @@ const SellerPaymentRequests = () => {
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-semibold text-gray-900 text-lg">{order.product?.title || 'Unknown Product'}</h3>
-                            <div className="flex items-center space-x-3 mt-2">
-                              <p className="text-sm text-gray-600">
-                                📂 {order.product?.category || 'Uncategorized'}
-                              </p>
-                              {order.product?.condition && getConditionBadge(order.product.condition)}
+                            <h3 className="item-title">{order.product?.title || 'Unknown Product'}</h3>
+                            <div className="item-meta">
+                              <div className="item-meta-item">
+                                <span>📂</span>
+                                <span>{order.product?.category || 'Unknown'}</span>
+                              </div>
+                              {getConditionBadge(order.product?.condition)}
                             </div>
                           </div>
                         </div>
@@ -754,17 +697,17 @@ const SellerPaymentRequests = () => {
                             <p className="text-sm text-gray-600 flex items-center">
                               <Calendar size={14} className="mr-2" />
                               <span className="font-medium">Order Date:</span>
-                              <span className="ml-1">{formatDate(order.createdAt || order.orderDate)}</span>
+                              <span className="ml-1">{safeFormatDate(order.createdAt || order.orderDate, '—')}</span>
                             </p>
                             <p className="text-sm text-gray-600 flex items-center mt-1">
                               <CheckCircle size={14} className="mr-2" />
                               <span className="font-medium">Verified:</span>
-                              <span className="ml-1">{formatDate(order.verifiedAt)}</span>
+                              <span className="ml-1">{safeFormatDate(order.verifiedAt, '—')}</span>
                             </p>
                             <p className="text-sm text-gray-600 flex items-center mt-1">
                               <Package size={14} className="mr-2" />
                               <span className="font-medium">Delivery:</span>
-                              <span className="ml-1">{order.deliveryAddress}</span>
+                              <span className="ml-1">{order.deliveryAddress || '—'}</span>
                             </p>
                           </div>
                         </div>
@@ -775,12 +718,12 @@ const SellerPaymentRequests = () => {
                       </div>
                     </div>
                     
-                    <div className="text-right ml-6">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-2xl font-bold text-gray-900">{formatCurrency(order.amount)}</p>
-                        <p className="text-sm text-gray-500 mt-1">Order: #{order._id.substring(order._id.length - 8)}</p>
+                    <div className="item-right">
+                      <div className="item-amount-card">
+                        <p className="item-amount">{formatCurrency(order.amount)}</p>
+                        <p className="item-order-id">Order: #{order._id.substring(order._id.length - 8)}</p>
                         
-                        <div className="mt-4 space-y-2">
+                        <div className="item-actions">
                           {order.hasPaymentRequest || order.paymentRequested ? (
                             <div>
                               {getStatusBadge(order.paymentRequestStatus || 'pending')}
@@ -789,16 +732,16 @@ const SellerPaymentRequests = () => {
                           ) : (
                             <button
                               onClick={() => handleRequestPayment(order)}
-                              className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                              className="request-payment-btn"
                             >
                               <DollarSign size={14} className="mr-2" />
                               Request Payment
                             </button>
                           )}
-                          
-                          <div className="flex items-center space-x-1 mt-2">
-                            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                            <span className="text-xs text-green-600 font-medium">Payment Verified</span>
+                        
+                          <div className="status-indicator">
+                            <span className="status-dot"></span>
+                            <span className="status-text">Payment Verified</span>
                           </div>
                         </div>
                       </div>
@@ -812,20 +755,20 @@ const SellerPaymentRequests = () => {
       )}
 
       {activeTab === 'history' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+        <div className="content-card">
+          <div className="content-header">
+            <div className="content-header-top">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Transaction History</h2>
-                <p className="text-sm text-gray-600 mt-1">Track all your payment requests and their status.</p>
+                <h2>Transaction History</h2>
+                <p>Track all your payment requests and their status.</p>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
+              <div className="filter-controls">
+                <div className="filter-select">
                   <Filter size={16} className="text-gray-400" />
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className=""
                   >
                     <option value="all">All Status ({transactions.length})</option>
                     <option value="pending">Pending ({transactions.filter(t => t.status === 'pending').length})</option>
@@ -835,9 +778,9 @@ const SellerPaymentRequests = () => {
                   </select>
                 </div>
                 {filteredTransactions.length > 0 && (
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">Filtered total</p>
-                    <p className="text-lg font-bold text-gray-900">
+                  <div className="content-header-right">
+                    <p>Filtered total</p>
+                    <p className="total-amount">
                       {formatCurrency(filteredTransactions.reduce((sum, t) => sum + t.amount, 0))}
                     </p>
                   </div>
@@ -847,154 +790,152 @@ const SellerPaymentRequests = () => {
           </div>
 
           {filteredTransactions.length === 0 ? (
-            <div className="p-12 text-center">
-              <CreditCard size={64} className="mx-auto text-gray-400 mb-6" />
-              <h3 className="text-xl font-medium text-gray-900 mb-3">No transactions found</h3>
-              <p className="text-gray-600 mb-6">
+            <div className="empty-state">
+              <CreditCard size={64} className="empty-state-icon" />
+              <h3>No transactions found</h3>
+              <p>
                 {filter === 'all' 
                   ? 'Your payment requests will appear here once submitted.' 
-                  : `No transactions with status "${filter}" found.`
-                }
+                  : `No transactions with status "${filter}" found.`}
               </p>
-              <div className="flex items-center justify-center space-x-4">
+              <div className="empty-state-actions">
                 {filter !== 'all' && (
                   <button 
                     onClick={() => setFilter('all')}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="action-button"
                   >
                     Show All
                   </button>
                 )}
                 <button 
                   onClick={handleRefresh}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="action-button primary"
                 >
                   Refresh Data
                 </button>
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
+            <div className="items-list">
               {filteredTransactions.map((transaction) => (
-                <div key={transaction._id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <h3 className="font-semibold text-gray-900 text-lg">
+                <div key={transaction._id} className="item-row">
+                  <div className="item-content">
+                    <div className="item-left" style={{gap: '1rem'}}>
+                      <div className="item-details" style={{flex: 1}}>
+                        <div className="item-header">
+                          <h3 className="item-title">
                             {transaction.product?.title || transaction.productTitle || 'Unknown Product'}
                           </h3>
                           {getStatusBadge(transaction.status)}
                         </div>
-                        <p className="text-2xl font-bold text-gray-900">{formatCurrency(transaction.amount)}</p>
+
+                        <div className="details-grid" style={{margin: 0}}>
+                          <div className="detail-section">
+                            <div className="detail-item">
+                              <span className="label">Transaction ID:</span>
+                              <span className="overview-value mono">#{transaction._id}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="label">Request Date:</span>
+                              <span>{safeFormatDateTime(transaction.createdAt || transaction.requestDate, '—')}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="label">UPI ID:</span>
+                              <span className="overview-value mono">{transaction.sellerUpiId || transaction.upiId || 'N/A'}</span>
+                            </div>
+                          </div>
+                          <div className="detail-section">
+                            <div className="detail-item">
+                              <span className="label">Buyer:</span>
+                              <span>{transaction.buyer?.name || 'Unknown'}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="label">Email:</span>
+                              <span>{transaction.buyer?.email || 'No email'}</span>
+                            </div>
+                            {transaction.buyer?.phone && (
+                              <div className="detail-item">
+                                <span className="label">Phone:</span>
+                                <span>{transaction.buyer.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {transaction.status === 'completed' && (
+                          <div className="status-info-card completed">
+                            <div className="status-info-header completed">
+                              <CheckCircle size={16} />
+                              <span>Payment Completed</span>
+                            </div>
+                            <div className="status-info-content completed">
+                              <p><span className="label">Completed:</span> {safeFormatDateTime(transaction.completedAt || transaction.completedDate, '—')}</p>
+                              {transaction.transactionReference && (
+                                <p><span className="label">Reference:</span> {transaction.transactionReference}</p>
+                              )}
+                              {transaction.adminNotes && (
+                                <p><span className="label">Note:</span> {transaction.adminNotes}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {transaction.status === 'failed' && (
+                          <div className="status-info-card failed">
+                            <div className="status-info-header failed">
+                              <AlertCircle size={16} />
+                              <span>Payment Failed</span>
+                            </div>
+                            <div className="status-info-content failed">
+                              {transaction.failedAt && (
+                                <p><span className="label">Failed:</span> {safeFormatDateTime(transaction.failedAt, '—')}</p>
+                              )}
+                              {transaction.adminNotes && (
+                                <p><span className="label">Reason:</span> {transaction.adminNotes}</p>
+                              )}
+                              {transaction.failureReason && (
+                                <p><span className="label">Error Code:</span> {transaction.failureReason}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {(transaction.status === 'pending' || transaction.status === 'processing') && (
+                          <div className="status-info-card processing">
+                            <div className="status-info-header processing">
+                              <Clock size={16} />
+                              <span>{transaction.status === 'pending' ? 'Awaiting Processing' : 'Payment in Progress'}</span>
+                            </div>
+                            <div className="status-info-content processing">
+                              {transaction.estimatedCompletionDate && (
+                                <p><span className="label">Estimated Completion:</span> {safeFormatDateTime(transaction.estimatedCompletionDate, '—')}</p>
+                              )}
+                              {transaction.adminNotes && (
+                                <p><span className="label">Status:</span> {transaction.adminNotes}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="item-footer">
+                          <p className="item-last-updated">
+                            Last updated: {safeFormatDateTime(transaction.updatedAt || transaction.createdAt, '—')}
+                          </p>
+                          <button
+                            onClick={() => handleViewDetails(transaction)}
+                            className="view-details-btn"
+                          >
+                            <Eye size={14} />
+                            <span>View Details</span>
+                          </button>
+                        </div>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
-                        <div>
-                          <span className="font-medium">Transaction ID:</span>
-                          <p className="font-mono text-xs mt-1">#{transaction._id}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Request Date:</span>
-                          <p className="mt-1">{formatDateTime(transaction.createdAt || transaction.requestDate)}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">UPI ID:</span>
-                          <p className="mt-1 font-mono">{transaction.sellerUpiId || transaction.upiId || 'N/A'}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                        <div>
-                          <span className="font-medium">Buyer Details:</span>
-                          <div className="mt-1 space-y-1">
-                            <p>👤 {transaction.buyer?.name || 'Unknown'}</p>
-                            <p>📧 {transaction.buyer?.email || 'No email'}</p>
-                            {transaction.buyer?.phone && <p>📱 {transaction.buyer.phone}</p>}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="font-medium">Payment Details:</span>
-                          <div className="mt-1 space-y-1">
-                            {transaction.accountHolderName && <p>🏦 {transaction.accountHolderName}</p>}
-                            {transaction.bankName && <p>🏛️ {transaction.bankName}</p>}
-                            {transaction.product?.category && <p>📂 {transaction.product.category}</p>}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Status-specific information */}
-                      {transaction.status === 'completed' && (
-                        <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                          <div className="flex items-center space-x-2 text-sm text-green-800">
-                            <CheckCircle size={16} />
-                            <span className="font-medium">Payment Completed</span>
-                          </div>
-                          <div className="mt-2 text-sm text-green-700">
-                            <p><span className="font-medium">Completed:</span> {formatDateTime(transaction.completedAt || transaction.completedDate)}</p>
-                            {transaction.transactionReference && (
-                              <p><span className="font-medium">Reference:</span> {transaction.transactionReference}</p>
-                            )}
-                            {transaction.adminNotes && (
-                              <p><span className="font-medium">Note:</span> {transaction.adminNotes}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {transaction.status === 'failed' && (
-                        <div className="mt-4 p-3 bg-red-50 rounded-lg">
-                          <div className="flex items-center space-x-2 text-sm text-red-800">
-                            <AlertCircle size={16} />
-                            <span className="font-medium">Payment Failed</span>
-                          </div>
-                          <div className="mt-2 text-sm text-red-700">
-                            {transaction.failedAt && (
-                              <p><span className="font-medium">Failed:</span> {formatDateTime(transaction.failedAt)}</p>
-                            )}
-                            {transaction.adminNotes && (
-                              <p><span className="font-medium">Reason:</span> {transaction.adminNotes}</p>
-                            )}
-                            {transaction.failureReason && (
-                              <p><span className="font-medium">Error Code:</span> {transaction.failureReason}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {(transaction.status === 'pending' || transaction.status === 'processing') && (
-                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                          <div className="flex items-center space-x-2 text-sm text-blue-800">
-                            <Clock size={16} />
-                            <span className="font-medium">
-                              {transaction.status === 'pending' ? 'Awaiting Processing' : 'Payment in Progress'}
-                            </span>
-                          </div>
-                          <div className="mt-2 text-sm text-blue-700">
-                            {transaction.estimatedCompletionDate && (
-                              <p>
-                                <span className="font-medium">Estimated Completion:</span> 
-                                {formatDateTime(transaction.estimatedCompletionDate)}
-                              </p>
-                            )}
-                            {transaction.adminNotes && (
-                              <p><span className="font-medium">Status:</span> {transaction.adminNotes}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                        <p className="text-xs text-gray-500">
-                          Last updated: {formatDateTime(transaction.updatedAt || transaction.createdAt)}
-                        </p>
-                        <button
-                          onClick={() => handleViewDetails(transaction)}
-                          className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          <Eye size={14} />
-                          <span>View Details</span>
-                        </button>
+                    </div>
+                    <div className="item-right">
+                      <div className="item-amount-card">
+                        <p className="item-amount">{formatCurrency(transaction.amount)}</p>
+                        <p className="item-order-id">Txn: #{transaction._id.substring(transaction._id.length - 8)}</p>
+                        {getStatusBadge(transaction.status)}
                       </div>
                     </div>
                   </div>
@@ -1007,13 +948,13 @@ const SellerPaymentRequests = () => {
 
       {/* Payment Request Modal */}
       {showRequestModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">Request Payment</h3>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Request Payment</h3>
               <button
                 onClick={() => setShowRequestModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="modal-close-btn"
               >
                 <X size={20} />
               </button>

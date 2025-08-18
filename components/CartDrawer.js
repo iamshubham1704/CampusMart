@@ -137,14 +137,7 @@ const CartDrawer = () => {
                     Clear Cart
                   </button>
                   
-                  <button
-                    className="checkout-btn"
-                    onClick={handleCheckout}
-                    disabled={isLoading || cartItems.length === 0}
-                  >
-                    <span>Checkout</span>
-                    <ArrowRight size={18} />
-                  </button>
+                  
                 </div>
               </div>
             </>

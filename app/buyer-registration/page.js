@@ -4,21 +4,21 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin, GraduationCap, Calendar } from 'lucide-react';
 
-const UnifiedBuyerRegistration = () => {
+const UnifiedBuyerRegistration = ({ updateProfile, isEditMode = false, initialData = {} }) => {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: initialData.name || '',
+    email: initialData.email || '',
+    phone: initialData.phone || '',
     password: '',
     confirmPassword: '',
-    college: '',
+    college: initialData.college || '',
     customCollege: '',
-    year: '',
-    course: '',
+    year: initialData.year || '',
+    course: initialData.course || '',
     customCourse: '',
-    branch: '',
+    branch: initialData.branch || '',
     customBranch: '',
   });
 
@@ -68,13 +68,14 @@ const UnifiedBuyerRegistration = () => {
     setError('');
     setSuccess('');
 
-    // Validation
-    if (!form.name || !form.email || !form.phone || !form.password || !form.year) {
+    // Basic validation
+    if (!form.name || !form.email || !form.phone || !form.year) {
       setError('Please fill in all required fields');
       setLoading(false);
       return;
     }
 
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
       setError('Please enter a valid email address');
@@ -82,18 +83,28 @@ const UnifiedBuyerRegistration = () => {
       return;
     }
 
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
+    // Password validation only for registration mode
+    if (!isEditMode) {
+      if (!form.password) {
+        setError('Password is required');
+        setLoading(false);
+        return;
+      }
+      
+      if (form.password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        setLoading(false);
+        return;
+      }
+
+      if (form.password !== form.confirmPassword) {
+        setError('Passwords do not match!');
+        setLoading(false);
+        return;
+      }
     }
 
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match!');
-      setLoading(false);
-      return;
-    }
-
+    // College/Course/Branch validation
     const college = form.college === 'manual' ? form.customCollege : form.college;
     const course = form.course === 'manual' ? form.customCourse : form.course;
     const branch = form.branch === 'manual' ? form.customBranch : form.branch;
@@ -105,35 +116,50 @@ const UnifiedBuyerRegistration = () => {
     }
 
     try {
-      const registrationData = {
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        password: form.password,
-        college,
-        year: form.year,
-        course,
-        branch,
-      };
+      if (isEditMode && updateProfile) {
+        // Profile update mode
+        await updateProfile({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          college,
+          year: form.year,
+          course,
+          branch,
+        });
+        setSuccess('Profile updated successfully!');
+      } else {
+        // Registration mode
+        const registrationData = {
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          password: form.password,
+          college,
+          year: form.year,
+          course,
+          branch,
+        };
 
-      const res = await fetch('/api/buyer/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registrationData),
-      });
+        const res = await fetch('/api/buyer/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(registrationData),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed');
+        if (!res.ok) {
+          throw new Error(data.error || 'Registration failed');
+        }
+        
+        setSuccess('Registration successful! Redirecting...');
+        setTimeout(() => {
+          router.push('/buyer-login');
+        }, 1500);
       }
-      
-      setSuccess('Registration successful! Redirecting...');
-      setTimeout(() => {
-        router.push('/buyer-login');
-      }, 1500);
     } catch (err) {
-      (err);
+      console.error(err);
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -428,8 +454,12 @@ const UnifiedBuyerRegistration = () => {
           <div style={styles.logoContainer}>
             <GraduationCap style={{ width: '2rem', height: '2rem', color: '#ffffff' }} />
           </div>
-          <h1 style={styles.title}>Buyer Registration</h1>
-          <p style={styles.subtitle}>Join our student marketplace community</p>
+          <h1 style={styles.title}>
+            {isEditMode ? 'Update Profile' : 'Buyer Registration'}
+          </h1>
+          <p style={styles.subtitle}>
+            {isEditMode ? 'Update your profile information' : 'Join our student marketplace community'}
+          </p>
         </div>
 
         {/* Error/Success Messages */}
@@ -519,73 +549,75 @@ const UnifiedBuyerRegistration = () => {
               </div>
             </div>
 
-            {/* Password Fields */}
-            <div style={styles.gridTwo}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Password *</label>
-                <div style={styles.inputWrapper}>
-                  <Lock style={styles.icon} />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={handleChange}
-                    style={{
-                      ...styles.input,
-                      paddingRight: '3rem',
-                      ...(loading ? styles.inputDisabled : {}),
-                    }}
-                    required 
-                    disabled={loading}
-                    onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                    onBlur={(e) => e.target.style.borderColor = '#4b5563'}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={styles.passwordToggle}
-                    onMouseOver={(e) => e.target.style.color = styles.passwordToggleHover.color}
-                    onMouseOut={(e) => e.target.style.color = '#9ca3af'}
-                  >
-                    {showPassword ? <EyeOff style={{ width: '1.25rem', height: '1.25rem' }} /> : <Eye style={{ width: '1.25rem', height: '1.25rem' }} />}
-                  </button>
+            {/* Password Fields - Only show in registration mode */}
+            {!isEditMode && (
+              <div style={styles.gridTwo}>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Password *</label>
+                  <div style={styles.inputWrapper}>
+                    <Lock style={styles.icon} />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={handleChange}
+                      style={{
+                        ...styles.input,
+                        paddingRight: '3rem',
+                        ...(loading ? styles.inputDisabled : {}),
+                      }}
+                      required 
+                      disabled={loading}
+                      onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
+                      onBlur={(e) => e.target.style.borderColor = '#4b5563'}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={styles.passwordToggle}
+                      onMouseOver={(e) => e.target.style.color = styles.passwordToggleHover.color}
+                      onMouseOut={(e) => e.target.style.color = '#9ca3af'}
+                    >
+                      {showPassword ? <EyeOff style={{ width: '1.25rem', height: '1.25rem' }} /> : <Eye style={{ width: '1.25rem', height: '1.25rem' }} />}
+                    </button>
+                  </div>
+                  <p style={styles.helpText}>Must be at least 6 characters</p>
                 </div>
-                <p style={styles.helpText}>Must be at least 6 characters</p>
-              </div>
 
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Confirm Password *</label>
-                <div style={styles.inputWrapper}>
-                  <Lock style={styles.icon} />
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    placeholder="••••••••"
-                    value={form.confirmPassword}
-                    onChange={handleChange}
-                    style={{
-                      ...styles.input,
-                      paddingRight: '3rem',
-                      ...(loading ? styles.inputDisabled : {}),
-                    }}
-                    required
-                    disabled={loading}
-                    onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                    onBlur={(e) => e.target.style.borderColor = '#4b5563'}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={styles.passwordToggle}
-                    onMouseOver={(e) => e.target.style.color = styles.passwordToggleHover.color}
-                    onMouseOut={(e) => e.target.style.color = '#9ca3af'}
-                  >
-                    {showConfirmPassword ? <EyeOff style={{ width: '1.25rem', height: '1.25rem' }} /> : <Eye style={{ width: '1.25rem', height: '1.25rem' }} />}
-                  </button>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Confirm Password *</label>
+                  <div style={styles.inputWrapper}>
+                    <Lock style={styles.icon} />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      placeholder="••••••••"
+                      value={form.confirmPassword}
+                      onChange={handleChange}
+                      style={{
+                        ...styles.input,
+                        paddingRight: '3rem',
+                        ...(loading ? styles.inputDisabled : {}),
+                      }}
+                      required
+                      disabled={loading}
+                      onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
+                      onBlur={(e) => e.target.style.borderColor = '#4b5563'}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={styles.passwordToggle}
+                      onMouseOver={(e) => e.target.style.color = styles.passwordToggleHover.color}
+                      onMouseOut={(e) => e.target.style.color = '#9ca3af'}
+                    >
+                      {showConfirmPassword ? <EyeOff style={{ width: '1.25rem', height: '1.25rem' }} /> : <Eye style={{ width: '1.25rem', height: '1.25rem' }} />}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Academic Information */}
@@ -772,45 +804,50 @@ const UnifiedBuyerRegistration = () => {
             onMouseOver={(e) => !loading && (e.target.style.backgroundColor = styles.submitButtonHover.backgroundColor)}
             onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#2563eb')}
           >
-            {loading ? 'Registering...' : 'Register as Buyer'}
+            {loading ? (isEditMode ? 'Updating...' : 'Registering...') : (isEditMode ? 'Update Profile' : 'Register as Buyer')}
           </button>
         </form>
         
-        {/* Divider */}
-        <div style={styles.divider}>
-          <div style={styles.dividerLine}></div>
-          <span style={styles.dividerText}>or</span>
-          <div style={styles.dividerLine}></div>
-        </div>
+        {/* Google Button - Only show in registration mode */}
+        {!isEditMode && (
+          <>
+            <div style={styles.divider}>
+              <div style={styles.dividerLine}></div>
+              <span style={styles.dividerText}>or</span>
+              <div style={styles.dividerLine}></div>
+            </div>
 
-        {/* Google Button */}
-        <button
-          type="button"
-          onClick={handleGoogleSignup} 
-          style={{
-            ...styles.googleButton,
-            ...(loading ? styles.googleButtonDisabled : {}),
-          }}
-          disabled={loading}
-          onMouseOver={(e) => !loading && (e.target.style.backgroundColor = styles.googleButtonHover.backgroundColor)}
-          onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#dc2626')}
-        >
-          {loading ? 'Signing in...' : 'Continue with Google'}
-        </button>
-
-        {/* Footer */}
-        <div style={styles.footer}>
-          <p style={styles.footerText}>
-            Already have an account?{' '}
-            <button 
+            <button
               type="button"
-              onClick={() => router.push('/buyer-login')}
-              style={styles.footerLink}
+              onClick={handleGoogleSignup} 
+              style={{
+                ...styles.googleButton,
+                ...(loading ? styles.googleButtonDisabled : {}),
+              }}
+              disabled={loading}
+              onMouseOver={(e) => !loading && (e.target.style.backgroundColor = styles.googleButtonHover.backgroundColor)}
+              onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#dc2626')}
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Continue with Google'}
             </button>
-          </p>
-        </div>
+          </>
+        )}
+
+        {/* Footer - Only show in registration mode */}
+        {!isEditMode && (
+          <div style={styles.footer}>
+            <p style={styles.footerText}>
+              Already have an account?{' '}
+              <button 
+                type="button"
+                onClick={() => router.push('/buyer-login')}
+                style={styles.footerLink}
+              >
+                Sign In
+              </button>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
