@@ -8,6 +8,10 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [adminData, setAdminData] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [filter, setFilter] = useState("all"); // all, buyer, seller
+  
   const [dashboardStats, setDashboardStats] = useState({
     totalUsers: 0,
     totalBuyers: 0,
@@ -21,6 +25,15 @@ export default function AdminDashboard() {
     totalRevenue: 0
   });
 
+  // Reports stats state
+  const [reportsStats, setReportsStats] = useState({
+    pending: 0,
+    'in-progress': 0,
+    resolved: 0,
+    closed: 0,
+    total: 0
+  });
+
   const router = useRouter();
 
   // Auto-refresh every 30 seconds
@@ -28,6 +41,7 @@ export default function AdminDashboard() {
     const interval = setInterval(() => {
       if (!loading) {
         fetchDashboardStats(true);
+        fetchData();
       }
     }, 30000);
 
@@ -36,7 +50,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     initializeAdmin();
-  }, [router]);
+  }, [router, filter]);
 
   const initializeAdmin = () => {
     try {
@@ -56,6 +70,7 @@ export default function AdminDashboard() {
       
       setAdminData(adminInfo);
       fetchDashboardStats();
+      fetchData();
     } catch (error) {
       console.error('Error initializing admin:', error);
       clearAuthData();
@@ -66,6 +81,63 @@ export default function AdminDashboard() {
   const clearAuthData = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminData');
+  };
+
+  // Fetch reports data function
+  const fetchReportsData = async (token) => {
+    try {
+      const response = await fetch('/api/admin/reports?limit=1', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setReportsStats(data.statistics.status);
+      }
+    } catch (error) {
+      console.error('Error fetching reports data:', error);
+    }
+  };
+
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+
+      // Fetch users and stats in parallel
+      const [usersResponse, statsResponse] = await Promise.all([
+        fetch(`/api/admin/users${filter !== "all" ? `?type=${filter}` : ""}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        fetch("/api/admin/stats", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      ]);
+
+      const usersData = await usersResponse.json();
+      const statsData = await statsResponse.json();
+
+      if (usersResponse.ok) {
+        setUsers(usersData.data.users);
+      } else {
+        setError(usersData.error || "Failed to fetch users");
+      }
+
+      if (statsResponse.ok) {
+        setStats(statsData.data);
+      }
+
+      // Fetch reports data
+      await fetchReportsData(token);
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Network error. Please try again.");
+    }
   };
 
   const fetchDashboardStats = useCallback(async (silent = false) => {
@@ -140,7 +212,7 @@ export default function AdminDashboard() {
       );
 
       // Calculate stats with null checking
-      const stats = {
+      const newStats = {
         totalUsers: (usersData?.data?.buyers?.length || 0) + (usersData?.data?.sellers?.length || 0),
         totalBuyers: usersData?.data?.buyers?.length || 0,
         totalSellers: usersData?.data?.sellers?.length || 0,
@@ -153,7 +225,7 @@ export default function AdminDashboard() {
         totalRevenue: paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
       };
 
-      setDashboardStats(stats);
+      setDashboardStats(newStats);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
       if (error.message === 'Request timeout') {
@@ -167,6 +239,50 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
+  const handleStatusChange = async (userId, userType, currentStatus) => {
+    const newStatus = !currentStatus;
+    const action = newStatus ? "activate" : "ban";
+
+    if (!confirm(`Are you sure you want to ${action} this ${userType}?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("adminToken");
+
+      const response = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId,
+          userType,
+          isActive: newStatus,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update the user in the local state
+        setUsers(
+          users.map((user) =>
+            user._id === userId ? { ...user, isActive: newStatus } : user
+          )
+        );
+
+        alert(`User ${newStatus ? "activated" : "banned"} successfully!`);
+      } else {
+        alert(data.error || "Failed to update user status");
+      }
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      alert("Network error. Please try again.");
+    }
+  };
+
   const handleLogout = () => {
     clearAuthData();
     router.push('/admin-login');
@@ -174,6 +290,7 @@ export default function AdminDashboard() {
 
   const handleRefresh = () => {
     fetchDashboardStats();
+    fetchData();
   };
 
   const formatCurrency = (amount) => {
@@ -269,11 +386,29 @@ export default function AdminDashboard() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
+            onClick={() => navigateWithErrorHandler('/admin-dashboard/management')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#1e7e34'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+          >
+            Manage Content
+          </button>
+          <button
             onClick={handleRefresh}
             disabled={refreshing}
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: refreshing ? '#6c757d' : '#28a745',
+              backgroundColor: refreshing ? '#6c757d' : '#17a2b8',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -339,14 +474,14 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Statistics Cards */}
+      {/* Enhanced Statistics Cards */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: '1.5rem',
-        marginBottom: '3rem'
+        marginBottom: '2rem'
       }}>
-        {/* Users Stats */}
+        {/* Total Users Stats */}
         <div style={{
           backgroundColor: 'white',
           padding: '1.5rem',
@@ -382,7 +517,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#007bff', margin: '0 0 0.5rem 0' }}>
-            {dashboardStats.totalUsers.toLocaleString()}
+            {stats ? stats.users.totalUsers.toLocaleString() : dashboardStats.totalUsers.toLocaleString()}
           </p>
           <div style={{ 
             display: 'flex', 
@@ -390,98 +525,114 @@ export default function AdminDashboard() {
             fontSize: '0.9rem', 
             color: '#6c757d'
           }}>
-            <span>👤 {dashboardStats.totalBuyers} Buyers</span>
-            <span>🏪 {dashboardStats.totalSellers} Sellers</span>
+            <span>👤 {stats ? stats.users.totalBuyers : dashboardStats.totalBuyers} Buyers</span>
+            <span>🏪 {stats ? stats.users.totalSellers : dashboardStats.totalSellers} Sellers</span>
           </div>
         </div>
+
+        {/* Active Users Stats */}
+        {stats && (
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            border: '1px solid #e9ecef',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, #28a745, #1e7e34)',
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '12px',
+                marginRight: '1rem',
+                fontSize: '1.25rem'
+              }}>
+                ✅
+              </div>
+              <div>
+                <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Active Users</h3>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.85rem' }}>
+                  Currently active accounts
+                </p>
+              </div>
+            </div>
+            <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#28a745', margin: '0 0 0.5rem 0' }}>
+              {stats.overview.activeUsers.toLocaleString()}
+            </p>
+            <div style={{ 
+              display: 'flex', 
+              gap: '1rem',
+              fontSize: '0.9rem', 
+              color: '#6c757d'
+            }}>
+              <span>👤 {stats.users.activeBuyers} Buyers</span>
+              <span>🏪 {stats.users.activeSellers} Sellers</span>
+            </div>
+          </div>
+        )}
+
+        {/* New Users This Week */}
+        {stats && (
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            border: '1px solid #e9ecef',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, #ffc107, #e0a800)',
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '12px',
+                marginRight: '1rem',
+                fontSize: '1.25rem'
+              }}>
+                🆕
+              </div>
+              <div>
+                <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>New This Week</h3>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.85rem' }}>
+                  Recent registrations
+                </p>
+              </div>
+            </div>
+            <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#ffc107', margin: '0 0 0.5rem 0' }}>
+              {stats.users.newUsersThisWeek.toLocaleString()}
+            </p>
+            <div style={{ 
+              display: 'flex', 
+              gap: '1rem',
+              fontSize: '0.9rem', 
+              color: '#6c757d'
+            }}>
+              <span>👤 {stats.users.newBuyersThisWeek} Buyers</span>
+              <span>🏪 {stats.users.newSellersThisWeek} Sellers</span>
+            </div>
+          </div>
+        )}
 
         {/* Products Stats */}
-        <div style={{
-          backgroundColor: 'white',
-          padding: '1.5rem',
-          borderRadius: '16px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          border: '1px solid #e9ecef',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, #28a745, #1e7e34)',
-              color: 'white', 
-              padding: '16px', 
-              borderRadius: '12px',
-              marginRight: '1rem',
-              fontSize: '1.25rem'
-            }}>
-              📦
-            </div>
-            <div>
-              <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Total Products</h3>
-              <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.85rem' }}>
-                Active marketplace listings
-              </p>
-            </div>
-          </div>
-          <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#28a745', margin: '0 0 0.5rem 0' }}>
-            {dashboardStats.totalProducts.toLocaleString()}
-          </p>
-          <p style={{ fontSize: '0.9rem', color: '#6c757d', margin: 0 }}>
-            Available for purchase
-          </p>
-        </div>
-
-        {/* Orders Stats */}
-        <div style={{
-          backgroundColor: 'white',
-          padding: '1.5rem',
-          borderRadius: '16px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          border: '1px solid #e9ecef',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, #ffc107, #e0a800)',
-              color: 'white', 
-              padding: '16px', 
-              borderRadius: '12px',
-              marginRight: '1rem',
-              fontSize: '1.25rem'
-            }}>
-              🛍️
-            </div>
-            <div>
-              <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Total Orders</h3>
-              <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.85rem' }}>
-                Completed transactions
-              </p>
-            </div>
-          </div>
-          <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#ffc107', margin: '0 0 0.5rem 0' }}>
-            {dashboardStats.totalOrders.toLocaleString()}
-          </p>
-          <p style={{ fontSize: '0.9rem', color: '#6c757d', margin: 0 }}>
-            All time orders
-          </p>
-        </div>
-
-        {/* Payment Verification Stats */}
         <div style={{
           backgroundColor: 'white',
           padding: '1.5rem',
@@ -507,95 +658,24 @@ export default function AdminDashboard() {
               marginRight: '1rem',
               fontSize: '1.25rem'
             }}>
-              💳
+              📦
             </div>
             <div>
-              <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Payment Screenshots</h3>
+              <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Total Products</h3>
               <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.85rem' }}>
-                Awaiting verification
+                Active marketplace listings
               </p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#17a2b8', margin: 0 }}>
-              {dashboardStats.pendingPayments.toLocaleString()}
-            </p>
-            {dashboardStats.pendingPayments > 0 && (
-              <span style={{
-                backgroundColor: '#dc3545',
-                color: 'white',
-                borderRadius: '10px',
-                padding: '2px 6px',
-                fontSize: '0.75rem',
-                fontWeight: '600'
-              }}>
-                URGENT
-              </span>
-            )}
-          </div>
+          <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#17a2b8', margin: '0 0 0.5rem 0' }}>
+            {dashboardStats.totalProducts.toLocaleString()}
+          </p>
           <p style={{ fontSize: '0.9rem', color: '#6c757d', margin: 0 }}>
-            ✅ {dashboardStats.verifiedPayments} verified
+            Available for purchase
           </p>
         </div>
 
-        {/* Seller Payment Requests Stats */}
-        <div style={{
-          backgroundColor: 'white',
-          padding: '1.5rem',
-          borderRadius: '16px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          border: '1px solid #e9ecef',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, #6f42c1, #59359a)',
-              color: 'white', 
-              padding: '16px', 
-              borderRadius: '12px',
-              marginRight: '1rem',
-              fontSize: '1.25rem'
-            }}>
-              💰
-            </div>
-            <div>
-              <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Seller Payments</h3>
-              <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.85rem' }}>
-                Pending payout requests
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#6f42c1', margin: 0 }}>
-              {dashboardStats.pendingSellerPayments.toLocaleString()}
-            </p>
-            {dashboardStats.pendingSellerPayments > 0 && (
-              <span style={{
-                backgroundColor: '#ffc107',
-                color: '#212529',
-                borderRadius: '10px',
-                padding: '2px 6px',
-                fontSize: '0.75rem',
-                fontWeight: '600'
-              }}>
-                PENDING
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: '0.9rem', color: '#6c757d', margin: 0 }}>
-            📊 {dashboardStats.sellerPaymentRequests} total requests
-          </p>
-        </div>
-
-        {/* Revenue Stats */}
+        {/* Payment Verification Stats */}
         <div style={{
           backgroundColor: 'white',
           padding: '1.5rem',
@@ -621,21 +701,129 @@ export default function AdminDashboard() {
               marginRight: '1rem',
               fontSize: '1.25rem'
             }}>
-              💸
+              💳
             </div>
             <div>
-              <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Total Revenue</h3>
+              <h3 style={{ margin: 0, color: '#212529', fontSize: '1.1rem', fontWeight: '600' }}>Payment Screenshots</h3>
               <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.85rem' }}>
-                Verified transactions
+                Awaiting verification
               </p>
             </div>
           </div>
-          <p style={{ fontSize: '2rem', fontWeight: '700', color: '#e83e8c', margin: '0 0 0.5rem 0' }}>
-            {formatCurrency(dashboardStats.totalRevenue)}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <p style={{ fontSize: '2.25rem', fontWeight: '700', color: '#e83e8c', margin: 0 }}>
+              {dashboardStats.pendingPayments.toLocaleString()}
+            </p>
+            {dashboardStats.pendingPayments > 0 && (
+              <span style={{
+                backgroundColor: '#dc3545',
+                color: 'white',
+                borderRadius: '10px',
+                padding: '2px 6px',
+                fontSize: '0.75rem',
+                fontWeight: '600'
+              }}>
+                URGENT
+              </span>
+            )}
+          </div>
           <p style={{ fontSize: '0.9rem', color: '#6c757d', margin: 0 }}>
-            From verified payments
+            ✅ {dashboardStats.verifiedPayments} verified
           </p>
+        </div>
+      </div>
+
+      {/* Reports Management Card */}
+      <div style={{
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        border: '1px solid #e0e0e0',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{
+            backgroundColor: '#6f42c1',
+            color: 'white',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            marginRight: '1rem'
+          }}>
+            📋
+          </div>
+          <div>
+            <h3 style={{ margin: 0, color: '#333' }}>Reports Management</h3>
+            <p style={{ margin: '0.25rem 0 0 0', color: '#666', fontSize: '0.9rem' }}>
+              User reports and issues
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ffc107' }}>
+              {reportsStats.pending || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              Pending
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0dcaf0' }}>
+              {reportsStats['in-progress'] || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              In Progress
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#198754' }}>
+              {reportsStats.resolved || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              Resolved
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#6c757d' }}>
+              {reportsStats.closed || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', textTransform: 'uppercase' }}>
+              Closed
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => router.push('/admin-dashboard/reports')}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              backgroundColor: '#6f42c1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            📋 Manage Reports
+          </button>
+          <button
+            onClick={() => router.push('/admin-dashboard/reports?status=pending')}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              backgroundColor: '#ffc107',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            🚨 Pending Issues
+          </button>
         </div>
       </div>
 
@@ -851,6 +1039,193 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Users Management Section */}
+      <div style={{
+        backgroundColor: "white",
+        padding: "2rem",
+        borderRadius: "12px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        border: '1px solid #e9ecef',
+        marginBottom: '2rem'
+      }}>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "2rem",
+        }}>
+          <h2 style={{ margin: 0, color: "#333" }}>User Management</h2>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={() => setFilter("all")}
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: filter === "all" ? "#007bff" : "#e9ecef",
+                color: filter === "all" ? "white" : "#333",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              All Users
+            </button>
+            <button
+              onClick={() => setFilter("buyer")}
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: filter === "buyer" ? "#007bff" : "#e9ecef",
+                color: filter === "buyer" ? "white" : "#333",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Buyers
+            </button>
+            <button
+              onClick={() => setFilter("seller")}
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: filter === "seller" ? "#007bff" : "#e9ecef",
+                color: filter === "seller" ? "white" : "#333",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Sellers
+            </button>
+          </div>
+        </div>
+
+        {/* Users Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            border: "1px solid #dee2e6",
+          }}>
+            <thead>
+              <tr style={{ backgroundColor: "#f8f9fa" }}>
+                <th style={{
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  borderBottom: "1px solid #dee2e6",
+                  fontWeight: "bold",
+                }}>
+                  Name
+                </th>
+                <th style={{
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  borderBottom: "1px solid #dee2e6",
+                  fontWeight: "bold",
+                }}>
+                  Email
+                </th>
+                <th style={{
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  borderBottom: "1px solid #dee2e6",
+                  fontWeight: "bold",
+                }}>
+                  Type
+                </th>
+                <th style={{
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  borderBottom: "1px solid #dee2e6",
+                  fontWeight: "bold",
+                }}>
+                  Status
+                </th>
+                <th style={{
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  borderBottom: "1px solid #dee2e6",
+                  fontWeight: "bold",
+                }}>
+                  Joined
+                </th>
+                <th style={{
+                  padding: "0.75rem",
+                  textAlign: "center",
+                  borderBottom: "1px solid #dee2e6",
+                  fontWeight: "bold",
+                }}>
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user._id} style={{ borderBottom: "1px solid #dee2e6" }}>
+                  <td style={{ padding: "0.75rem" }}>{user.name}</td>
+                  <td style={{ padding: "0.75rem" }}>{user.email}</td>
+                  <td style={{ padding: "0.75rem" }}>
+                    <span style={{
+                      padding: "0.25rem 0.5rem",
+                      backgroundColor: user.userType === "buyer" ? "#e7f3ff" : "#fff3cd",
+                      color: user.userType === "buyer" ? "#004085" : "#856404",
+                      borderRadius: "4px",
+                      fontSize: "0.875rem",
+                      textTransform: "capitalize",
+                    }}>
+                      {user.userType}
+                    </span>
+                  </td>
+                  <td style={{ padding: "0.75rem" }}>
+                    <span style={{
+                      padding: "0.25rem 0.5rem",
+                      backgroundColor: user.isActive ? "#d4edda" : "#f8d7da",
+                      color: user.isActive ? "#155724" : "#721c24",
+                      borderRadius: "4px",
+                      fontSize: "0.875rem",
+                    }}>
+                      {user.isActive ? "Active" : "Banned"}
+                    </span>
+                  </td>
+                  <td style={{
+                    padding: "0.75rem",
+                    color: "#666",
+                    fontSize: "0.875rem",
+                  }}>
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: "0.75rem", textAlign: "center" }}>
+                    <button
+                      onClick={() => handleStatusChange(user._id, user.userType, user.isActive)}
+                      style={{
+                        padding: "0.375rem 0.75rem",
+                        backgroundColor: user.isActive ? "#dc3545" : "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {user.isActive ? "Ban" : "Activate"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {users.length === 0 && (
+            <div style={{
+              textAlign: "center",
+              padding: "2rem",
+              color: "#666",
+            }}>
+              No users found.
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* System Overview */}
       <div style={{
         backgroundColor: 'white',
@@ -895,7 +1270,7 @@ export default function AdminDashboard() {
             {
               icon: '👥',
               title: 'Active Users',
-              value: `${dashboardStats.totalUsers.toLocaleString()} registered`,
+              value: `${stats ? stats.overview.activeUsers.toLocaleString() : dashboardStats.totalUsers.toLocaleString()} registered`,
               color: '#007bff',
               bgColor: '#e7f3ff'
             },
@@ -1003,7 +1378,7 @@ export default function AdminDashboard() {
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontWeight: '600', color: '#212529' }}>User Growth</div>
               <div style={{ color: '#6c757d' }}>
-                {((dashboardStats.totalBuyers + dashboardStats.totalSellers) / Math.max(1, dashboardStats.totalBuyers) * 100).toFixed(1)}% buyer conversion
+                {stats ? `${((stats.users.activeBuyers / Math.max(1, stats.users.totalUsers)) * 100).toFixed(1)}% active rate` : `${((dashboardStats.totalBuyers + dashboardStats.totalSellers) / Math.max(1, dashboardStats.totalBuyers) * 100).toFixed(1)}% buyer conversion`}
               </div>
             </div>
             
