@@ -8,7 +8,6 @@ import {
   User,
   Bell,
   Grid3X3,
-  List,
   Star,
   MapPin,
   Clock,
@@ -331,6 +330,40 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
   );
 };
 
+const conditions = ["Like New", "Excellent", "Good", "Fair"];
+
+function ConditionFilter({ selectedConditions, onConditionChange }) {
+  return (
+    <div className="condition-filter">
+      <h3 className="condition-header">
+        <span className="condition-icon">📦</span> Condition
+        <span className="condition-count">
+          ({selectedConditions.length} selected)
+        </span>
+      </h3>
+
+      <div className="condition-list">
+        {conditions.map((condition) => (
+          <label
+            key={condition}
+            className={`condition-item ${
+              selectedConditions.includes(condition) ? "selected" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={selectedConditions.includes(condition)}
+              onChange={(e) => onConditionChange(condition, e.target.checked)}
+              className="condition-checkbox"
+            />
+            <span className="condition-label">{condition}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const BuyerDashboard = () => {
   // Mouse tracking state
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -339,7 +372,6 @@ const BuyerDashboard = () => {
   // State management
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [viewMode, setViewMode] = useState('grid');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -807,23 +839,6 @@ const BuyerDashboard = () => {
               </div>
 
               <div className="filterGroup">
-                <label>
-                  <Clock size={18} className="filter-icon" />
-                  Sort By
-                </label>
-                <select
-                  value={filters.sortBy}
-                  onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                  className="filterSelect"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                </select>
-              </div>
-
-              <div className="filterGroup">
                 <div className="priceRange">
                   <div className="price-label">
                     <DollarSign size={18} className="filter-icon" />
@@ -857,22 +872,10 @@ const BuyerDashboard = () => {
               </div>
 
               <div className="filterGroup">
-                <label>
-                  <Package size={18} className="filter-icon" />
-                  Condition ({filters.conditions.length} selected)
-                </label>
-                <div className="checkboxGroup">
-                  {['Like New', 'Excellent', 'Good', 'Fair'].map(condition => (
-                    <label key={condition} className="checkboxLabel">
-                      <input
-                        type="checkbox"
-                        checked={filters.conditions.includes(condition)}
-                        onChange={(e) => handleConditionChange(condition, e.target.checked)}
-                      />
-                      <span>{condition}</span>
-                    </label>
-                  ))}
-                </div>
+                <ConditionFilter 
+                  selectedConditions={filters.conditions}
+                  onConditionChange={handleConditionChange}
+                />
               </div>
 
               <div className="locationGroup">
@@ -950,21 +953,6 @@ const BuyerDashboard = () => {
                   <span className="filterCount">{getActiveFilterCount()}</span>
                 )}
               </button>
-
-              <div className="viewModeToggle">
-                <button
-                  className={`viewButton ${viewMode === 'grid' ? 'active' : ''}`}
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid3X3 size={18} />
-                </button>
-                <button
-                  className={`viewButton ${viewMode === 'list' ? 'active' : ''}`}
-                  onClick={() => setViewMode('list')}
-                >
-                  <List size={18} />
-                </button>
-              </div>
             </div>
           </div>
 
@@ -987,7 +975,7 @@ const BuyerDashboard = () => {
           )}
 
           {!loading && (
-            <div className={`productsContainer ${viewMode === 'grid' ? 'gridView' : 'listView'}`}>
+            <div className="productsContainer">
               {filteredProducts.length === 0 ? (
                 <div className="noResults">
                   <Search size={64} />
