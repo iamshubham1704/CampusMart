@@ -285,8 +285,6 @@ const OrderHistory = () => {
             )}
           </div>
         ) : (
-<<<<<<< Updated upstream
-
           filteredOrders.map((order) => (
             <div key={order._id} className={styles.orderCard}>
               {/* Order Header */}
@@ -313,10 +311,10 @@ const OrderHistory = () => {
               <div className={styles.orderContent}>
                 <div className={styles.productSection}>
                   <div className={styles.productImage}>
-                    {order.product.image ? (
+                    {order.product && order.product.image && order.product.image !== 'https://via.placeholder.com/80x80?text=No+Image' ? (
                       <img 
                         src={order.product.image} 
-                        alt={order.product.title}
+                        alt={order.product.title || 'Product'}
                         onError={(e) => {
                           e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
                         }}
@@ -329,80 +327,33 @@ const OrderHistory = () => {
                   </div>
                   
                   <div className={styles.productDetails}>
-                    <h3 className={styles.productTitle}>{order.product.title}</h3>
+                    <h3 className={styles.productTitle}>
+                      {order.product?.title || 'Product not found'}
+                    </h3>
                     <div className={styles.productMeta}>
-                      <span className={styles.category}>{order.product.category}</span>
+                      <span className={styles.category}>
+                        {order.product?.category || 'Unknown Category'}
+                      </span>
+                      {order.product?.condition && (
+                        <span className={styles.condition}>{order.product.condition}</span>
+                      )}
                       <span className={styles.paymentMethod}>
                         <DollarSign size={14} />
                         {order.paymentMethod?.toUpperCase() || 'UPI'}
                       </span>
-=======
-          filteredOrders.map((order) => {
-            
-            return (
-              <div key={order._id} className="orderCard">
-                {/* Order Header */}
-                <div className="orderHeader">
-                  <div className="orderInfo">
-                    <div className="orderId">
-                      <Package size={18} />
-                      Order #{order._id.toString().slice(-8).toUpperCase()}
                     </div>
-                    <div className="orderDate">
-                      <Calendar size={16} />
-                      {formatDate(order.createdAt)}
-                    </div>
-                  </div>
-=======
-          filteredOrders.map((order) => {
-            
-            return (
-              <div key={order._id} className="orderCard">
-                {/* Order Header */}
-                <div className="orderHeader">
-                  <div className="orderInfo">
-                    <div className="orderId">
-                      <Package size={18} />
-                      Order #{order._id.toString().slice(-8).toUpperCase()}
-                    </div>
-                    <div className="orderDate">
-                      <Calendar size={16} />
-                      {formatDate(order.createdAt)}
-                    </div>
-                  </div>
-
-=======
-          filteredOrders.map((order) => {
-            
-            return (
-              <div key={order._id} className="orderCard">
-                {/* Order Header */}
-                <div className="orderHeader">
-                  <div className="orderInfo">
-                    <div className="orderId">
-                      <Package size={18} />
-                      Order #{order._id.toString().slice(-8).toUpperCase()}
-                    </div>
-                    <div className="orderDate">
-                      <Calendar size={16} />
-                      {formatDate(order.createdAt)}
-                    </div>
-                  </div>
->>>>>>> Stashed changes
-                  <div className="orderStatus">
-                    <div className={`statusBadge ${getStatusColor(order.status)}`}>
-                      {React.createElement(getStatusIcon(order.status), { size: 18 })}
-                      {order.statusMessage}
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
-                    </div>
+                    {order.product?.description && (
+                      <p className={styles.productDescription}>{order.product.description}</p>
+                    )}
+                    {!order.product?.title && (
+                      <p className={styles.productDescription} style={{color: '#ef4444', fontStyle: 'italic'}}>
+                        ⚠️ Product details could not be loaded. This may be due to a database issue.
+                      </p>
+                    )}
                   </div>
                 </div>
 
-<<<<<<< Updated upstream
-
+                {/* Order Details */}
                 <div className={styles.orderDetails}>
                   <div className={styles.detailRow}>
                     <span className={styles.label}>Amount:</span>
@@ -425,309 +376,48 @@ const OrderHistory = () => {
                         <a href={`tel:${order.seller.phone}`} className={styles.contactLink}>
                           <Phone size={14} />
                           {order.seller.phone}
-
-                {/* Order Content */}
-                <div className="orderContent">
-                  <div className="productSection">
-                    <div className="productImage">
-                      {order.product && order.product.image && order.product.image !== 'https://via.placeholder.com/80x80?text=No+Image' ? (
-                        <img 
-                          src={order.product.image} 
-                          alt={order.product.title || 'Product'}
-                          onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
-                          }}
-                        />
-                      ) : (
-                        <div className="noImage">
-                          <Package size={32} />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="productDetails">
-                      <h3 className="productTitle">
-                        {order.product?.title || 'Product not found'}
-                      </h3>
-                      <div className="productMeta">
-                        <span className="category">
-                          {order.product?.category || 'Unknown Category'}
-                        </span>
-                        {order.product?.condition && (
-                          <span className="condition">{order.product.condition}</span>
-                        )}
-                        <span className="paymentMethod">
-                          <DollarSign size={14} />
-                          {order.paymentMethod?.toUpperCase() || 'UPI'}
-                        </span>
-                      </div>
-                      {order.product?.description && (
-                        <p className="productDescription">{order.product.description}</p>
-                      )}
-                      {!order.product?.title && (
-                        <p className="productDescription" style={{color: '#ef4444', fontStyle: 'italic'}}>
-                          ⚠️ Product details could not be loaded. This may be due to a database issue.
-                        </p>
-                      )}
-                    </div>
-                  </div>                {/* Order Content */}
-                <div className="orderContent">
-                  <div className="productSection">
-                    <div className="productImage">
-                      {order.product && order.product.image && order.product.image !== 'https://via.placeholder.com/80x80?text=No+Image' ? (
-                        <img 
-                          src={order.product.image} 
-                          alt={order.product.title || 'Product'}
-                          onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
-                          }}
-                        />
-                      ) : (
-                        <div className="noImage">
-                          <Package size={32} />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="productDetails">
-                      <h3 className="productTitle">
-                        {order.product?.title || 'Product not found'}
-                      </h3>
-                      <div className="productMeta">
-                        <span className="category">
-                          {order.product?.category || 'Unknown Category'}
-                        </span>
-                        {order.product?.condition && (
-                          <span className="condition">{order.product.condition}</span>
-                        )}
-                        <span className="paymentMethod">
-                          <DollarSign size={14} />
-                          {order.paymentMethod?.toUpperCase() || 'UPI'}
-                        </span>
-                      </div>
-                      {order.product?.description && (
-                        <p className="productDescription">{order.product.description}</p>
-                      )}
-                      {!order.product?.title && (
-                        <p className="productDescription" style={{color: '#ef4444', fontStyle: 'italic'}}>
-                          ⚠️ Product details could not be loaded. This may be due to a database issue.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-=======
-                {/* Order Content */}
-                <div className="orderContent">
-                  <div className="productSection">
-                    <div className="productImage">
-                      {order.product && order.product.image && order.product.image !== 'https://via.placeholder.com/80x80?text=No+Image' ? (
-                        <img 
-                          src={order.product.image} 
-                          alt={order.product.title || 'Product'}
-                          onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
-                          }}
-                        />
-                      ) : (
-                        <div className="noImage">
-                          <Package size={32} />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="productDetails">
-                      <h3 className="productTitle">
-                        {order.product?.title || 'Product not found'}
-                      </h3>
-                      <div className="productMeta">
-                        <span className="category">
-                          {order.product?.category || 'Unknown Category'}
-                        </span>
-                        {order.product?.condition && (
-                          <span className="condition">{order.product.condition}</span>
-                        )}
-                        <span className="paymentMethod">
-                          <DollarSign size={14} />
-                          {order.paymentMethod?.toUpperCase() || 'UPI'}
-                        </span>
-                      </div>
-                      {order.product?.description && (
-                        <p className="productDescription">{order.product.description}</p>
-                      )}
-                      {!order.product?.title && (
-                        <p className="productDescription" style={{color: '#ef4444', fontStyle: 'italic'}}>
-                          ⚠️ Product details could not be loaded. This may be due to a database issue.
-                        </p>
-                      )}
-                    </div>
-                  </div>
->>>>>>> Stashed changes
-
-                  <div className="orderDetails">
-                    <div className="detailRow">
-                      <span className="label">Amount:</span>
-                      <span className="value amount">₹{order.amount || 0}</span>
-                    </div>
-                    
-                    <div className="detailRow">
-                      <span className="label">Seller:</span>
-                      <span className="value sellerName">
-                        {order.seller?.name || 'Unknown Seller'}
-                      </span>
-                    </div>
-                    
-                    <div className="detailRow">
-                      <span className="label">Contact:</span>
-                      <div className="contactInfo">
-                        <a href={`mailto:${order.seller?.email || '#'}`} className="contactLink">
-                          <Mail size={14} />
-                          {order.seller?.email || 'No email available'}
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
                         </a>
-                        {order.seller?.phone && order.seller.phone !== 'No phone available' && (
-                          <a href={`tel:${order.seller.phone}`} className="contactLink">
-                            <Phone size={14} />
-                            {order.seller.phone}
-                          </a>
-                        )}
-                      </div>
-                      
-                      {(!order.seller?.name || !order.seller?.email) && (
-                        <div className="detailRow">
-                          <span className="label">Note:</span>
-                          <span className="value" style={{color: '#ef4444', fontStyle: 'italic'}}>
-                            Seller information incomplete
-                          </span>
-                        </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-              {/* Order Actions */}
-              <div className={styles.orderActions}>
-                {order.status === 'payment_rejected' && (
-                  <div className={styles.adminContactInfo}>
-                    <AlertCircle size={16} />
-                    <span>Payment was rejected. Contact admin for assistance:</span>
-                    <div className={styles.adminContacts}>
-                      <a href={`mailto:${adminContact.email}`} className={styles.adminContact}>
-                        <Mail size={14} />
-                        {adminContact.email}
-                      </a>
-                      <a href={`tel:${adminContact.phone}`} className={styles.adminContact}>
-                        <Phone size={14} />
-                        {adminContact.phone}
-                      </a>
-                    </div>
-                  </div>
-                )}
-                
-                {order.status === 'will_be_delivered_soon' && (
-                  <div className={styles.deliveryInfo}>
-                    <Info size={16} />
-                    <span>Your order will be delivered soon. Admin will contact you for coordination.</span>
-                  </div>
-                )}
-                
-                {order.status === 'delivered' && (
-                  <div className={styles.deliverySuccess}>
-                    <CheckCircle size={16} />
-                    <span>Order successfully delivered! Thank you for shopping with CampusMart.</span>
-                  </div>
-                )}
-=======
                 {/* Order Actions */}
-                <div className="orderActions">
+                <div className={styles.orderActions}>
                   {order.status === 'payment_rejected' && (
-                    <div className="adminContactInfo">
+                    <div className={styles.adminContactInfo}>
                       <AlertCircle size={16} />
                       <span>Payment was rejected. Contact admin for assistance:</span>
-                      <div className="adminContacts">
-                        <a href={`mailto:${adminContact.email}`} className="adminContact">
+                      <div className={styles.adminContacts}>
+                        <a href={`mailto:${adminContact.email}`} className={styles.adminContact}>
                           <Mail size={14} />
                           {adminContact.email}
                         </a>
-                        <a href={`tel:${adminContact.phone}`} className="adminContact">
+                        <a href={`tel:${adminContact.phone}`} className={styles.adminContact}>
                           <Phone size={14} />
                           {adminContact.phone}
                         </a>
                       </div>
                     </div>
-=======
-                {/* Order Actions */}
-                <div className="orderActions">
-                  {order.status === 'payment_rejected' && (
-                    <div className="adminContactInfo">
-                      <AlertCircle size={16} />
-                      <span>Payment was rejected. Contact admin for assistance:</span>
-                      <div className="adminContacts">
-                        <a href={`mailto:${adminContact.email}`} className="adminContact">
-                          <Mail size={14} />
-                          {adminContact.email}
-                        </a>
-                        <a href={`tel:${adminContact.phone}`} className="adminContact">
-                          <Phone size={14} />
-                          {adminContact.phone}
-                        </a>
-                      </div>
-                    </div>
->>>>>>> Stashed changes
-=======
-                {/* Order Actions */}
-                <div className="orderActions">
-                  {order.status === 'payment_rejected' && (
-                    <div className="adminContactInfo">
-                      <AlertCircle size={16} />
-                      <span>Payment was rejected. Contact admin for assistance:</span>
-                      <div className="adminContacts">
-                        <a href={`mailto:${adminContact.email}`} className="adminContact">
-                          <Mail size={14} />
-                          {adminContact.email}
-                        </a>
-                        <a href={`tel:${adminContact.phone}`} className="adminContact">
-                          <Phone size={14} />
-                          {adminContact.phone}
-                        </a>
-                      </div>
-                    </div>
->>>>>>> Stashed changes
                   )}
                   
                   {order.status === 'will_be_delivered_soon' && (
-                    <div className="deliveryInfo">
+                    <div className={styles.deliveryInfo}>
                       <Info size={16} />
                       <span>Your order will be delivered soon. Admin will contact you for coordination.</span>
                     </div>
                   )}
                   
                   {order.status === 'delivered' && (
-                    <div className="deliverySuccess">
+                    <div className={styles.deliverySuccess}>
                       <CheckCircle size={16} />
                       <span>Order successfully delivered! Thank you for shopping with CampusMart.</span>
                     </div>
                   )}
                 </div>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
 
