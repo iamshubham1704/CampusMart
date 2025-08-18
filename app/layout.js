@@ -1,4 +1,6 @@
+import GlobalReportButton from '@/components/GlobalReportButton';
 import styles from './global.css';
+
 
 export const metadata = {
   title: 'CampusMart',
@@ -8,7 +10,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={styles.root}>{children}</body>
+      <body className={styles.root}>
+        {children}
+        <GlobalReportButton/>
+      </body>
     </html>
   );
 }

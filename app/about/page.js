@@ -155,20 +155,13 @@ const CampusMartAbout = () => {
       {/* Main Content */}
       <main className="main-content">
         {/* Hero Section */}
-        <section className="about-hero">
-          <div className="container">
-            <div className="hero-content">
-              <h1 className="hero-title">Our Story</h1>
-              <p className="hero-subtitle">From a small team with a big vision to the leading student marketplace platform</p>
-            </div>
-          </div>
-        </section>
+        
 
         {/* Journey Section */}
         <section className="journey-section">
           <div className="container">
             <div className="journey-header">
-              <div className="journey-icon">🚀</div>
+              
               <h2 className="journey-title">Our Journey</h2>
             </div>
             
@@ -181,9 +174,7 @@ const CampusMartAbout = () => {
                 a platform that truly serves the campus community.
               </p>
               
-              <div className="journey-cta">
-                <span>Our Story ↓</span>
-              </div>
+              
             </div>
             
             <div className="brand-highlight">
@@ -237,7 +228,7 @@ const CampusMartAbout = () => {
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">Mission & Vision</h2>
-              <p className="section-subtitle">Guiding principles that drive everything we do</p>
+              
             </div>
             
             <div className="mission-grid">
@@ -353,11 +344,11 @@ const CampusMartAbout = () => {
             <div className="team-grid">
               <div className="team-card">
                 <div className="team-avatar">
-                  <span>AS</span>
+                  <span>KV</span>
                 </div>
                 <div className="team-info">
-                  <h3 className="team-name">Abhay Singh</h3>
-                  <p className="team-role">Co-Founder & CEO</p>
+                  <h3 className="team-name">Krish Vishwakarma</h3>
+                  
                   <p className="team-description">
                     Computer Science student and entrepreneur, passionate about building technology 
                     solutions that serve the student community. Experienced in platform development 
@@ -368,11 +359,11 @@ const CampusMartAbout = () => {
               
               <div className="team-card">
                 <div className="team-avatar">
-                  <span>HR</span>
+                  <span>SS</span>
                 </div>
                 <div className="team-info">
-                  <h3 className="team-name">Harsh Rana</h3>
-                  <p className="team-role">Co-Founder & CTO</p>
+                  <h3 className="team-name">Shubham Solanki</h3>
+                  
                   <p className="team-description">
                     Engineering student and tech enthusiast, expert in building scalable platforms 
                     and secure transaction systems. Focused on creating seamless user experiences 
@@ -383,11 +374,11 @@ const CampusMartAbout = () => {
               
               <div className="team-card">
                 <div className="team-avatar">
-                  <span>SM</span>
+                  <span>SR</span>
                 </div>
                 <div className="team-info">
-                  <h3 className="team-name">Suteekshn Manchanda</h3>
-                  <p className="team-role">Co-Founder & COO</p>
+                  <h3 className="team-name">Shubham Raj</h3>
+                  
                   <p className="team-description">
                     Student leader and operations specialist, leading campus outreach and community 
                     engagement initiatives. Focused on building trust and expanding CampusMart's 
@@ -397,9 +388,7 @@ const CampusMartAbout = () => {
               </div>
             </div>
             
-            <div className="team-cta">
-              <p>Interested in joining our team? Check out our career opportunities.</p>
-            </div>
+           
           </div>
         </section>
 
