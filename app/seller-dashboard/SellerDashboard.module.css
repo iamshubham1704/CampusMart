@@ -25,14 +25,16 @@
 
 /* Header Styles */
 .header {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.98);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   padding: 16px 20px;
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+  will-change: transform;
 }
 
 .headerContent {
@@ -41,9 +43,11 @@
   justify-content: space-between;
   max-width: 1600px;
   margin: 0 auto;
-  gap: 20px;
+  gap: 16px;
   position: relative;
-  z-index: 1;
+  z-index: 1001;
+  flex-wrap: nowrap;
+  min-height: 48px;
 }
 
 .logoSection {
@@ -91,14 +95,119 @@
   max-width: 100%;
   min-width: fit-content;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 1001;
 }
-
-@media (max-width: 767px) {
-  .headerActions {
+/* Extra Small Mobile - up to 479px */
+@media (max-width: 479px) {
+  .header {
+    padding: 8px 10px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1002;
+    min-height: 56px;
+  }
+  
+  .headerContent {
+    display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
-    min-width: auto;
+    min-height: 32px;
+  }
+  
+  .mobileNavToggle {
+    display: flex !important;
+    order: 1;
+    padding: 6px;
+  }
+  
+  .logoSection {
+    order: 2;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .logo {
+    font-size: 16px;
+  }
+  
+  .profileSection {
+    order: 3;
+  }
+  
+  .userProfile {
+    padding: 4px 6px;
+  }
+  
+  .headerActions {
+    order: 4;
+    width: 100%;
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  
+  .searchInput {
+    flex: 1;
+    min-width: 140px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  
+  .paymentsButton,
+  .sellButton,
+  .messagesButton {
+    padding: 6px 8px;
+    min-width: 32px;
+    font-size: 12px;
+  }
+  
+  .paymentsButton span,
+  .sellButton span,
+  .messagesButton span {
+    display: none;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 80px;
+    width: 240px;
+    height: calc(100vh - 80px);
+    z-index: 999;
+    transform: translateX(-100%);
+  }
+  
+  .mainLayout {
+    margin-top: 80px;
+  }
+  
+  .userName {
+    display: none;
+  }
+}
+/* Ensure main content doesn't overlap with fixed header on mobile */
+@media (max-width: 767px) {
+  .dashboard {
+    padding-top: 0;
+  }
+  
+  .mainLayout {
+    position: relative;
+  }
+  
+  .mainContent {
+    transition: none;
+  }
+  
+  /* Prevent body scroll when mobile menu is open */
+  body.mobile-menu-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 }
 
@@ -217,17 +326,72 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+/* Mobile button fixes */
 @media (max-width: 767px) {
-  .mobileNavToggle {
-    display: flex !important;
+  .headerActions {
     align-items: center;
-    justify-content: center;
-    position: relative;
-    z-index: 1001;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
-  .sidebar {
-    display: block;
+  .headerActions > * {
+    flex-shrink: 0;
+  }
+  
+  .paymentsButton,
+  .sellButton,
+  .messagesButton {
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .paymentsButton {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+  
+  .sellButton {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  
+  .messagesButton {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+  }
+.dashboard {
+    overflow-x: hidden;
+  }
+  
+  .headerContent {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .logoSection {
+    min-width: 0;
+    overflow: hidden;
+  }
+  
+  .logo {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .profileSection {
+    min-width: 0;
+  }
+  
+  .mainContent {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
   }
 }
 /* Mobile Navigation Toggle */
@@ -1049,18 +1213,19 @@
 
 .profileDropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   right: 0;
-  margin-top: 12px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  min-width: 300px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  min-width: 280px;
   z-index: 10000;
   overflow: hidden;
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
 }
 
 @keyframes slideDown {
@@ -1169,9 +1334,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
-  z-index: 997;
+  z-index: 998;
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -1321,22 +1486,24 @@
   }
   
   .searchInput {
-    max-width: 300px;
-    min-width: 200px;
+    max-width: 280px;
+    min-width: 180px;
   }
 }
 
 /* Tablet - 768px to 991px */
 @media (min-width: 768px) and (max-width: 991px) {
+  .header {
+    padding: 12px 16px;
+  }
+  
   .headerContent {
-    padding: 0 12px;
-    flex-wrap: nowrap;
-    gap: 16px;
+    gap: 12px;
   }
   
   .searchInput {
-    max-width: 240px;
-    min-width: 180px;
+    max-width: 220px;
+    min-width: 160px;
   }
   
   .sidebar {
@@ -1344,7 +1511,7 @@
   }
   
   .mainContent {
-    padding: 24px;
+    padding: 20px;
   }
   
   .statsGrid {
@@ -1352,11 +1519,16 @@
   }
   
   .listingsGrid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
   
-  /* Keep navbar visible on tablets */
-  .mobileNavToggle {
+  .userName {
+    display: none;
+  }
+  
+  .sellButton span:not(.sellButtonIcon),
+  .messagesButton span:not(.messagesButtonIcon),
+  .paymentsButton span:not(.paymentsButtonIcon) {
     display: none;
   }
 }
@@ -1376,51 +1548,89 @@
   }
 }
 /* Small Tablet/Large Phone - 640px to 767px */
+/* Mobile - 640px to 767px */
+/* Mobile - 640px to 767px */
 @media (min-width: 640px) and (max-width: 767px) {
   .header {
     padding: 12px 16px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1002;
+    min-height: 64px;
   }
   
   .headerContent {
-    gap: 12px;
+    display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+  }
+  
+  /* First row: Menu + Logo + Profile */
+  .mobileNavToggle {
+    display: flex !important;
+    order: 1;
+    flex-shrink: 0;
   }
   
   .logoSection {
-    flex-shrink: 0;
-    min-width: auto;
+    order: 2;
+    flex: 1;
+    display: flex;
+    justify-content: center;
   }
   
+  .profileSection {
+    order: 3;
+    flex-shrink: 0;
+  }
+  
+  /* Second row: Search + Buttons */
   .headerActions {
-    flex-wrap: wrap;
-    gap: 10px;
+    order: 4;
     width: 100%;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
   }
   
   .searchInput {
-    order: 3;
     flex: 1;
-    min-width: 200px;
+    min-width: 180px;
     max-width: none;
   }
   
-  /* Show mobile toggle at this breakpoint */
-  .mobileNavToggle {
-    display: block;
-    order: 1;
+  .paymentsButton,
+  .sellButton,
+  .messagesButton {
+    padding: 10px 12px;
+    min-width: 40px;
+    flex-shrink: 0;
   }
   
-  .mainLayout {
-    position: relative;
+  .paymentsButton span,
+  .sellButton span,
+  .messagesButton span {
+    display: none;
+  }
+  
+  .userName {
+    display: none;
   }
   
   .sidebar {
     position: fixed;
-    top: 80px;
+    top: 88px;
     left: 0;
     width: 280px;
-    height: calc(100vh - 80px);
-    z-index: 998;
+    height: calc(100vh - 88px);
+    z-index: 999;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -1429,131 +1639,286 @@
     transform: translateX(0);
   }
   
-  .mainContent {
-    padding: 20px;
-    width: 100%;
+  .mainLayout {
+    margin-top: 88px;
   }
-  
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-  
-  .listingsGrid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-  }
-  
-  .userName {
-  display: none;
 }
 
-.sellButton span:not(.icon),
-.messagesButton span:not(.icon) {
-  display: none;
-}
-
-.sellButton,
-.messagesButton,
-.profileButton {
-  min-width: 44px;
-  padding: 12px;
-}
-}
-
-/* Mobile Phone - 480px to 639px */
+/* Small Mobile - 480px to 639px */
 @media (min-width: 480px) and (max-width: 639px) {
   .header {
     padding: 10px 12px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1002;
+    min-height: 60px;
   }
   
   .headerContent {
+    display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-  }
-  
-  .logo {
-    font-size: 20px;
-  }
-  
-  .headerActions {
-    width: 100%;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 10px;
-  }
-  
-  .searchInput {
-    order: 3;
-    flex: 1;
-    min-width: 180px;
+    min-height: 36px;
   }
   
   .mobileNavToggle {
-    display: block;
+    display: flex !important;
     order: 1;
+    padding: 8px;
+  }
+  
+  .logoSection {
+    order: 2;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .logo {
+    font-size: 18px;
+  }
+  
+  .profileSection {
+    order: 3;
+  }
+  
+  .headerActions {
+    order: 4;
+    width: 100%;
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  
+  .searchInput {
+    flex: 1;
+    min-width: 160px;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  .paymentsButton,
+  .sellButton,
+  .messagesButton {
+    padding: 8px 10px;
+    min-width: 36px;
+  }
+  
+  .paymentsButton span,
+  .sellButton span,
+  .messagesButton span {
+    display: none;
   }
   
   .sidebar {
-  position: fixed;
-  top: 80px;
-  left: 0;
-  width: 280px;
-  height: calc(100vh - 80px);
-  z-index: 998;
-  transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
-}
-
-.sidebar.sidebarMobileOpen {
-  transform: translateX(0);
-}
-
-.mainContent {
-  padding: 20px;
-  width: 100%;
-  transition: margin-left 0.3s ease;
-}
-
-.mainContent.contentShifted {
-  margin-left: 0;
-}
-  
-  .statsGrid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    position: fixed;
+    top: 84px;
+    width: 260px;
+    height: calc(100vh - 84px);
+    z-index: 999;
+    transform: translateX(-100%);
   }
   
-  .listingsGrid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .statCard {
-    padding: 20px;
-    min-height: 120px;
-  }
-  
-  .listingContent {
-    padding: 20px;
-  }
-  
-  .sidebarCard {
-    padding: 20px;
-  }
-  
-  .emptyState {
-    padding: 40px 20px;
-  }
-  
-  .profileDropdown {
-    min-width: 260px;
-    right: -10px;
+  .mainLayout {
+    margin-top: 84px;
   }
   
   .userName {
     display: none;
   }
+}
+
+/* Extra Small Mobile - up to 479px */
+@media (max-width: 479px) {
+  .header {
+    padding: 8px 10px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1002;
+    min-height: 56px;
+  }
+  
+  .headerContent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+  }
+  
+  .mobileNavToggle {
+    display: flex !important;
+    order: 1;
+    padding: 6px;
+  }
+  
+  .logoSection {
+    order: 2;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .logo {
+    font-size: 16px;
+  }
+  
+  .profileSection {
+    order: 3;
+  }
+  
+  .userProfile {
+    padding: 4px 6px;
+  }
+  
+  .headerActions {
+    order: 4;
+    width: 100%;
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  
+  .searchInput {
+    flex: 1;
+    min-width: 140px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  
+  .paymentsButton,
+  .sellButton,
+  .messagesButton {
+    padding: 6px 8px;
+    min-width: 32px;
+    font-size: 12px;
+  }
+  
+  .paymentsButton span,
+  .sellButton span,
+  .messagesButton span {
+    display: none;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 80px;
+    width: 240px;
+    height: calc(100vh - 80px);
+    z-index: 999;
+    transform: translateX(-100%);
+  }
+  
+  .mainLayout {
+    margin-top: 80px;
+  }
+  
+  .userName {
+    display: none;
+  }
+
+  
+  .mainContent {
+    width: 100%;
+    padding: 16px;
+  }
+  
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Mobile Phone - 480px to 639px */
+/* Small Mobile - 480px to 639px */
+@media (min-width: 480px) and (max-width: 639px) {
+  .header {
+    padding: 10px 12px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1002;
+    min-height: 60px;
+  }
+  
+  .headerContent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    min-height: 36px;
+  }
+  
+  .mobileNavToggle {
+    display: flex !important;
+    order: 1;
+    padding: 8px;
+  }
+  
+  .logoSection {
+    order: 2;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .logo {
+    font-size: 18px;
+  }
+  
+  .profileSection {
+    order: 3;
+  }
+  
+  .headerActions {
+    order: 4;
+    width: 100%;
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  
+  .searchInput {
+    flex: 1;
+    min-width: 160px;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  .paymentsButton,
+  .sellButton,
+  .messagesButton {
+    padding: 8px 10px;
+    min-width: 36px;
+  }
+  
+  .paymentsButton span,
+  .sellButton span,
+  .messagesButton span {
+    display: none;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 84px;
+    width: 260px;
+    height: calc(100vh - 84px);
+    z-index: 999;
+    transform: translateX(-100%);
+  }
+  
+  .mainLayout {
+    margin-top: 84px;
+  }
+  
+  .userName {
+    display: none;
+  }
+
+
   
   .sellButton span,
   .messagesButton span {
@@ -1774,20 +2139,27 @@
 
 /* Landscape orientation on mobile */
 @media (max-width: 767px) and (orientation: landscape) {
+  .header {
+    padding: 6px 12px;
+  }
+  
+  .headerContent {
+    min-height: 48px;
+  }
+  
   .sidebar {
-    width: 240px;
+    width: 220px;
+    top: 60px;
+    height: calc(100vh - 60px);
   }
   
   .nav {
-    padding: 16px;
+    padding: 12px;
   }
   
   .navItem {
-    padding: 12px 16px;
-  }
-  
-  .mainContent {
-    padding: 16px;
+    padding: 10px 14px;
+    font-size: 14px;
   }
 }
 
@@ -1810,4 +2182,112 @@
   .navItem.active {
     outline: 2px solid currentColor;
   }
+}
+.paymentsButton {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+  flex-shrink: 0;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.paymentsButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.paymentsButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+}
+
+.paymentsButton:hover::before {
+  left: 100%;
+}
+
+.navNotificationBadge {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 10px;
+  border-radius: 10px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-left: auto;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.paymentOverview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.paymentStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.paymentLabel {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.paymentValue {
+  color: #f59e0b;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.viewPaymentsButton {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.viewPaymentsButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.activityDotPayment {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4) !important;
 }
