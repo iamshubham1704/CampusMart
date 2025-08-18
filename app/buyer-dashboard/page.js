@@ -405,6 +405,7 @@ const BuyerDashboard = () => {
     sortBy: 'newest'
   });
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   // Location dropdown state
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
@@ -688,6 +689,63 @@ const BuyerDashboard = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  // Fetch pending order count
+  const fetchPendingOrderCount = async () => {
+    try {
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/buyer/order-history?page=1&limit=1000', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const orders = data.data?.orders || [];
+        
+        // Count orders that are pending delivery or in payment verification
+        const pendingCount = orders.filter(order => {
+          const status = order.displayStatus || order.status;
+          return status === 'payment_pending_verification' || 
+                 status === 'payment_verified' || 
+                 status === 'will_be_delivered_soon';
+        }).length;
+        
+        setPendingOrderCount(pendingCount);
+      }
+    } catch (error) {
+      console.error('Error fetching pending order count:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingOrderCount();
+  }, []);
+
+  useEffect(() => {
+    if (buyer) {
+      fetchPendingOrderCount();
+    }
+  }, [buyer]);
+
+  // Refresh pending order count
+  const refreshPendingOrderCount = async () => {
+    await fetchPendingOrderCount();
+  };
+
+  // Expose refresh function for other components
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.refreshPendingOrderCount = refreshPendingOrderCount;
+    }
+  }, []);
+
+  // Fetch buyer profile
+
   if (buyerLoading) {
     return (
       <div className={`dashboard ${isDarkTheme ? 'dark' : 'light'}`}>
@@ -760,6 +818,7 @@ const BuyerDashboard = () => {
 
             <Link href="/buyer-dashboard/order-history" className="actionButton">
               <Package size={20} />
+              {pendingOrderCount > 0 && <span className="badge">{pendingOrderCount}</span>}
             </Link>
 
             <button className="actionButton" onClick={openCart}>
@@ -822,6 +881,7 @@ const BuyerDashboard = () => {
                 <Link href="/buyer-dashboard/order-history" className="navItem">
                   <Package size={18} />
                   <span>Order History</span>
+                  {pendingOrderCount > 0 && <span className="navBadge">{pendingOrderCount}</span>}
                 </Link>
                 <Link href="/buyer-dashboard/orders" className="navItem">
                   <ShoppingCart size={18} />
