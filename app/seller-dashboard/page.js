@@ -9,7 +9,7 @@ import {
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
-import NotificationBadge from '../../components/NotificationBadge';
+// import NotificationBadge from '../../components/NotificationBadge';
 
 const SellerDashboard = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -267,7 +267,7 @@ const SellerDashboard = () => {
           pendingPayments: mockPaymentData.pendingPayments,
           paymentHistory: mockPaymentData.paymentHistory,
           responseRate: 95,
-          unreadNotifications: 0,
+          // unreadNotifications: 0,
           memberSince: new Date().getFullYear(),
           accountType: 'Standard',
           changes: {
@@ -350,7 +350,7 @@ const SellerDashboard = () => {
           monthlyEarnings: 0,
           pendingPayments: 0,
           responseRate: 95,
-          unreadNotifications: 0,
+          // unreadNotifications: 0,
           memberSince: new Date().getFullYear(),
           accountType: 'Standard'
         });
@@ -403,9 +403,9 @@ const SellerDashboard = () => {
       case 'settings':
         router.push('/seller-dashboard/settings');
         break;
-      case 'notifications':
-        router.push('/seller-dashboard/notifications');
-        break;
+      // case 'notifications':
+      //   router.push('/seller-dashboard/notifications');
+      //   break;
       case 'logout':
         handleLogout();
         break;
@@ -621,7 +621,7 @@ const SellerDashboard = () => {
                           <span>Account Settings</span>
                         </button>
 
-                        <button
+                        {/* <button
                           className={styles.profileMenuItem}
                           onClick={() => handleProfileAction('notifications')}
                         >
@@ -632,7 +632,7 @@ const SellerDashboard = () => {
                               {sellerData.unreadNotifications}
                             </span>
                           )}
-                        </button>
+                        </button> */}
 
                         <div className={styles.profileDivider}></div>
 
@@ -694,13 +694,13 @@ const SellerDashboard = () => {
                 )}
               </button>
 
-              <button
+              {/* <button
                 onClick={handleNavigation(() => router.push('/seller-dashboard/notifications'))}
                 className={`${styles.navItem} ${activeTab === 'notifications' ? styles.active : ''}`}
               >
                 <Bell size={20} />
                 <span>Notifications</span>
-              </button>
+              </button> */}
 
               <button 
                 onClick={handleNavigation(() => router.push('/seller-dashboard/settings'))}
