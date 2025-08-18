@@ -2,44 +2,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '../../../../lib/mongo';
 import { verifyToken } from '../../../../lib/auth';
+import { ObjectId } from 'mongodb';
 
 // Verify buyer token
 function verifyBuyerToken(request) {
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('🔴 No valid authorization header found');
       return null;
     }
     const token = authHeader.substring(7);
-    console.log('🔍 Token received:', token.substring(0, 20) + '...');
     
     const decoded = verifyToken(token);
-    console.log('🔍 Decoded token:', decoded);
     
     if (!decoded) {
-      console.log('🔴 Token verification failed');
       return null;
     }
     
     // Check if user is a buyer - either by role or by having buyerId
     if (decoded.role === 'buyer' || decoded.buyerId) {
-      console.log('✅ Buyer verification successful:', {
-        role: decoded.role,
-        buyerId: decoded.buyerId,
-        email: decoded.email
-      });
       return decoded;
     }
     
-    console.log('🔴 User is not a buyer:', {
-      role: decoded.role,
-      buyerId: decoded.buyerId,
-      userId: decoded.userId
-    });
     return null;
   } catch (error) {
-    console.error('🔴 Buyer token verification failed:', error);
     return null;
   }
 }
@@ -47,41 +33,42 @@ function verifyBuyerToken(request) {
 // GET - Fetch buyer's order history
 export async function GET(request) {
   try {
-    console.log('🚀 Order history API called');
-    
     const buyer = verifyBuyerToken(request);
-    console.log('🔍 Buyer verification result:', buyer);
     
     if (!buyer) {
-      console.log('🔴 Buyer verification failed - returning 401');
       return NextResponse.json({ 
         error: 'Unauthorized. Buyer authentication required.' 
       }, { status: 401 });
     }
-
-    console.log('✅ Buyer authenticated successfully:', {
-      buyerId: buyer.buyerId,
-      role: buyer.role,
-      email: buyer.email
-    });
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const status = searchParams.get('status'); // Filter by order status
 
-    console.log('🔍 Query parameters:', { page, limit, status });
-
     const client = await clientPromise;
     const db = client.db('campusmart');
+
+    // Check if required collections exist
+    const collections = await db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name);
+
+    const requiredCollections = ['orders', 'listings', 'sellers'];
+    const missingCollections = requiredCollections.filter(name => !collectionNames.includes(name));
+    
+    if (missingCollections.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Database setup incomplete',
+        message: `Missing collections: ${missingCollections.join(', ')}`
+      }, { status: 500 });
+    }
 
     // Build filter for buyer's orders
     let filter = { buyerId: buyer.buyerId };
     if (status && status !== 'all') {
       filter.status = status;
     }
-    
-    console.log('🔍 Database filter:', filter);
 
     // Calculate pagination
     const skip = (page - 1) * limit;
@@ -97,26 +84,94 @@ export async function GET(request) {
     // Get total count
     const totalCount = await db.collection('orders').countDocuments(filter);
 
+    // Check if buyer has any orders at all
+    if (totalCount === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          orders: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0
+          },
+          message: 'No orders found for this buyer'
+        }
+      }, { status: 200 });
+    }
+
     // Get additional details for each order
     const ordersWithDetails = await Promise.all(
       orders.map(async (order) => {
         try {
-          // Get product details
-          const product = await db.collection('listings').findOne({
-            _id: order.productId
-          }, { projection: { title: 1, price: 1, images: 1, category: 1 } });
+          // Get product details with better error handling
+          let product = null;
+          if (order.productId) {
+            try {
+              // Handle both string and ObjectId formats
+              let productId;
+              if (typeof order.productId === 'string') {
+                // Check if it's a valid ObjectId string
+                if (ObjectId.isValid(order.productId)) {
+                  productId = new ObjectId(order.productId);
+                } else {
+                  // Skip this product lookup but continue processing the order
+                }
+              } else {
+                productId = order.productId;
+              }
+              
+              if (productId) {
+                product = await db.collection('listings').findOne(
+                  { _id: productId },
+                  { projection: { title: 1, price: 1, images: 1, category: 1, description: 1, condition: 1 } }
+                );
+              }
+            } catch (productError) {
+              console.error(`❌ Error fetching product ${order.productId}:`, productError);
+            }
+          }
 
-          // Get seller details
-          const seller = await db.collection('sellers').findOne({
-            _id: order.sellerId
-          }, { projection: { name: 1, email: 1, phone: 1 } });
+          // Get seller details with better error handling
+          let seller = null;
+          if (order.sellerId) {
+            try {
+              // Handle both string and ObjectId formats
+              let sellerId;
+              if (typeof order.sellerId === 'string') {
+                // Check if it's a valid ObjectId string
+                if (ObjectId.isValid(order.sellerId)) {
+                  sellerId = new ObjectId(order.sellerId);
+                } else {
+                  // Skip this seller lookup but continue processing the order
+                }
+              } else {
+                sellerId = order.sellerId;
+              }
+              
+              if (sellerId) {
+                seller = await db.collection('sellers').findOne(
+                  { _id: sellerId },
+                  { projection: { name: 1, email: 1, phone: 1, businessName: 1 } }
+                );
+              }
+            } catch (sellerError) {
+              console.error(`❌ Error fetching seller ${order.sellerId}:`, sellerError);
+            }
+          }
 
           // Get payment screenshot details
           let paymentScreenshot = null;
           if (order.paymentScreenshotId) {
-            paymentScreenshot = await db.collection('payment_screenshots').findOne({
-              _id: order.paymentScreenshotId
-            }, { projection: { status: 1, verifiedAt: 1, amount: 1, imageKit: 1 } });
+            try {
+              paymentScreenshot = await db.collection('payment_screenshots').findOne(
+                { _id: order.paymentScreenshotId },
+                { projection: { status: 1, verifiedAt: 1, amount: 1, imageKit: 1 } }
+              );
+            } catch (screenshotError) {
+              console.error(`❌ Error fetching payment screenshot ${order.paymentScreenshotId}:`, screenshotError);
+            }
           }
 
           // Get order status details
@@ -127,7 +182,6 @@ export async function GET(request) {
             });
           } catch (error) {
             // Order status might not exist yet
-            console.log('Order status not found for order:', order._id);
           }
 
           // Determine the display status based on payment screenshot and order status
@@ -158,35 +212,44 @@ export async function GET(request) {
             }
           }
 
-          // Prepare image URL
+          // Prepare image URL with better handling
           let productImage = null;
           if (product && product.images && product.images.length > 0) {
-            if (product.images[0].startsWith('http')) {
-              productImage = product.images[0];
-            } else {
-              // Handle base64 or other image formats
-              productImage = product.images[0];
+            const firstImage = product.images[0];
+            if (typeof firstImage === 'string') {
+              // Handle base64 or direct URL strings
+              productImage = firstImage;
+            } else if (typeof firstImage === 'object' && firstImage.url) {
+              // Handle ImageKit object format
+              productImage = firstImage.url;
             }
+          }
+
+          // Fallback image if no product image
+          if (!productImage) {
+            productImage = 'https://via.placeholder.com/80x80?text=No+Image';
           }
 
           return {
             _id: order._id,
             orderId: order._id,
             product: {
-              _id: product?._id,
+              _id: product?._id || null,
               title: product?.title || 'Product not found',
               price: product?.price || 0,
               image: productImage,
-              category: product?.category || 'Unknown'
+              category: product?.category || 'Unknown',
+              description: product?.description || 'No description available',
+              condition: product?.condition || 'Unknown'
             },
             seller: {
-              _id: seller?._id,
-              name: seller?.name || 'Unknown Seller',
+              _id: seller?._id || null,
+              name: seller?.name || seller?.businessName || 'Unknown Seller',
               email: seller?.email || 'No email available',
               phone: seller?.phone || 'No phone available'
             },
-            amount: order.amount,
-            paymentMethod: order.paymentMethod,
+            amount: order.amount || 0,
+            paymentMethod: order.paymentMethod || 'UPI',
             status: displayStatus,
             statusMessage: statusMessage,
             statusColor: statusColor,
@@ -196,14 +259,25 @@ export async function GET(request) {
             orderStatus: orderStatus
           };
         } catch (error) {
-          console.error('Error fetching details for order:', order._id, error);
+          console.error('Error processing order details for order:', order._id, error);
           return {
             _id: order._id,
             orderId: order._id,
-            product: { title: 'Product not found', price: 0, image: null, category: 'Unknown' },
-            seller: { name: 'Unknown Seller', email: 'No email available', phone: 'No phone available' },
-            amount: order.amount,
-            paymentMethod: order.paymentMethod,
+            product: { 
+              title: 'Error loading product', 
+              price: 0, 
+              image: 'https://via.placeholder.com/80x80?text=Error', 
+              category: 'Unknown',
+              description: 'Failed to load product details',
+              condition: 'Unknown'
+            },
+            seller: { 
+              name: 'Error loading seller', 
+              email: 'No email available', 
+              phone: 'No phone available' 
+            },
+            amount: order.amount || 0,
+            paymentMethod: order.paymentMethod || 'UPI',
             status: 'error',
             statusMessage: 'Error loading order details',
             statusColor: 'error',

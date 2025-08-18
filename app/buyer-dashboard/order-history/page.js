@@ -84,12 +84,18 @@ const OrderHistory = () => {
       }
 
       const data = await response.json();
-      setOrders(data.data.orders || []);
-      setTotalPages(data.data.pagination?.totalPages || 1);
-      setCurrentPage(page);
+      
+      if (data.success && data.data && data.data.orders) {
+        setOrders(data.data.orders || []);
+        setTotalPages(data.data.pagination?.totalPages || 1);
+        setCurrentPage(page);
+      } else {
+        setOrders([]);
+        setTotalPages(1);
+        setCurrentPage(page);
+      }
 
     } catch (err) {
-      console.error('Error fetching orders:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -121,12 +127,17 @@ const OrderHistory = () => {
     if (!searchQuery) return true;
     
     const searchLower = searchQuery.toLowerCase();
-    return (
-      order.product.title.toLowerCase().includes(searchLower) ||
-      order.seller.name.toLowerCase().includes(searchLower) ||
-      order.seller.email.toLowerCase().includes(searchLower) ||
-      order.statusMessage.toLowerCase().includes(searchLower)
-    );
+    const productTitle = order.product?.title?.toLowerCase() || '';
+    const sellerName = order.seller?.name?.toLowerCase() || '';
+    const sellerEmail = order.seller?.email?.toLowerCase() || '';
+    const statusMessage = order.statusMessage?.toLowerCase() || '';
+    
+    const matches = productTitle.includes(searchLower) ||
+                   sellerName.includes(searchLower) ||
+                   sellerEmail.includes(searchLower) ||
+                   statusMessage.includes(searchLower);
+    
+    return matches;
   });
 
   // Get status icon and color
@@ -274,6 +285,7 @@ const OrderHistory = () => {
             )}
           </div>
         ) : (
+<<<<<<< Updated upstream
           filteredOrders.map((order) => (
             <div key={order._id} className={styles.orderCard}>
               {/* Order Header */}
@@ -323,10 +335,33 @@ const OrderHistory = () => {
                         <DollarSign size={14} />
                         {order.paymentMethod?.toUpperCase() || 'UPI'}
                       </span>
+=======
+          filteredOrders.map((order) => {
+            
+            return (
+              <div key={order._id} className="orderCard">
+                {/* Order Header */}
+                <div className="orderHeader">
+                  <div className="orderInfo">
+                    <div className="orderId">
+                      <Package size={18} />
+                      Order #{order._id.toString().slice(-8).toUpperCase()}
+                    </div>
+                    <div className="orderDate">
+                      <Calendar size={16} />
+                      {formatDate(order.createdAt)}
+                    </div>
+                  </div>
+                  <div className="orderStatus">
+                    <div className={`statusBadge ${getStatusColor(order.status)}`}>
+                      {React.createElement(getStatusIcon(order.status), { size: 18 })}
+                      {order.statusMessage}
+>>>>>>> Stashed changes
                     </div>
                   </div>
                 </div>
 
+<<<<<<< Updated upstream
                 <div className={styles.orderDetails}>
                   <div className={styles.detailRow}>
                     <span className={styles.label}>Amount:</span>
@@ -349,13 +384,95 @@ const OrderHistory = () => {
                         <a href={`tel:${order.seller.phone}`} className={styles.contactLink}>
                           <Phone size={14} />
                           {order.seller.phone}
+=======
+                {/* Order Content */}
+                <div className="orderContent">
+                  <div className="productSection">
+                    <div className="productImage">
+                      {order.product && order.product.image && order.product.image !== 'https://via.placeholder.com/80x80?text=No+Image' ? (
+                        <img 
+                          src={order.product.image} 
+                          alt={order.product.title || 'Product'}
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
+                          }}
+                        />
+                      ) : (
+                        <div className="noImage">
+                          <Package size={32} />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="productDetails">
+                      <h3 className="productTitle">
+                        {order.product?.title || 'Product not found'}
+                      </h3>
+                      <div className="productMeta">
+                        <span className="category">
+                          {order.product?.category || 'Unknown Category'}
+                        </span>
+                        {order.product?.condition && (
+                          <span className="condition">{order.product.condition}</span>
+                        )}
+                        <span className="paymentMethod">
+                          <DollarSign size={14} />
+                          {order.paymentMethod?.toUpperCase() || 'UPI'}
+                        </span>
+                      </div>
+                      {order.product?.description && (
+                        <p className="productDescription">{order.product.description}</p>
+                      )}
+                      {!order.product?.title && (
+                        <p className="productDescription" style={{color: '#ef4444', fontStyle: 'italic'}}>
+                          ⚠️ Product details could not be loaded. This may be due to a database issue.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="orderDetails">
+                    <div className="detailRow">
+                      <span className="label">Amount:</span>
+                      <span className="value amount">₹{order.amount || 0}</span>
+                    </div>
+                    
+                    <div className="detailRow">
+                      <span className="label">Seller:</span>
+                      <span className="value sellerName">
+                        {order.seller?.name || 'Unknown Seller'}
+                      </span>
+                    </div>
+                    
+                    <div className="detailRow">
+                      <span className="label">Contact:</span>
+                      <div className="contactInfo">
+                        <a href={`mailto:${order.seller?.email || '#'}`} className="contactLink">
+                          <Mail size={14} />
+                          {order.seller?.email || 'No email available'}
+>>>>>>> Stashed changes
                         </a>
+                        {order.seller?.phone && order.seller.phone !== 'No phone available' && (
+                          <a href={`tel:${order.seller.phone}`} className="contactLink">
+                            <Phone size={14} />
+                            {order.seller.phone}
+                          </a>
+                        )}
+                      </div>
+                      
+                      {(!order.seller?.name || !order.seller?.email) && (
+                        <div className="detailRow">
+                          <span className="label">Note:</span>
+                          <span className="value" style={{color: '#ef4444', fontStyle: 'italic'}}>
+                            Seller information incomplete
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
-              </div>
 
+<<<<<<< Updated upstream
               {/* Order Actions */}
               <div className={styles.orderActions}>
                 {order.status === 'payment_rejected' && (
@@ -388,9 +505,44 @@ const OrderHistory = () => {
                     <span>Order successfully delivered! Thank you for shopping with CampusMart.</span>
                   </div>
                 )}
+=======
+                {/* Order Actions */}
+                <div className="orderActions">
+                  {order.status === 'payment_rejected' && (
+                    <div className="adminContactInfo">
+                      <AlertCircle size={16} />
+                      <span>Payment was rejected. Contact admin for assistance:</span>
+                      <div className="adminContacts">
+                        <a href={`mailto:${adminContact.email}`} className="adminContact">
+                          <Mail size={14} />
+                          {adminContact.email}
+                        </a>
+                        <a href={`tel:${adminContact.phone}`} className="adminContact">
+                          <Phone size={14} />
+                          {adminContact.phone}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {order.status === 'will_be_delivered_soon' && (
+                    <div className="deliveryInfo">
+                      <Info size={16} />
+                      <span>Your order will be delivered soon. Admin will contact you for coordination.</span>
+                    </div>
+                  )}
+                  
+                  {order.status === 'delivered' && (
+                    <div className="deliverySuccess">
+                      <CheckCircle size={16} />
+                      <span>Order successfully delivered! Thank you for shopping with CampusMart.</span>
+                    </div>
+                  )}
+                </div>
+>>>>>>> Stashed changes
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
