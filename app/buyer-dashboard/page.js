@@ -35,7 +35,8 @@ import {
   Save,
   Package,
   ChevronDown,
-  Pen
+  Pen,
+  MessageCircle
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
@@ -757,6 +758,10 @@ const BuyerDashboard = () => {
               {getWishlistCount() > 0 && <span className="badge">{getWishlistCount()}</span>}
             </button>
 
+            <Link href="/buyer-dashboard/order-history" className="actionButton">
+              <Package size={20} />
+            </Link>
+
             <button className="actionButton" onClick={openCart}>
               <ShoppingCart size={20} />
               {totalItems > 0 && <span className="badge">{totalItems}</span>}
@@ -802,6 +807,36 @@ const BuyerDashboard = () => {
                 </div>
               </div>
             )}
+
+            {/* Navigation Section */}
+            <div className="navigationSection">
+              <h3>
+                <Package size={20} />
+                My Account
+              </h3>
+              <div className="navigationList">
+                <Link href="/buyer-dashboard" className="navItem active">
+                  <Grid3X3 size={18} />
+                  <span>Browse Items</span>
+                </Link>
+                <Link href="/buyer-dashboard/order-history" className="navItem">
+                  <Package size={18} />
+                  <span>Order History</span>
+                </Link>
+                <Link href="/buyer-dashboard/orders" className="navItem">
+                  <ShoppingCart size={18} />
+                  <span>My Orders</span>
+                </Link>
+                <Link href="/buyer-dashboard/messages" className="navItem">
+                  <MessageCircle size={18} />
+                  <span>Messages</span>
+                </Link>
+                <Link href="/buyer-dashboard/wishlist" className="navItem">
+                  <Heart size={18} />
+                  <span>Wishlist</span>
+                </Link>
+              </div>
+            </div>
 
             <div className="categorySection">
               <h3>
