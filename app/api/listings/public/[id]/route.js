@@ -111,6 +111,8 @@ export async function GET(request, context) {
         description: listingData.description,
         price: listingData.price,
         originalPrice: listingData.originalPrice,
+        commission: listingData.commission ?? 10,
+        finalPrice: (listingData.price || 0) + ((listingData.price || 0) * ((listingData.commission ?? 10) / 100)),
         condition: listingData.condition,
         category: listingData.category,
         subcategory: listingData.subcategory,

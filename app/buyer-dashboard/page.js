@@ -1142,7 +1142,12 @@ const BuyerDashboard = () => {
 
                       <div className="priceSection">
                         <div className="currentPrice">
-                          ₹{Math.round(product.price)}
+                          ₹{Math.round(
+                            (product.finalPrice !== undefined
+                              ? product.finalPrice
+                              : (product.price || 0) + ((product.price || 0) * ((product.commission ?? 0) / 100))
+                            )
+                          )}
                         </div>
                         {product.originalPrice > product.price && (
                           <>

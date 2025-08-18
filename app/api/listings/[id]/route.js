@@ -37,6 +37,7 @@ export async function GET(request, { params }) {
       location: listing.location,
       college: listing.college,
       images: listing.images || [], // Now contains ImageKit URLs with metadata
+      commission: listing.commission ?? 10,
       tags: listing.tags || [],
       status: listing.status,
       views: listing.views || 0,
@@ -147,6 +148,7 @@ export async function PUT(request, { params }) {
       ...body,
       price: body.price ? Number(body.price) : existingListing.price,
       originalPrice: body.originalPrice ? Number(body.originalPrice) : existingListing.originalPrice,
+      commission: body.commission !== undefined ? Number(body.commission) : (existingListing.commission ?? 10),
       images: uploadedImages, // Use processed images
       updatedAt: new Date()
     };
