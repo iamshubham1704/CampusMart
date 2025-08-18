@@ -1,178 +1,165 @@
 'use client';
-import { useState, useEffect } from 'react';
-// Assuming you have these icons from a library like react-icons
-// If not, you can replace them with text or other elements.
-import { FiClock, FiRefreshCw, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { useState, useEffect, useMemo } from 'react';
+import { FiClock, FiRefreshCw, FiCheckCircle, FiAlertCircle, FiDownload, FiEye, FiCheck, FiX } from 'react-icons/fi';
+import styles from './seller-payments.module.css';
 
-// --- STYLES OBJECT ---
-const styles = {
-  container: {
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem',
-    flexWrap: 'wrap',
-    gap: '1rem',
-  },
-  title: {
-    fontSize: '1.75rem',
-    fontWeight: 'bold',
-    color: '#333',
-    margin: 0,
-  },
-  subtitle: {
-    margin: '0.25rem 0 0 0',
-    color: '#666',
-  },
-  exportButton: {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #dee2e6',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontWeight: '500',
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '1.5rem',
-    marginBottom: '2rem',
-  },
-  statCard: {
-    backgroundColor: '#f8f9fa',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-  },
-  statHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    marginBottom: '1rem',
-  },
-  statTitle: {
-    fontSize: '1rem',
-    fontWeight: '600',
-    color: '#495057',
-  },
-  statCount: {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: '#212529',
-    margin: '0.25rem 0',
-  },
-  statAmount: {
-    fontSize: '1.1rem',
-    fontWeight: '500',
-    color: '#343a40',
-  },
-  statDescription: {
-    fontSize: '0.875rem',
-    color: '#6c757d',
-    margin: 0,
-  },
-  searchInput: {
-    width: '100%',
-    padding: '0.75rem',
-    fontSize: '1rem',
-    border: '1px solid #ced4da',
-    borderRadius: '4px',
-    marginTop: '1rem',
-  }
-};
+// --- (The rest of your JavaScript code is correct and does not need changes) ---
+// --- Initial Data (Simulates fetching from an API) ---
+const initialTransactions = [
+  { id: 'TXN72391', seller: 'Crafty Creations', date: '2025-08-19', amount: 15000, status: 'Completed' },
+  { id: 'TXN58219', seller: 'Vintage Finds', date: '2025-08-19', amount: 7200, status: 'Pending' },
+  { id: 'TXN60342', seller: 'Gadget Galaxy', date: '2025-08-18', amount: 22500, status: 'Processing' },
+  { id: 'TXN49123', seller: 'Home Essentials', date: '2025-08-18', amount: 5000, status: 'Completed' },
+  { id: 'TXN38210', seller: 'Book Nook', date: '2025-08-17', amount: 3000, status: 'Failed' },
+];
 
-// --- COMPONENT ---
-export default function AdminSellerTransactions() {
-  // --- STATE (Example Data) ---
-  // Replace this with your actual data fetching logic
-  const [stats, setStats] = useState({
-    pendingCount: 0,
-    pendingAmount: 0,
-    processingCount: 0,
-    completedCount: 4,
-    completedAmount: 16344,
-    failedCount: 0,
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  // useEffect(() => {
-  //   // FETCH YOUR DATA HERE
-  //   // Example:
-  //   // fetch('/api/admin/seller-payments/stats')
-  //   //   .then(res => res.json())
-  //   //   .then(data => setStats(data))
-  //   //   .catch(err => setError('Failed to load stats'))
-  //   //   .finally(() => setLoading(false));
-  // }, []);
+// --- Helper Components ---
+const StatCard = ({ icon, title, count, amount, colorClass }) => (
+  <div className={styles.statCard}>
+    <div className={styles.statHeader}>
+      <div className={`${styles.iconWrapper} ${colorClass}`}>{icon}</div>
+      <h3 className={styles.statTitle}>{title}</h3>
+    </div>
+    <div>
+      <p className={styles.statCount}>{count}</p>
+      <p className={styles.statAmount}>{amount}</p>
+    </div>
+  </div>
+);
+
+const SkeletonLoader = () => (
+  <div className={styles.statsGrid}>
+    {Array(4).fill(0).map((_, index) => (
+      <div key={index} className={styles.skeletonCard}>
+        <div className={styles.skeletonLine} style={{ width: '50%', height: '30px' }}></div>
+        <div className={styles.skeletonLine} style={{ width: '80%' }}></div>
+        <div className={styles.skeletonLine} style={{ width: '60%' }}></div>
+      </div>
+    ))}
+  </div>
+);
+
+// --- Main Page Component ---
+export default function SellerPaymentsPage() {
+  const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTransactions(initialTransactions);
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const stats = useMemo(() => {
+    return transactions.reduce((acc, tx) => {
+      const status = tx.status.toLowerCase();
+      acc[status] = acc[status] || { count: 0, amount: 0 };
+      acc[status].count += 1;
+      acc[status].amount += tx.amount;
+      return acc;
+    }, {});
+  }, [transactions]);
+
+  const filteredTransactions = useMemo(() => {
+    if (!searchQuery) return transactions;
+    return transactions.filter(t =>
+      t.seller.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.status.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, transactions]);
+
+  const handleUpdateRequest = (id, newStatus) => {
+    setTransactions(currentTransactions =>
+      currentTransactions.map(tx =>
+        tx.id === id ? { ...tx, status: newStatus } : tx
+      )
+    );
+  };
+
+  const handleViewDetails = (tx) => {
+    alert(`Details for ${tx.id}:\n\nSeller: ${tx.seller}\nAmount: ₹${tx.amount.toLocaleString('en-IN')}\nDate: ${tx.date}\nStatus: ${tx.status}`);
+  };
+
+  const handleExport = () => {
+    const headers = "Transaction ID,Seller,Date,Amount,Status";
+    const rows = transactions.map(tx => `${tx.id},${tx.seller},${tx.date},${tx.amount},${tx.status}`).join('\n');
+    const csvContent = `data:text/csv;charset=utf-8,${headers}\n${rows}`;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "seller_payment_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const cardData = [
+    { id: 'pending', icon: <FiClock size={20} />, title: 'Pending', colorClass: styles.pendingColor, count: stats.pending?.count || 0, amount: `₹${(stats.pending?.amount || 0).toLocaleString('en-IN')}` },
+    { id: 'processing', icon: <FiRefreshCw size={20} />, title: 'Processing', colorClass: styles.processingColor, count: stats.processing?.count || 0, amount: "In progress" },
+    { id: 'completed', icon: <FiCheckCircle size={20} />, title: 'Completed', colorClass: styles.completedColor, count: stats.completed?.count || 0, amount: `₹${(stats.completed?.amount || 0).toLocaleString('en-IN')}` },
+    { id: 'failed', icon: <FiAlertCircle size={20} />, title: 'Failed', colorClass: styles.failedColor, count: stats.failed?.count || 0, amount: "Needs attention" },
+  ];
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'Pending': return styles.statusPending;
+      case 'Processing': return styles.statusProcessing;
+      case 'Completed': return styles.statusCompleted;
+      case 'Failed': return styles.statusFailed;
+      default: return '';
+    }
+  };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <div>
-          <h2 style={styles.title}>Seller Payment Requests</h2>
-          <p style={styles.subtitle}>Manage and process seller payment requests</p>
+          <h2 className={styles.title}>Seller Payment Requests</h2>
+          <p className={styles.subtitle}>Today is {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
-        <button style={styles.exportButton}>Export</button>
+        <button className={styles.exportButton} onClick={handleExport}><FiDownload size={16} /><span>Export Report</span></button>
       </div>
 
-      <div style={styles.statsGrid}>
-        {/* Pending Card */}
-        <div style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <FiClock size={20} color="#6c757d" />
-            <h3 style={styles.statTitle}>Pending</h3>
-          </div>
-          <p style={styles.statCount}>{stats.pendingCount}</p>
-          <p style={styles.statAmount}>₹{stats.pendingAmount.toLocaleString('en-IN')}</p>
-        </div>
+      {loading ? <SkeletonLoader /> : <div className={styles.statsGrid}>{cardData.map((card) => (<StatCard key={card.id} {...card} />))}</div>}
 
-        {/* Processing Card */}
-        <div style={styles.statCard}>
-          <div style={styles.statHeader}>
-             <FiRefreshCw size={20} color="#6c757d" />
-            <h3 style={styles.statTitle}>Processing</h3>
+      {!loading && (
+        <div className={styles.transactionSection}>
+          <input type="text" placeholder="Search by Seller, ID, or Status..." className={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Seller</th><th>Request Date</th><th>Amount</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTransactions.map((tx) => (
+                  <tr key={tx.id}>
+                    <td>
+                      <div className={styles.sellerInfo}>{tx.seller}</div>
+                      <div className={styles.transactionId}>{tx.id}</div>
+                    </td>
+                    <td>{tx.date}</td>
+                    <td>{'₹' + tx.amount.toLocaleString('en-IN')}</td>
+                    <td><span className={`${styles.statusBadge} ${getStatusClass(tx.status)}`}>{tx.status}</span></td>
+                    <td>
+                      <div className={styles.actionsCell}>
+                        <button title="Approve" onClick={() => handleUpdateRequest(tx.id, 'Completed')}><FiCheck /></button>
+                        <button title="Reject" onClick={() => handleUpdateRequest(tx.id, 'Failed')}><FiX /></button>
+                        <button title="View Details" onClick={() => handleViewDetails(tx)}><FiEye /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <p style={styles.statCount}>{stats.processingCount}</p>
-          <p style={styles.statDescription}>In progress</p>
         </div>
-
-        {/* Completed Card */}
-        <div style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <FiCheckCircle size={20} color="#6c757d" />
-            <h3 style={styles.statTitle}>Completed</h3>
-          </div>
-          <p style={styles.statCount}>{stats.completedCount}</p>
-          <p style={styles.statAmount}>₹{stats.completedAmount.toLocaleString('en-IN')}</p>
-        </div>
-        
-        {/* Failed Card */}
-        <div style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <FiAlertCircle size={20} color="#6c757d" />
-            <h3 style={styles.statTitle}>Failed</h3>
-          </div>
-           <p style={styles.statCount}>{stats.failedCount}</p>
-          <p style={styles.statDescription}>Needs attention</p>
-        </div>
-      </div>
-      
-      <div>
-        <input 
-          type="text" 
-          placeholder="Search transactions..." 
-          style={styles.searchInput} 
-        />
-        {/* You would render the list/table of transactions here */}
-      </div>
-
+      )}
     </div>
   );
 }

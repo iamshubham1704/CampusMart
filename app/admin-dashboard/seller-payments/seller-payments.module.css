@@ -1,50 +1,239 @@
+/* --- Main Layout & Variables --- */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  /* CSS Variables are now scoped to this container */
+  --primary-color: #4a47a3;
+  --background-color: #f4f7fe;
+  --card-background: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6e7f8d;
+  --border-color: #e0e7f1;
+  --pending-color: #ffa726;
+  --processing-color: #29b6f6;
+  --completed-color: #66bb6a;
+  --failed-color: #ef5350;
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --medium-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+
+  /* Styles for the container itself */
+  background-color: var(--card-background);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: var(--soft-shadow);
+  border: 1px solid var(--border-color);
+  margin: 1rem;
 }
 
-/* header */
+/* ... (rest of the CSS is the same as before) ... */
 .header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-/* simple table layout */
-.paymentsTable {
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.exportButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.exportButton:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--medium-shadow);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.statCard {
+  background-color: var(--card-background);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--medium-shadow);
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.iconWrapper {
+  border-radius: 50%;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.statCount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.statAmount {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.pendingColor { background-color: #ffa72620; color: var(--pending-color); }
+.processingColor { background-color: #29b6f620; color: var(--processing-color); }
+.completedColor { background-color: #66bb6a20; color: var(--completed-color); }
+.failedColor { background-color: #ef535020; color: var(--failed-color); }
+
+.transactionSection {
+  margin-top: 3rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--card-bg, #fff);
-  border: 1px solid rgba(0,0,0,0.06);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.paymentsTable th,
-.paymentsTable td {
-  padding: 12px 16px;
   text-align: left;
-  font-size: 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.04);
 }
 
-.paymentsTable th {
-  background: rgba(59,130,246,0.04);
+.table th {
+  padding: 0.75rem 1rem;
+  background-color: #f8f9fa;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table td {
+  padding: 1rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.sellerInfo {
   font-weight: 600;
 }
 
-/* responsive */
-@media (max-width: 768px) {
-  .container {
-    padding: 12px;
-  }
+.transactionId {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
 
-  .paymentsTable th,
-  .paymentsTable td {
-    padding: 10px;
-    font-size: 13px;
-  }
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.statusPending { background-color: #ffa72620; color: var(--pending-color); }
+.statusProcessing { background-color: #29b6f620; color: var(--processing-color); }
+.statusCompleted { background-color: #66bb6a20; color: var(--completed-color); }
+.statusFailed { background-color: #ef535020; color: var(--failed-color); }
+
+.actionsCell {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionsCell button {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.actionsCell button:hover {
+  background-color: #f8f9fa;
+  color: var(--text-primary);
+}
+
+.skeletonCard {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.skeletonLine {
+  background-image: linear-gradient(to right, #e0e7f1 0%, #f4f7fe 20%, #e0e7f1 40%, #e0e7f1 100%);
+  background-repeat: no-repeat;
+  background-size: 800px 104px;
+  border-radius: 4px;
+  height: 20px;
+  margin-bottom: 1rem;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
 }
