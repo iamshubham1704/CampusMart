@@ -346,6 +346,40 @@ contactSellerButton{
   justify-content: center;
   line-height: 1;
   box-sizing: border-box;
+  animation: badgePulse 2s ease-in-out infinite;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.navBadge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+  min-width: 1.2rem;
+  animation: badgePulse 2s ease-in-out infinite;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  }
 }
 
 .userAvatar {
@@ -572,6 +606,7 @@ contactSellerButton{
   background: transparent;
   border: 1px solid transparent;
   text-decoration: none;
+  position: relative;
 }
 
 .navItem:hover {

@@ -99,6 +99,12 @@ const OrderHistory = () => {
   const refreshOrders = async () => {
     setRefreshing(true);
     await fetchOrders(1, selectedStatus);
+    
+    // Refresh the pending order count in the main dashboard
+    if (typeof window !== 'undefined' && window.refreshPendingOrderCount) {
+      window.refreshPendingOrderCount();
+    }
+    
     setRefreshing(false);
   };
 
@@ -107,6 +113,11 @@ const OrderHistory = () => {
     setSelectedStatus(status);
     setCurrentPage(1);
     fetchOrders(1, status);
+    
+    // Refresh the pending order count in the main dashboard
+    if (typeof window !== 'undefined' && window.refreshPendingOrderCount) {
+      window.refreshPendingOrderCount();
+    }
   };
 
   // Handle search

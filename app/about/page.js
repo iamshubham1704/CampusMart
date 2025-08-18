@@ -439,8 +439,8 @@ const CampusMartAbout = () => {
                   from their respective college, creating a trusted campus-exclusive environment.
                 </p>
                 <ul className="approach-features">
-                  <li><CheckCircle size={16} />College email verification</li>
-                  <li><CheckCircle size={16} />Student ID authentication</li>
+                  <li><CheckCircle size={16} />Email verification</li>
+                  <li><CheckCircle size={16} />Student verification</li>
                   <li><CheckCircle size={16} />Campus-specific listings</li>
                 </ul>
               </div>
@@ -547,11 +547,11 @@ const CampusMartAbout = () => {
                 <ul className="footer-contact">
                   <li>
                     <Mail size={16} />
-                    <span>support@campusmart.in</span>
+                    <span>iamshubham1719@gmail.com</span>
                   </li>
                   <li>
                     <Phone size={16} />
-                    <span>+91 999-888-7777</span>
+                    <span>+91 9315863073</span>
                   </li>
                   <li>
                     <MapPin size={16} />
