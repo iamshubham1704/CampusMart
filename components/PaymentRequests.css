@@ -1090,7 +1090,7 @@ body {
 }
 
 .form-info-box {
-  background-color: var(--primary-blue-50);
+  background-color: #0b1c33;
   padding: 1.25rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--primary-blue-200);
