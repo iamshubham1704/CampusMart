@@ -1,6 +1,7 @@
 // app/api/admin/payment-screenshots/route.js - CREATE NEW FILE
 import { verifyToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
+import { ObjectId } from 'mongodb';
 
 // Verify admin token
 function verifyAdminToken(request) {
@@ -46,13 +47,25 @@ export async function GET(request) {
     const db = client.db('campusmart');
     const collection = db.collection('payment_screenshots');
 
-    // Build filter
+    // Build filter (support both string/ObjectId stored IDs)
     let filter = {};
     if (status && status !== 'all') {
       filter.status = status;
     }
-    if (buyerId) filter.buyerId = buyerId;
-    if (sellerId) filter.sellerId = sellerId;
+    if (buyerId) {
+      const candidates = [buyerId];
+      if (ObjectId.isValid(buyerId)) {
+        try { candidates.push(new ObjectId(buyerId)); } catch (_) {}
+      }
+      filter.buyerId = { $in: candidates };
+    }
+    if (sellerId) {
+      const candidates = [sellerId];
+      if (ObjectId.isValid(sellerId)) {
+        try { candidates.push(new ObjectId(sellerId)); } catch (_) {}
+      }
+      filter.sellerId = { $in: candidates };
+    }
 
     // Calculate pagination
     const skip = (page - 1) * limit;
@@ -76,26 +89,44 @@ export async function GET(request) {
     const screenshotsWithDetails = await Promise.all(
       screenshots.map(async (screenshot) => {
         try {
-          // Get buyer details
+          // Get buyer details (support string/ObjectId)
           const buyersCollection = db.collection('buyers');
-          const buyer = await buyersCollection.findOne(
-            { _id: screenshot.buyerId },
-            { projection: { name: 1, email: 1, phone: 1 } }
-          );
+          let buyer = null;
+          try {
+            const buyerKey = (typeof screenshot.buyerId === 'string' && ObjectId.isValid(screenshot.buyerId))
+              ? new ObjectId(screenshot.buyerId)
+              : screenshot.buyerId;
+            buyer = await buyersCollection.findOne(
+              { _id: buyerKey },
+              { projection: { name: 1, email: 1, phone: 1 } }
+            );
+          } catch (_) {}
 
           // Get seller details
           const sellersCollection = db.collection('sellers');
-          const seller = await sellersCollection.findOne(
-            { _id: screenshot.sellerId },
-            { projection: { name: 1, email: 1, phone: 1 } }
-          );
+          let seller = null;
+          try {
+            const sellerKey = (typeof screenshot.sellerId === 'string' && ObjectId.isValid(screenshot.sellerId))
+              ? new ObjectId(screenshot.sellerId)
+              : screenshot.sellerId;
+            seller = await sellersCollection.findOne(
+              { _id: sellerKey },
+              { projection: { name: 1, email: 1, phone: 1 } }
+            );
+          } catch (_) {}
 
-          // Get product details
+          // Get product details (may be deleted)
           const productsCollection = db.collection('listings');
-          const product = await productsCollection.findOne(
-            { _id: screenshot.productId },
-            { projection: { title: 1, price: 1, images: 1 } }
-          );
+          let product = null;
+          try {
+            const productKey = (typeof screenshot.productId === 'string' && ObjectId.isValid(screenshot.productId))
+              ? new ObjectId(screenshot.productId)
+              : screenshot.productId;
+            product = await productsCollection.findOne(
+              { _id: productKey },
+              { projection: { title: 1, price: 1, images: 1 } }
+            );
+          } catch (_) {}
 
           return {
             ...screenshot,
