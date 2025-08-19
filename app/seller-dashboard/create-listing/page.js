@@ -11,6 +11,7 @@ const CreateListing = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const fileInputRef = useRef(null);
   
   // Form state
@@ -50,11 +51,66 @@ const CreateListing = () => {
     'Fair'
   ];
 
+  // Add validation helper function
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'title':
+        if (!value.trim()) return 'Title is required';
+        if (value.trim().length < 5) return 'Title must be at least 5 characters';
+        if (value.trim().length > 100) return 'Title must be less than 100 characters';
+        return null;
+      
+      case 'description':
+        if (!value.trim()) return 'Description is required';
+        if (value.trim().length < 20) return 'Description must be at least 20 characters';
+        if (value.trim().length > 1000) return 'Description must be less than 1000 characters';
+        return null;
+      
+      case 'price':
+        if (!value) return 'Price is required';
+        if (isNaN(parseFloat(value))) return 'Please enter a valid price';
+        if (parseFloat(value) <= 0) return 'Price must be greater than 0';
+        return null;
+      
+      case 'originalPrice':
+        if (value && isNaN(parseFloat(value))) return 'Please enter a valid original price';
+        if (value && parseFloat(value) <= 0) return 'Original price must be greater than 0';
+        if (value && parseFloat(value) <= parseFloat(formData.price)) {
+          return 'Original price should be higher than selling price';
+        }
+        return null;
+      
+      default:
+        return null;
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear any existing errors or success messages when user starts typing
+    if (error) setError('');
+    if (success) setSuccess('');
+    
+    // Special handling for price fields to ensure valid numbers
+    let processedValue = value;
+    if (name === 'price' || name === 'originalPrice') {
+      // Remove any non-numeric characters except decimal point
+      processedValue = value.replace(/[^0-9.]/g, '');
+      // Ensure only one decimal point
+      const parts = processedValue.split('.');
+      if (parts.length > 2) {
+        processedValue = parts[0] + '.' + parts.slice(1).join('');
+      }
+      // Limit to 2 decimal places
+      if (parts.length === 2 && parts[1].length > 2) {
+        processedValue = parts[0] + '.' + parts[1].substring(0, 2);
+      }
+    }
+    
     const newFormData = {
       ...formData,
-      [name]: value
+      [name]: processedValue
     };
     
     setFormData(newFormData);
@@ -158,7 +214,10 @@ const CreateListing = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Basic validation - check for empty or whitespace-only strings
+    // Clear any previous errors
+    setError('');
+    
+    // Enhanced validation - check for empty or whitespace-only strings
     const requiredFields = {
       title: formData.title?.trim(),
       description: formData.description?.trim(),
@@ -177,13 +236,42 @@ const CreateListing = () => {
       return;
     }
 
+    // Validate price format
+    if (formData.price && isNaN(parseFloat(formData.price))) {
+      setError('Please enter a valid price');
+      return;
+    }
+
+    if (formData.originalPrice && isNaN(parseFloat(formData.originalPrice))) {
+      setError('Please enter a valid original price');
+      return;
+    }
+
+    // Validate price range
+    const price = parseFloat(formData.price);
+    if (price <= 0) {
+      setError('Price must be greater than 0');
+      return;
+    }
+
+    if (formData.originalPrice) {
+      const originalPrice = parseFloat(formData.originalPrice);
+      if (originalPrice <= 0) {
+        setError('Original price must be greater than 0');
+        return;
+      }
+      if (originalPrice <= price) {
+        setError('Original price should be higher than selling price');
+        return;
+      }
+    }
+
     if (formData.images.length === 0) {
       setError('Please add at least one image of your item');
       return;
     }
 
     setLoading(true);
-    setError('');
 
     try {
       // 1) Upload images one-by-one to keep each request small
@@ -214,11 +302,15 @@ const CreateListing = () => {
       const result = await listingsAPI.createListing(jsonData);
 
       if (result.success) {
-        router.push('/seller-dashboard');
+        setSuccess('Listing created successfully! Redirecting to dashboard...');
+        setTimeout(() => {
+          router.push('/seller-dashboard');
+        }, 1500);
       } else {
         setError(result.message || 'Failed to create listing');
       }
     } catch (err) {
+      console.error('Create listing error:', err);
       setError(err.message || 'Failed to create listing');
     } finally {
       setLoading(false);
@@ -240,11 +332,17 @@ const CreateListing = () => {
 
       {error && (
         <div className={styles.errorMessage}>
-          {error}
+          <strong>⚠️ Error:</strong> {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={styles.form}>
+      {success && (
+        <div className={styles.successMessage}>
+          <strong>✅ Success:</strong> {success}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className={styles.form} noValidate>
         {/* Basic Info */}
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Basic Information</h2>
@@ -279,29 +377,31 @@ const CreateListing = () => {
             <div className={styles.inputGroup}>
               <label className={styles.label}>Price (₹) *</label>
               <input
-                type="number"
+                type="text"
                 name="price"
                 value={formData.price}
                 onChange={handleInputChange}
                 placeholder="0"
                 className={styles.input}
                 required
-                min="0"
-                step="0.01"
+                inputMode="decimal"
+                pattern="[0-9]*[.]?[0-9]{0,2}"
+                title="Please enter a valid price (e.g., 100 or 99.99)"
               />
             </div>
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>Original Price (₹) [Market Price]</label>
               <input
-                type="number"
+                type="text"
                 name="originalPrice"
                 value={formData.originalPrice}
                 onChange={handleInputChange}
                 placeholder="Optional"
                 className={styles.input}
-                min="0"
-                step="0.01"
+                inputMode="decimal"
+                pattern="[0-9]*[.]?[0-9]{0,2}"
+                title="Please enter a valid price (e.g., 100 or 99.99)"
               />
             </div>
           </div>
