@@ -47,6 +47,7 @@ const UnifiedBuyerLogin = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       const data = await res.json();
@@ -62,8 +63,12 @@ const UnifiedBuyerLogin = () => {
 
         setSuccess('Login successful! Redirecting...');
         
-        // Immediate redirect without delay
-        router.push('/buyer-dashboard');
+        // Hard navigation so new HttpOnly cookie is sent on first request
+        if (typeof window !== 'undefined') {
+          window.location.assign('/buyer-dashboard');
+        } else {
+          router.push('/buyer-dashboard');
+        }
       } else {
         setError(data.error || 'Login failed');
       }

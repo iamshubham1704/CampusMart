@@ -111,10 +111,20 @@ export async function POST(req) {
     } catch (updateError) {
     }
 
-    // Create response headers with cookie
+    // Create response headers with cookie (dev-safe: no Secure in development)
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookie = [
+      `auth-token=${token}`,
+      'Path=/',
+      'HttpOnly',
+      isProd ? 'Secure' : '',
+      'SameSite=Lax',
+      `Max-Age=${7 * 24 * 60 * 60}`
+    ].filter(Boolean).join('; ');
+
     const headers = new Headers({
       'Content-Type': 'application/json',
-      'Set-Cookie': `auth-token=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}` // 7 days
+      'Set-Cookie': cookie
     });
 
     // Return success response with token and cookie

@@ -47,6 +47,7 @@ const UnifiedSellerLogin = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       const data = await res.json();
@@ -63,8 +64,12 @@ const UnifiedSellerLogin = () => {
 
         setSuccess('Login successful! Redirecting...');
         
-        // Immediate redirect without delay
-        router.push('/seller-dashboard');
+        // Hard navigation so new HttpOnly cookie is sent on first request
+        if (typeof window !== 'undefined') {
+          window.location.assign('/seller-dashboard');
+        } else {
+          router.push('/seller-dashboard');
+        }
       } else {
         setError(data.error || 'Login failed');
       }
