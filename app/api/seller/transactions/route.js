@@ -21,8 +21,16 @@ export async function GET(request) {
     const client = await clientPromise;
     const db = client.db('campusmart');
     
-    // Build filter
-    let filter = { sellerId: decoded.sellerId };
+    // Build filter and match both string and ObjectId forms of sellerId
+    const sellerIdCandidates = [];
+    if (decoded.sellerId) {
+      sellerIdCandidates.push(decoded.sellerId);
+      if (typeof decoded.sellerId === 'string' && ObjectId.isValid(decoded.sellerId)) {
+        try { sellerIdCandidates.push(new ObjectId(decoded.sellerId)); } catch (_) {}
+      }
+    }
+    let filter = { sellerId: { $in: sellerIdCandidates } };
+    
     if (status && status !== 'all') {
       filter.status = status;
     }
@@ -45,20 +53,50 @@ export async function GET(request) {
     const transactionsWithDetails = await Promise.all(
       transactions.map(async (transaction) => {
         try {
-          // Get order details
-          const order = await db.collection('orders').findOne({
-            _id: transaction.orderId
-          });
+          // Get order details with proper ObjectId conversion
+          let order = null;
+          if (transaction.orderId) {
+            try {
+              const orderId = (typeof transaction.orderId === 'string' && ObjectId.isValid(transaction.orderId))
+                ? new ObjectId(transaction.orderId)
+                : transaction.orderId;
+              order = await db.collection('orders').findOne({
+                _id: orderId
+              });
+            } catch (error) {
+              console.error('Error converting orderId to ObjectId:', error);
+            }
+          }
 
-          // Get product details
-          const product = await db.collection('listings').findOne({
-            _id: transaction.productId
-          }, { projection: { title: 1, price: 1, images: 1 } });
+          // Get product details with proper ObjectId conversion
+          let product = null;
+          if (transaction.productId) {
+            try {
+              const productId = (typeof transaction.productId === 'string' && ObjectId.isValid(transaction.productId))
+                ? new ObjectId(transaction.productId)
+                : transaction.productId;
+              product = await db.collection('listings').findOne({
+                _id: productId
+              }, { projection: { title: 1, price: 1, images: 1 } });
+            } catch (error) {
+              console.error('Error converting productId to ObjectId:', error);
+            }
+          }
 
-          // Get buyer details
-          const buyer = await db.collection('buyers').findOne({
-            _id: transaction.buyerId
-          }, { projection: { name: 1, email: 1 } });
+          // Get buyer details with proper ObjectId conversion
+          let buyer = null;
+          if (transaction.buyerId) {
+            try {
+              const buyerId = (typeof transaction.buyerId === 'string' && ObjectId.isValid(transaction.buyerId))
+                ? new ObjectId(transaction.buyerId)
+                : transaction.buyerId;
+              buyer = await db.collection('buyers').findOne({
+                _id: buyerId
+              }, { projection: { name: 1, email: 1, phone: 1 } });
+            } catch (error) {
+              console.error('Error converting buyerId to ObjectId:', error);
+            }
+          }
 
           return {
             ...transaction,
@@ -127,11 +165,24 @@ export async function POST(request) {
     const db = client.db('campusmart');
 
     // Verify the order belongs to this seller and payment is verified
-    const order = await db.collection('orders').findOne({
-      _id: orderId,
-      sellerId: decoded.sellerId,
-      status: 'payment_verified' // Only allow if buyer payment is verified
-    });
+    let order = null;
+    try {
+      const orderIdObj = (typeof orderId === 'string' && ObjectId.isValid(orderId)) ? new ObjectId(orderId) : orderId;
+      const sellerIdCandidates = [];
+      if (decoded.sellerId) {
+        sellerIdCandidates.push(decoded.sellerId);
+        if (typeof decoded.sellerId === 'string' && ObjectId.isValid(decoded.sellerId)) {
+          try { sellerIdCandidates.push(new ObjectId(decoded.sellerId)); } catch (_) {}
+        }
+      }
+      order = await db.collection('orders').findOne({
+        _id: orderIdObj,
+        sellerId: { $in: sellerIdCandidates },
+        status: 'payment_verified' // Only allow if buyer payment is verified
+      });
+    } catch (error) {
+      console.error('Error converting orderId to ObjectId:', error);
+    }
 
     if (!order) {
       return Response.json({ 
@@ -140,10 +191,23 @@ export async function POST(request) {
     }
 
     // Check if transaction request already exists for this order
-    const existingTransaction = await db.collection('seller_transactions').findOne({
-      orderId: orderId,
-      sellerId: decoded.sellerId
-    });
+    let existingTransaction = null;
+    try {
+      const orderIdObj = (typeof orderId === 'string' && ObjectId.isValid(orderId)) ? new ObjectId(orderId) : orderId;
+      const sellerIdCandidates = [];
+      if (decoded.sellerId) {
+        sellerIdCandidates.push(decoded.sellerId);
+        if (typeof decoded.sellerId === 'string' && ObjectId.isValid(decoded.sellerId)) {
+          try { sellerIdCandidates.push(new ObjectId(decoded.sellerId)); } catch (_) {}
+        }
+      }
+      existingTransaction = await db.collection('seller_transactions').findOne({
+        orderId: orderIdObj,
+        sellerId: { $in: sellerIdCandidates }
+      });
+    } catch (error) {
+      console.error('Error converting orderId to ObjectId for existing transaction check:', error);
+    }
 
     if (existingTransaction) {
       return Response.json({ 
@@ -175,17 +239,23 @@ export async function POST(request) {
     await db.collection('seller_transactions').insertOne(transactionData);
 
     // Update order status to indicate seller has requested payment
-    await db.collection('orders').updateOne(
-      { _id: orderId },
-      { 
-        $set: { 
-          sellerPaymentRequested: true,
-          sellerPaymentRequestedAt: new Date(),
-          sellerTransactionId: transactionId,
-          updatedAt: new Date()
+    try {
+      const orderIdObj = (typeof orderId === 'string' && ObjectId.isValid(orderId)) ? new ObjectId(orderId) : orderId;
+      await db.collection('orders').updateOne(
+        { _id: orderIdObj },
+        { 
+          $set: { 
+            sellerPaymentRequested: true,
+            sellerPaymentRequestedAt: new Date(),
+            sellerTransactionId: transactionId,
+            updatedAt: new Date()
+          }
         }
-      }
-    );
+      );
+    } catch (updateError) {
+      console.error('Error updating order with seller payment request:', updateError);
+      // Continue even if the status update fails
+    }
 
     // Create notification for admin
     try {

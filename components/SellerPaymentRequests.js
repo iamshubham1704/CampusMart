@@ -53,222 +53,47 @@ const SellerPaymentRequests = () => {
       console.log('🔄 Fetching payment data...');
 
       // Check for authentication token
-      const token = localStorage?.getItem?.('token') || 'demo-token';
+      const token = localStorage?.getItem?.('token') || localStorage?.getItem?.('sellerToken');
       if (!token) {
-        console.warn('⚠️ No authentication token found, using demo data');
+        console.error('❌ No authentication token found');
+        setError('Authentication required. Please login again.');
+        setLoading(false);
+        return;
       }
 
-      // Mock data for development - replace with real API calls
-      const mockVerifiedOrders = [
-        {
-          _id: '67890abcdef12345',
-          product: {
-            title: 'MacBook Pro 16" M2 Max',
-            category: 'Electronics',
-            condition: 'Like New',
-            description: 'Barely used MacBook Pro with all original accessories',
-            images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400']
-          },
-          buyer: {
-            name: 'John Doe',
-            email: 'john.doe@email.com',
-            phone: '+91 98765 43210'
-          },
-          amount: 185000,
-          createdAt: '2024-01-15T10:30:00Z',
-          verifiedAt: '2024-01-15T12:45:00Z',
-          hasPaymentRequest: false,
-          paymentRequested: false,
-          orderStatus: 'payment_verified',
-          deliveryAddress: 'Mumbai, Maharashtra'
-        },
-        {
-          _id: '12345abcdef67890',
-          product: {
-            title: 'iPhone 15 Pro Max 256GB',
-            category: 'Electronics',
-            condition: 'Excellent',
-            description: 'Mint condition iPhone with warranty remaining',
-            images: ['https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400']
-          },
-          buyer: {
-            name: 'Jane Smith',
-            email: 'jane.smith@email.com',
-            phone: '+91 87654 32109'
-          },
-          amount: 135000,
-          createdAt: '2024-01-14T14:20:00Z',
-          verifiedAt: '2024-01-14T16:30:00Z',
-          hasPaymentRequest: true,
-          paymentRequested: true,
-          paymentRequestStatus: 'pending',
-          orderStatus: 'payment_requested',
-          deliveryAddress: 'Bangalore, Karnataka'
-        },
-        {
-          _id: 'abcdef1234567890',
-          product: {
-            title: 'Dell XPS 13 Plus',
-            category: 'Electronics',
-            condition: 'Good',
-            description: 'Well-maintained laptop, perfect for professionals',
-            images: ['https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400']
-          },
-          buyer: {
-            name: 'Mike Johnson',
-            email: 'mike.johnson@email.com',
-            phone: '+91 76543 21098'
-          },
-          amount: 89000,
-          createdAt: '2024-01-13T09:15:00Z',
-          verifiedAt: '2024-01-13T11:22:00Z',
-          hasPaymentRequest: false,
-          paymentRequested: false,
-          orderStatus: 'payment_verified',
-          deliveryAddress: 'Delhi, Delhi'
-        },
-        {
-          _id: 'fedcba0987654321',
-          product: {
-            title: 'iPad Pro 12.9" with Apple Pencil',
-            category: 'Electronics',
-            condition: 'Like New',
-            description: 'Complete set with keyboard and pencil',
-            images: ['https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400']
-          },
-          buyer: {
-            name: 'Sarah Wilson',
-            email: 'sarah.wilson@email.com',
-            phone: '+91 65432 10987'
-          },
-          amount: 95000,
-          createdAt: '2024-01-12T16:45:00Z',
-          verifiedAt: '2024-01-12T18:20:00Z',
-          hasPaymentRequest: false,
-          paymentRequested: false,
-          orderStatus: 'payment_verified',
-          deliveryAddress: 'Pune, Maharashtra'
-        }
-      ];
-
-      const mockTransactions = [
-        {
-          _id: 't001',
-          orderId: '12345abcdef67890',
-          product: {
-            title: 'iPhone 15 Pro Max 256GB',
-            category: 'Electronics'
-          },
-          buyer: {
-            name: 'Jane Smith',
-            email: 'jane.smith@email.com',
-            phone: '+91 87654 32109'
-          },
-          amount: 135000,
-          status: 'pending',
-          createdAt: '2024-01-14T16:35:00Z',
-          sellerUpiId: 'seller123@paytm',
-          accountHolderName: 'Seller Account',
-          bankName: 'HDFC Bank',
-          estimatedCompletionDate: '2024-01-17T18:00:00Z',
-          adminNotes: 'Payment request under review'
-        },
-        {
-          _id: 't002',
-          orderId: 'completed_order_1',
-          product: {
-            title: 'iPad Air 64GB Wi-Fi',
-            category: 'Electronics'
-          },
-          buyer: {
-            name: 'Alice Brown',
-            email: 'alice.brown@email.com',
-            phone: '+91 54321 09876'
-          },
-          amount: 45000,
-          status: 'completed',
-          createdAt: '2024-01-10T11:00:00Z',
-          completedAt: '2024-01-12T16:30:00Z',
-          sellerUpiId: 'seller123@paytm',
-          accountHolderName: 'Seller Account',
-          bankName: 'HDFC Bank',
-          transactionReference: 'TXN456789012345',
-          adminNotes: 'Payment processed successfully'
-        },
-        {
-          _id: 't003',
-          orderId: 'processing_order_1',
-          product: {
-            title: 'Samsung Galaxy S24 Ultra',
-            category: 'Electronics'
-          },
-          buyer: {
-            name: 'Bob Wilson',
-            email: 'bob.wilson@email.com',
-            phone: '+91 43210 98765'
-          },
-          amount: 125000,
-          status: 'processing',
-          createdAt: '2024-01-11T13:45:00Z',
-          sellerUpiId: 'seller123@paytm',
-          accountHolderName: 'Seller Account',
-          bankName: 'HDFC Bank',
-          estimatedCompletionDate: '2024-01-16T17:00:00Z',
-          adminNotes: 'Payment verification in progress'
-        },
-        {
-          _id: 't004',
-          orderId: 'failed_order_1',
-          product: {
-            title: 'Gaming Laptop RTX 4060',
-            category: 'Electronics'
-          },
-          buyer: {
-            name: 'Charlie Davis',
-            email: 'charlie.davis@email.com',
-            phone: '+91 32109 87654'
-          },
-          amount: 110000,
-          status: 'failed',
-          createdAt: '2024-01-09T08:20:00Z',
-          failedAt: '2024-01-10T14:15:00Z',
-          sellerUpiId: 'invalid@upi',
-          accountHolderName: 'Invalid Name',
-          bankName: 'Unknown Bank',
-          adminNotes: 'Invalid UPI ID provided. Please update payment details.',
-          failureReason: 'INVALID_UPI_ID'
-        },
-        {
-          _id: 't005',
-          orderId: 'completed_order_2',
-          product: {
-            title: 'AirPods Pro 2nd Generation',
-            category: 'Electronics'
-          },
-          buyer: {
-            name: 'Emma Thompson',
-            email: 'emma.thompson@email.com',
-            phone: '+91 21098 76543'
-          },
-          amount: 22000,
-          status: 'completed',
-          createdAt: '2024-01-08T09:30:00Z',
-          completedAt: '2024-01-09T15:45:00Z',
-          sellerUpiId: 'seller123@paytm',
-          accountHolderName: 'Seller Account',
-          bankName: 'HDFC Bank',
-          transactionReference: 'TXN789012345678',
-          adminNotes: 'Fast-tracked payment processed'
-        }
-      ];
+      // No mock data - only use real API data
 
       try {
         // Attempt real API calls
+        console.log('🔍 Fetching orders with token:', token.substring(0, 20) + '...');
+        
+        // First, let's test the orders API
         const ordersResponse = await fetch('/api/seller/orders?status=payment_verified', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
+        });
+
+        console.log('📦 Orders response status:', ordersResponse.status);
+        console.log('📦 Orders response headers:', Object.fromEntries(ordersResponse.headers.entries()));
+        
+        if (!ordersResponse.ok) {
+          if (ordersResponse.status === 401) {
+            throw new Error('Authentication failed. Please login again.');
+          }
+          const errorData = await ordersResponse.json();
+          console.error('❌ Orders API error response:', errorData);
+          throw new Error(errorData.error || `Orders API failed: ${ordersResponse.status}`);
+        }
+
+        const ordersData = await ordersResponse.json();
+        console.log('✅ Orders data received:', ordersData);
+        console.log('✅ Orders data structure:', {
+          success: ordersData.success,
+          hasData: !!ordersData.data,
+          verifiedOrdersCount: ordersData.data?.verifiedOrders?.length || 0,
+          totalOrdersCount: ordersData.data?.orders?.length || 0
         });
 
         const transactionsResponse = await fetch('/api/seller/transactions', {
@@ -278,26 +103,64 @@ const SellerPaymentRequests = () => {
           }
         });
 
-        if (ordersResponse.ok && transactionsResponse.ok) {
-          const ordersData = await ordersResponse.json();
-          const transactionsData = await transactionsResponse.json();
-
-          console.log('✅ Real API data loaded');
-          setVerifiedOrders(ordersData.data?.verifiedOrders || []);
-          setTransactions(transactionsData.data?.transactions || []);
-        } else {
-          throw new Error('API not available, using mock data');
+        console.log('📦 Transactions response status:', transactionsResponse.status);
+        console.log('📦 Transactions response headers:', Object.fromEntries(transactionsResponse.headers.entries()));
+        
+        if (!transactionsResponse.ok) {
+          if (transactionsResponse.status === 401) {
+            throw new Error('Authentication failed. Please login again.');
+          }
+          const errorData = await transactionsResponse.json();
+          console.error('❌ Transactions API error response:', errorData);
+          throw new Error(errorData.error || `Transactions API failed: ${transactionsResponse.status}`);
         }
+
+        const transactionsData = await transactionsResponse.json();
+        console.log('✅ Transactions data received:', transactionsData);
+        console.log('✅ Transactions data structure:', {
+          success: transactionsData.success,
+          hasData: !!transactionsData.data,
+          transactionsCount: transactionsData.data?.transactions?.length || 0
+        });
+
+        // Set real data
+        const verifiedOrdersData = ordersData.data?.verifiedOrders || [];
+        const transactionsDataArray = transactionsData.data?.transactions || [];
+        
+        console.log('📊 Setting verified orders:', {
+          count: verifiedOrdersData.length,
+          sampleOrder: verifiedOrdersData[0] ? {
+            id: verifiedOrdersData[0]._id,
+            productTitle: verifiedOrdersData[0].product?.title,
+            buyerName: verifiedOrdersData[0].buyer?.name,
+            buyerEmail: verifiedOrdersData[0].buyer?.email,
+            buyerPhone: verifiedOrdersData[0].buyer?.phone
+          } : null
+        });
+        
+        console.log('📊 Setting transactions:', {
+          count: transactionsDataArray.length,
+          sampleTransaction: transactionsDataArray[0] ? {
+            id: transactionsDataArray[0]._id,
+            productTitle: transactionsDataArray[0].product?.title,
+            buyerName: transactionsDataArray[0].buyer?.name,
+            buyerEmail: transactionsDataArray[0].buyer?.email,
+            buyerPhone: transactionsDataArray[0].buyer?.phone
+          } : null
+        });
+        
+        setVerifiedOrders(verifiedOrdersData);
+        setTransactions(transactionsDataArray);
+        
+        console.log('✅ Real API data loaded successfully');
       } catch (apiError) {
-        console.log('📦 Using mock data:', apiError.message);
-        setVerifiedOrders(mockVerifiedOrders);
-        setTransactions(mockTransactions);
+        console.error('❌ API Error:', apiError.message);
+        setError(apiError.message);
+        setVerifiedOrders([]);
+        setTransactions([]);
       }
 
-      console.log('✅ Data set successfully:', {
-        verifiedOrders: mockVerifiedOrders.length,
-        transactions: mockTransactions.length
-      });
+      console.log('✅ Data set successfully');
 
     } catch (err) {
       console.error('❌ Error fetching payment data:', err);
@@ -460,13 +323,23 @@ const SellerPaymentRequests = () => {
   };
 
   const getProductImage = (product) => {
-    if (product?.images && product.images.length > 0) {
-      const imageUrl = product.images[0];
-      if (imageUrl.startsWith('http')) {
-        return imageUrl;
-      } else {
-        return `/api/images/${imageUrl}`;
+    try {
+      if (product?.images && product.images.length > 0) {
+        const first = product.images[0];
+        // If it's already a string path or URL
+        if (typeof first === 'string') {
+          if (/^https?:\/\//i.test(first)) return first;
+          return `/api/images/${first}`;
+        }
+        // If it's an object from ImageKit or similar
+        if (first && typeof first === 'object') {
+          if (typeof first.url === 'string') return first.url;
+          if (first.imageKit && typeof first.imageKit.url === 'string') return first.imageKit.url;
+          if (typeof first.path === 'string') return `/api/images/${first.path}`;
+        }
       }
+    } catch (e) {
+      // fall through to placeholder
     }
     return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop';
   };
