@@ -43,6 +43,7 @@ export async function GET(request) {
     // Get query parameters
     const url = new URL(request.url);
     const userType = url.searchParams.get('type'); // 'buyer', 'seller', or null for all
+    const getAll = url.searchParams.get('all') === 'true'; // Get all users without pagination
     const page = parseInt(url.searchParams.get('page')) || 1;
     const limit = parseInt(url.searchParams.get('limit')) || 20;
     const skip = (page - 1) * limit;
@@ -53,8 +54,8 @@ export async function GET(request) {
     if (userType === 'buyer' || !userType) {
       const buyers = await db.collection('buyers')
         .find({})
-        .skip(userType === 'buyer' ? skip : 0)
-        .limit(userType === 'buyer' ? limit : 0)
+        .skip(getAll ? 0 : (userType === 'buyer' ? skip : 0))
+        .limit(getAll ? 0 : (userType === 'buyer' ? limit : 0))
         .project({ password: 0 }) // Exclude password
         .sort({ createdAt: -1 })
         .toArray();
@@ -74,8 +75,8 @@ export async function GET(request) {
     if (userType === 'seller' || !userType) {
       const sellers = await db.collection('sellers')
         .find({})
-        .skip(userType === 'seller' ? skip : 0)
-        .limit(userType === 'seller' ? limit : 0)
+        .skip(getAll ? 0 : (userType === 'seller' ? skip : 0))
+        .limit(getAll ? 0 : (userType === 'seller' ? limit : 0))
         .project({ password: 0 }) // Exclude password
         .sort({ createdAt: -1 })
         .toArray();
@@ -100,15 +101,22 @@ export async function GET(request) {
       ]);
       totalCount = buyerCount + sellerCount;
 
-      // Apply pagination for all users
-      users = users.slice(skip, skip + limit);
+      // Apply pagination for all users only if not getting all
+      if (!getAll) {
+        users = users.slice(skip, skip + limit);
+      }
     }
 
     return Response.json({
       success: true,
       data: {
         users,
-        pagination: {
+        pagination: getAll ? {
+          page: 1,
+          limit: totalCount,
+          total: totalCount,
+          totalPages: 1
+        } : {
           page,
           limit,
           total: totalCount,

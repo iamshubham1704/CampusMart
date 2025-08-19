@@ -11,6 +11,9 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState("all"); // all, buyer, seller
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10);
   
   const [dashboardStats, setDashboardStats] = useState({
     totalUsers: 0,
@@ -55,7 +58,43 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     initializeAdmin();
-  }, [router, filter]);
+  }, [router]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSearchTerm("");
+  }, [filter]);
+
+  // Filter and paginate users
+  const filteredUsers = users.filter(user => {
+    const matchesFilter = filter === "all" || user.userType === filter;
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  // Debug logging
+  console.log('Pagination Debug:', {
+    totalUsers: users.length,
+    filteredUsers: filteredUsers.length,
+    currentPage,
+    usersPerPage,
+    indexOfFirstUser,
+    indexOfLastUser,
+    currentUsers: currentUsers.length,
+    totalPages,
+    filter,
+    searchTerm
+  });
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   const initializeAdmin = () => {
     try {
@@ -110,9 +149,9 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem("adminToken");
 
-      // Fetch users and stats in parallel
+      // Always fetch ALL users first, then filter locally
       const [usersResponse, statsResponse] = await Promise.all([
-        fetch(`/api/admin/users${filter !== "all" ? `?type=${filter}` : ""}`, {
+        fetch('/api/admin/users?all=true', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -128,7 +167,10 @@ export default function AdminDashboard() {
       const statsData = await statsResponse.json();
 
       if (usersResponse.ok) {
+        console.log('Users API Response:', usersData);
         setUsers(usersData.data.users);
+        // Reset to first page when new data arrives
+        setCurrentPage(1);
       } else {
         setError(usersData.error || "Failed to fetch users");
       }
@@ -167,10 +209,10 @@ export default function AdminDashboard() {
         fetch('/api/admin/users', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('/api/admin/products', {
+        fetch('/api/admin/listings', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('/api/admin/orders', {
+        fetch('/api/admin/order-status', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
         fetch('/api/admin/payment-screenshots', {
@@ -217,13 +259,22 @@ export default function AdminDashboard() {
         responses.map(processResponse)
       );
 
+      // Debug logging
+      console.log('Dashboard API responses:', {
+        usersData,
+        productsData,
+        ordersData,
+        paymentsData,
+        sellerPaymentsData
+      });
+
       // Calculate stats with null checking
       const newStats = {
         totalUsers: (usersData?.data?.buyers?.length || 0) + (usersData?.data?.sellers?.length || 0),
         totalBuyers: usersData?.data?.buyers?.length || 0,
         totalSellers: usersData?.data?.sellers?.length || 0,
-        totalProducts: productsData?.data?.products?.length || 0,
-        totalOrders: ordersData?.data?.orders?.length || 0,
+        totalProducts: productsData?.data?.listings?.length || 0,
+        totalOrders: ordersData?.data?.orderStatuses?.length || 0,
         pendingPayments: paymentsData?.data?.screenshots?.filter(p => p.status === 'pending_verification')?.length || 0,
         verifiedPayments: paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.length || 0,
         sellerPaymentRequests: sellerPaymentsData?.data?.summary?.total || 0,
@@ -393,6 +444,12 @@ export default function AdminDashboard() {
           Loading dashboard...
         </div>
         <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <style jsx global>{`
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -1232,12 +1289,18 @@ export default function AdminDashboard() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "2rem",
+          flexWrap: "wrap",
+          gap: "1rem"
         }}>
           <h2 style={{ margin: 0, color: "#333" }}>User Management</h2>
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <button
-              onClick={() => setFilter("all")}
+              onClick={() => {
+                setFilter("all");
+                setSearchTerm("");
+                setCurrentPage(1);
+              }}
               style={{
                 padding: "0.5rem 1rem",
                 backgroundColor: filter === "all" ? "#007bff" : "#e9ecef",
@@ -1250,7 +1313,11 @@ export default function AdminDashboard() {
               All Users
             </button>
             <button
-              onClick={() => setFilter("buyer")}
+              onClick={() => {
+                setFilter("buyer");
+                setSearchTerm("");
+                setCurrentPage(1);
+              }}
               style={{
                 padding: "0.5rem 1rem",
                 backgroundColor: filter === "buyer" ? "#007bff" : "#e9ecef",
@@ -1263,7 +1330,11 @@ export default function AdminDashboard() {
               Buyers
             </button>
             <button
-              onClick={() => setFilter("seller")}
+              onClick={() => {
+                setFilter("seller");
+                setSearchTerm("");
+                setCurrentPage(1);
+              }}
               style={{
                 padding: "0.5rem 1rem",
                 backgroundColor: filter === "seller" ? "#007bff" : "#e9ecef",
@@ -1276,6 +1347,88 @@ export default function AdminDashboard() {
               Sellers
             </button>
           </div>
+        </div>
+
+        {/* Search Bar */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+          flexWrap: "wrap",
+          gap: "1rem"
+        }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flex: "1",
+            maxWidth: "400px"
+          }}>
+            <input
+              type="text"
+              placeholder="Search users by name or email..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page when searching
+              }}
+              style={{
+                padding: "0.5rem 0.75rem",
+                border: "1px solid #ced4da",
+                borderRadius: "6px",
+                fontSize: "0.9rem",
+                flex: "1",
+                minWidth: "250px"
+              }}
+            />
+            <span style={{ color: "#6c757d", fontSize: "0.9rem" }}>
+              {filteredUsers.length} users found • Page {currentPage} of {totalPages}
+            </span>
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: "0.25rem 0.5rem",
+                  backgroundColor: "#dc3545",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "0.8rem"
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Pagination Summary */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+          padding: "0.5rem 0",
+          fontSize: "0.9rem",
+          color: "#6c757d"
+        }}>
+          <span>
+            {loading ? (
+              "Loading users..."
+            ) : (
+              `Showing ${indexOfFirstUser + 1} to ${Math.min(indexOfLastUser, filteredUsers.length)} of ${filteredUsers.length} users`
+            )}
+          </span>
+          {totalPages > 1 && !loading && (
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+          )}
         </div>
 
         {/* Users Table */}
@@ -1338,7 +1491,24 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: "center", padding: "2rem", color: "#666" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                      <div style={{
+                        width: "20px",
+                        height: "20px",
+                        border: "2px solid #e9ecef",
+                        borderTop: "2px solid #007bff",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite"
+                      }}></div>
+                      Loading users...
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                currentUsers.map((user) => (
                 <tr key={user._id} style={{ borderBottom: "1px solid #dee2e6" }}>
                   <td style={{ padding: "0.75rem" }}>{user.name}</td>
                   <td style={{ padding: "0.75rem" }}>{user.email}</td>
@@ -1387,22 +1557,98 @@ export default function AdminDashboard() {
                     >
                       {user.isActive ? "Ban" : "Activate"}
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+                   </td>
+                 </tr>
+               ))
+              )}
+             </tbody>
           </table>
 
-          {users.length === 0 && (
+          {currentUsers.length === 0 && (
             <div style={{
               textAlign: "center",
               padding: "2rem",
               color: "#666",
             }}>
-              No users found.
+              {filteredUsers.length === 0 ? (
+                <div>
+                  <div style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>No users found</div>
+                  <div style={{ fontSize: "0.9rem" }}>There are currently no users in the system.</div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>No users match your criteria</div>
+                  <div style={{ fontSize: "0.9rem" }}>
+                    Try adjusting your search terms or filters. Found {filteredUsers.length} total users.
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginTop: "1.5rem",
+            flexWrap: "wrap"
+          }}>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: "0.5rem 0.75rem",
+                backgroundColor: currentPage === 1 ? "#e9ecef" : "#007bff",
+                color: currentPage === 1 ? "#6c757d" : "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontSize: "0.9rem"
+              }}
+            >
+              ← Previous
+            </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                style={{
+                  padding: "0.5rem 0.75rem",
+                  backgroundColor: currentPage === page ? "#007bff" : "#e9ecef",
+                  color: currentPage === page ? "white" : "#333",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "0.9rem",
+                  minWidth: "40px"
+                }}
+              >
+                {page}
+              </button>
+            ))}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: "0.5rem 0.75rem",
+                backgroundColor: currentPage === totalPages ? "#e9ecef" : "#007bff",
+                color: currentPage === totalPages ? "#6c757d" : "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontSize: "0.9rem"
+              }}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* System Overview */}
