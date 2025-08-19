@@ -52,15 +52,19 @@ const UnifiedSellerLogin = () => {
       const data = await res.json();
 
       if (res.ok) {
-        // Note: Avoid localStorage in production - use secure cookies or session storage
+        // Store token and user data consistently
         if (typeof window !== 'undefined') {
+          localStorage.setItem('auth-token', data.token);
           localStorage.setItem('token', data.token);
+          localStorage.setItem('sellerToken', data.token);
           localStorage.setItem('sellerId', data.seller?.id || '');
+          localStorage.setItem('userType', 'seller');
         }
 
         setSuccess('Login successful! Redirecting...');
         
-        setTimeout(() => router.push('/seller-dashboard'), 1500);
+        // Immediate redirect without delay
+        router.push('/seller-dashboard');
       } else {
         setError(data.error || 'Login failed');
       }

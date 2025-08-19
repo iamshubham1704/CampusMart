@@ -110,56 +110,41 @@ const UnifiedBuyerRegistration = ({ updateProfile, isEditMode = false, initialDa
     const branch = form.branch === 'manual' ? form.customBranch : form.branch;
 
     if (!college || !course || !branch) {
-      setError('Please specify your college, course, and branch');
+      setError('Please fill in all college details');
       setLoading(false);
       return;
     }
 
     try {
-      if (isEditMode && updateProfile) {
-        // Profile update mode
-        await updateProfile({
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          college,
-          year: form.year,
-          course,
-          branch,
-        });
-        setSuccess('Profile updated successfully!');
-      } else {
-        // Registration mode
-        const registrationData = {
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          password: form.password,
-          college,
-          year: form.year,
-          course,
-          branch,
-        };
+      const registrationData = {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        college,
+        year: form.year,
+        course,
+        branch,
+      };
 
-        const res = await fetch('/api/buyer/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(registrationData),
-        });
+      const res = await fetch('/api/buyer/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registrationData),
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Registration failed');
-        }
-        
-        setSuccess('Registration successful! Redirecting...');
-        setTimeout(() => {
-          router.push('/buyer-login');
-        }, 1500);
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed');
       }
+
+      setSuccess('Registration successful! Redirecting...');
+      
+      // Immediate redirect to login page
+      router.push('/buyer-login');
     } catch (err) {
-      console.error(err);
+      console.error('Registration error:', err);
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
