@@ -113,12 +113,12 @@ const CreateListing = () => {
       return;
     }
 
-    // Validate file sizes (e.g., max 5MB each)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file sizes (max 10MB each)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
     
     if (oversizedFiles.length > 0) {
-      setError('Each image must be smaller than 5MB');
+      setError('Each image must be smaller than 10MB');
       return;
     }
 
@@ -413,8 +413,11 @@ const CreateListing = () => {
         {/* Images */}
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Images *</h2>
-          <p className={styles.sectionSubtitle}>
-            Add up to 5 photos of your item (JPEG, JPG, PNG, WebP - Max 5MB each)
+          <p className={`${styles.sectionSubtitle} ${styles.imagesInfo}`}>
+            Add up to 5 photos of your item (JPEG, JPG, PNG, WebP - Max 10MB each)
+          </p>
+          <p className={`${styles.sectionSubtitle} ${styles.imagesRecommendation}`}>
+            Recommended: upload at least 3 images for better visibility (not compulsory).
           </p>
           
           {/* Hidden file input */}
@@ -455,7 +458,7 @@ const CreateListing = () => {
                 className={styles.addImageButton}
               >
                 <Upload size={24} />
-                <span>Add Photo</span>
+                <span className={styles.addImageButtonText}>Add Photo</span>
               </button>
             )}
           </div>

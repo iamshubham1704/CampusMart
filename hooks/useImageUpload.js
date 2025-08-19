@@ -22,7 +22,7 @@ export const useImageUpload = () => {
    * Validate image file before upload
    */
   const validateImageFile = useCallback((file) => {
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
     if (!allowedTypes.includes(file.type)) {
@@ -30,7 +30,7 @@ export const useImageUpload = () => {
     }
 
     if (file.size > maxSize) {
-      throw new Error('File size too large. Maximum size is 5MB.');
+      throw new Error('File size too large. Maximum size is 10MB.');
     }
 
     return true;
