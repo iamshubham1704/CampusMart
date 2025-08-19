@@ -76,9 +76,7 @@ const CampusMartAbout = () => {
             <div className="nav-brand">
               <div className="brand-logo">
                 <div className="logo-container">
-                  <div className="logo-icon">
-                    <Store size={28} />
-                  </div>
+                  <img src="/logo.png" alt="CampusMart" />
                 </div>
                 <div className="brand-text">
                   <h1 className="brand-name">CampusMart</h1>
@@ -507,7 +505,7 @@ const CampusMartAbout = () => {
               <div className="footer-section">
                 <div className="footer-brand">
                   <div className="footer-logo">
-                    <Store size={32} />
+                    <img src="/logo.png" alt="CampusMart" />
                     <span>CampusMart</span>
                   </div>
                   <p className="footer-tagline">

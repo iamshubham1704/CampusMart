@@ -93,6 +93,7 @@ export async function POST(req) {
 
     const token = jwt.sign(
       { 
+        userId: buyer._id.toString(),
         buyerId: buyer._id.toString(),
         email: buyer.email,
         name: buyer.name,

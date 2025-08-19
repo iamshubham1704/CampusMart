@@ -14,6 +14,14 @@ export async function GET(request) {
         const db = client.db('campusmart');
 
         let userId = decoded.userId || decoded.buyerId || decoded.id || decoded.user_id;
+        
+        console.log('GET Profile - Decoded token data:', {
+          userId: decoded.userId,
+          buyerId: decoded.buyerId,
+          id: decoded.id,
+          user_id: decoded.user_id,
+          role: decoded.role
+        });
 
         if (!userId) {
             return Response.json({ message: 'Invalid token: no user ID found' }, { status: 401 });
@@ -49,7 +57,7 @@ export async function GET(request) {
     }
 }
 
-// PUT/PATCH - Update buyer details
+// PUT/PATCH - Update buyer details - UNIQUE_IDENTIFIER
 export async function PUT(request) {
     try {
         const decoded = verifyToken(request);
@@ -61,6 +69,14 @@ export async function PUT(request) {
         const db = client.db('campusmart');
 
         let userId = decoded.userId || decoded.buyerId || decoded.id || decoded.user_id;
+        
+        console.log('PUT Profile - Decoded token data:', {
+          userId: decoded.userId,
+          buyerId: decoded.buyerId,
+          id: decoded.id,
+          user_id: decoded.user_id,
+          role: decoded.role
+        });
 
         if (!userId) {
             return Response.json({ message: 'Invalid token: no user ID found' }, { status: 401 });

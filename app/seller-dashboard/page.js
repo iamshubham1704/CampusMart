@@ -534,8 +534,7 @@ const SellerDashboard = () => {
 
           <div className={styles.logoSection}>
             <div className={styles.logo}>
-              <span className={styles.logoText}>Campus</span>
-              <span className={styles.logoTextSecondary}>Market</span>
+              <img src="/logo.png" alt="CampusMart" style={{ height: 80, width: 'auto' }} />
             </div>
           </div>
 

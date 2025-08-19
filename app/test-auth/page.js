@@ -1,105 +1,116 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getStoredToken, getStoredUserType, isAuthenticated, clearAllTokens } from '../../lib/auth';
+import { isAuthenticated, getStoredToken, clearAllTokens } from '../../lib/auth';
 
-export default function TestAuth() {
-  const [authState, setAuthState] = useState({});
+const TestAuth = () => {
+  const [authStatus, setAuthStatus] = useState({});
+  const [tokens, setTokens] = useState({});
+
+  const checkAuth = () => {
+    const buyerAuth = isAuthenticated('buyer');
+    const sellerAuth = isAuthenticated('seller');
+    const adminAuth = isAuthenticated('admin');
+    const anyAuth = isAuthenticated();
+
+    setAuthStatus({
+      buyer: buyerAuth,
+      seller: sellerAuth,
+      admin: adminAuth,
+      any: anyAuth
+    });
+
+    setTokens({
+      buyerToken: localStorage.getItem('buyerToken'),
+      authToken: localStorage.getItem('auth-token'),
+      userType: localStorage.getItem('userType'),
+      buyerData: localStorage.getItem('buyerData')
+    });
+  };
+
+  const clearTokens = () => {
+    clearAllTokens();
+    checkAuth();
+  };
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = getStoredToken();
-      const userType = getStoredUserType();
-      const isAuth = isAuthenticated();
-      
-      setAuthState({
-        token: token ? `${token.substring(0, 20)}...` : 'None',
-        userType: userType || 'None',
-        isAuthenticated: isAuth,
-        allTokens: {
-          'auth-token': localStorage.getItem('auth-token') ? 'Present' : 'None',
-          'buyerToken': localStorage.getItem('buyerToken') ? 'Present' : 'None',
-          'token': localStorage.getItem('token') ? 'Present' : 'None',
-          'sellerToken': localStorage.getItem('sellerToken') ? 'Present' : 'None',
-          'adminToken': localStorage.getItem('adminToken') ? 'Present' : 'None',
-        }
-      });
-    };
-
     checkAuth();
-    
-    // Check every second for changes
-    const interval = setInterval(checkAuth, 1000);
-    return () => clearInterval(interval);
   }, []);
-
-  const handleClearTokens = () => {
-    clearAllTokens();
-    setAuthState({});
-  };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Authentication Test Page</h1>
+      <h1>Authentication Debug Page</h1>
       
       <div style={{ marginBottom: '20px' }}>
-        <h2>Current Auth State:</h2>
-        <pre style={{ background: '#f5f5f5', padding: '10px', borderRadius: '5px' }}>
-          {JSON.stringify(authState, null, 2)}
-        </pre>
-      </div>
-
-      <div style={{ marginBottom: '20px' }}>
-        <h2>Actions:</h2>
-        <button 
-          onClick={handleClearTokens}
-          style={{ 
-            padding: '10px 20px', 
-            backgroundColor: '#dc3545', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}
-        >
+        <button onClick={checkAuth} style={{ marginRight: '10px' }}>
+          Refresh Auth Status
+        </button>
+        <button onClick={clearTokens} style={{ backgroundColor: '#ff4444', color: 'white' }}>
           Clear All Tokens
         </button>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h2>Navigation:</h2>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <a href="/buyer-login" style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-            Buyer Login
-          </a>
-          <a href="/seller-login" style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-            Seller Login
-          </a>
-          <a href="/buyer-registration" style={{ padding: '10px 20px', backgroundColor: '#ffc107', color: 'black', textDecoration: 'none', borderRadius: '5px' }}>
-            Buyer Registration
-          </a>
-          <a href="/seller-registration" style={{ padding: '10px 20px', backgroundColor: '#17a2b8', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-            Seller Registration
-          </a>
-          <a href="/buyer-dashboard" style={{ padding: '10px 20px', backgroundColor: '#6f42c1', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-            Buyer Dashboard
-          </a>
-          <a href="/seller-dashboard" style={{ padding: '10px 20px', backgroundColor: '#fd7e14', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-            Seller Dashboard
-          </a>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div>
+          <h2>Authentication Status</h2>
+          <div style={{ backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '5px' }}>
+            <p><strong>Buyer:</strong> {authStatus.buyer ? '✅ Authenticated' : '❌ Not Authenticated'}</p>
+            <p><strong>Seller:</strong> {authStatus.seller ? '✅ Authenticated' : '❌ Not Authenticated'}</p>
+            <p><strong>Admin:</strong> {authStatus.admin ? '✅ Authenticated' : '❌ Not Authenticated'}</p>
+            <p><strong>Any:</strong> {authStatus.any ? '✅ Authenticated' : '❌ Not Authenticated'}</p>
+          </div>
+        </div>
+
+        <div>
+          <h2>Stored Tokens</h2>
+          <div style={{ backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '5px' }}>
+            <p><strong>Buyer Token:</strong> {tokens.buyerToken ? '✅ Present' : '❌ Missing'}</p>
+            <p><strong>Auth Token:</strong> {tokens.authToken ? '✅ Present' : '❌ Missing'}</p>
+            <p><strong>User Type:</strong> {tokens.userType || '❌ Not Set'}</p>
+            <p><strong>Buyer Data:</strong> {tokens.buyerData ? '✅ Present' : '❌ Missing'}</p>
+          </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h2>Instructions:</h2>
-        <ol>
-          <li>Go to a registration page and create an account</li>
-          <li>Check if you're redirected to the login page</li>
-          <li>Login with your credentials</li>
-          <li>Check if you're redirected to the dashboard</li>
-          <li>Use this page to monitor the authentication state</li>
-        </ol>
+      <div style={{ marginTop: '20px' }}>
+        <h2>Token Details</h2>
+        <div style={{ backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '5px' }}>
+          <p><strong>Buyer Token:</strong></p>
+          <pre style={{ backgroundColor: '#fff', padding: '10px', overflow: 'auto' }}>
+            {tokens.buyerToken || 'No token found'}
+          </pre>
+          
+          <p><strong>Auth Token:</strong></p>
+          <pre style={{ backgroundColor: '#fff', padding: '10px', overflow: 'auto' }}>
+            {tokens.authToken || 'No token found'}
+          </pre>
+          
+          <p><strong>Buyer Data:</strong></p>
+          <pre style={{ backgroundColor: '#fff', padding: '10px', overflow: 'auto' }}>
+            {tokens.buyerData ? JSON.stringify(JSON.parse(tokens.buyerData), null, 2) : 'No data found'}
+          </pre>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '20px' }}>
+        <h2>Quick Actions</h2>
+        <div>
+          <button 
+            onClick={() => window.location.href = '/buyer-login'}
+            style={{ marginRight: '10px', backgroundColor: '#007bff', color: 'white', padding: '10px 20px' }}
+          >
+            Go to Buyer Login
+          </button>
+          <button 
+            onClick={() => window.location.href = '/buyer-dashboard'}
+            style={{ marginRight: '10px', backgroundColor: '#28a745', color: 'white', padding: '10px 20px' }}
+          >
+            Go to Buyer Dashboard
+          </button>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default TestAuth;

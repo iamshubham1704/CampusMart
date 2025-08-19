@@ -57,35 +57,64 @@ const useBuyer = () => {
       setLoading(true);
       setError(null);
 
+      console.log('Checking authentication for buyer dashboard...');
+      
       // Check authentication first
       if (!isAuthenticated('buyer')) {
+        console.log('Buyer not authenticated, redirecting to login');
         redirectToLogin('buyer');
         return;
       }
 
       const token = getStoredToken('buyer');
       if (!token) {
+        console.log('No buyer token found, redirecting to login');
         redirectToLogin('buyer');
         return;
       }
 
+      // Also check if we have the token in localStorage directly
+      const directToken = localStorage.getItem('buyerToken') || localStorage.getItem('auth-token');
+      if (!directToken) {
+        console.log('No direct token found in localStorage, redirecting to login');
+        redirectToLogin('buyer');
+        return;
+      }
+
+      console.log('Token found, fetching buyer profile...');
+      console.log('Using token:', token.substring(0, 20) + '...');
+
+      // Use the direct token from localStorage for the API call
       const response = await fetch('/api/buyer/profile', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${directToken}`,
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('Profile response status:', response.status);
+
       if (!response.ok) {
         if (response.status === 401) {
+          console.log('Unauthorized response, redirecting to login');
           redirectToLogin('buyer');
           return;
         }
-        throw new Error(`Failed to fetch profile: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Profile fetch error:', errorText);
+        
+        // Try to parse as JSON for better error messages
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(`Profile fetch failed: ${errorData.message || errorData.error || response.statusText}`);
+        } catch (parseError) {
+          throw new Error(`Failed to fetch profile: ${response.statusText}`);
+        }
       }
 
       const data = await response.json();
+      console.log('Profile data received:', data);
       setBuyer(data.data);
     } catch (error) {
       console.error('Error fetching buyer profile:', error);
@@ -828,8 +857,7 @@ const BuyerDashboard = () => {
               <Menu size={24} />
             </button>
             <div className="logo">
-              <Sparkles size={32} />
-              <span>CampusMart</span>
+              <img src="/logo.png" alt="CampusMart" style={{ height: 100, width: 'auto' }} />
             </div>
           </div>
 

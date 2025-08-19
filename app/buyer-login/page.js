@@ -43,6 +43,8 @@ const UnifiedBuyerLogin = () => {
     }
 
     try {
+      console.log('Attempting login for:', email);
+      
       const res = await fetch('/api/buyer/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,7 +52,10 @@ const UnifiedBuyerLogin = () => {
         credentials: 'include',
       });
 
+      console.log('Login response status:', res.status);
+      
       const data = await res.json();
+      console.log('Login response data:', data);
 
       if (res.ok) {
         // Store token and user data consistently
@@ -59,17 +64,22 @@ const UnifiedBuyerLogin = () => {
           localStorage.setItem('buyerToken', data.token);
           localStorage.setItem('buyerData', JSON.stringify(data.buyer));
           localStorage.setItem('userType', 'buyer');
+          
+          console.log('Tokens stored successfully');
+          console.log('Stored buyerToken:', localStorage.getItem('buyerToken'));
+          console.log('Stored userType:', localStorage.getItem('userType'));
         }
 
         setSuccess('Login successful! Redirecting...');
         
-        // Hard navigation so new HttpOnly cookie is sent on first request
+        // Immediate redirect for better performance
         if (typeof window !== 'undefined') {
-          window.location.assign('/buyer-dashboard');
+          window.location.href = '/buyer-dashboard';
         } else {
           router.push('/buyer-dashboard');
         }
       } else {
+        console.error('Login failed:', data.error);
         setError(data.error || 'Login failed');
       }
     } catch (err) {
@@ -94,7 +104,7 @@ const UnifiedBuyerLogin = () => {
         setError('Google login failed. Please try again.');
       } else if (result?.ok) {
         setSuccess('Google login successful! Redirecting...');
-        setTimeout(() => router.push('/buyer-dashboard'), 1500);
+        router.push('/buyer-dashboard');
       }
     } catch (err) {
       console.error('Google login error:', err);

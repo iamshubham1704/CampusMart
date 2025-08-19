@@ -236,20 +236,20 @@ body {
 
 .logo-container {
   position: relative;
-  width: 50px;
-  height: 50px;
+  width: 72px;
+  height: 72px;
 }
 
 .logo-icon {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: transparent;
   color: white;
-  width: 50px;
-  height: 50px;
+  width: 72px;
+  height: 72px;
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  box-shadow: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -295,8 +295,7 @@ body {
 }
 
 .brand-logo:hover .logo-icon {
-  transform: rotate(5deg) scale(1.05);
-  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+  transform: scale(1.03);
 }
 
 .brand-logo:hover .logo-icon::before {
@@ -307,6 +306,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+/* Ensure image inside logo scales and stays crisp */
+.logo-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-name {
@@ -2212,8 +2219,8 @@ body {
   }
   
   .logo-container {
-    width: 45px;
-    height: 45px;
+    width: 64px;
+    height: 64px;
   }
   
   .logo-icon {
@@ -2304,8 +2311,8 @@ body {
   }
   
   .logo-container {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
   }
   
   .logo-icon {
@@ -2455,8 +2462,8 @@ body {
   }
   
   .logo-container {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
   }
   
   .logo-icon {
@@ -2630,8 +2637,8 @@ body {
   }
   
   .logo-container {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
   }
   
   .logo-icon {
@@ -4877,13 +4884,9 @@ body {
   transform: translateY(-2px);
 }
 
-.footer-logo svg {
-  color: var(--accent-primary);
-  background: rgba(59, 130, 246, 0.1);
-  border-radius: 12px;
-  padding: 8px;
-  width: 48px;
+.footer-logo img {
   height: 48px;
+  width: auto;
 }
 
 .footer-logo span {

@@ -182,9 +182,7 @@ const CampusMart = () => {
             <div className="nav-brand">
               <div className="brand-logo">
                 <div className="logo-container">
-                  <div className="logo-icon">
-                    <Store size={isMobile ? 24 : 28} />
-                  </div>
+                  <img src="/logo.png" alt="CampusMart" />
                   {!isMobile && <div className="logo-pulse"></div>}
                 </div>
                 <div className="brand-text">
