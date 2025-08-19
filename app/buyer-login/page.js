@@ -52,15 +52,18 @@ const UnifiedBuyerLogin = () => {
       const data = await res.json();
 
       if (res.ok) {
-        // Store token and user data
+        // Store token and user data consistently
         if (typeof window !== 'undefined') {
+          localStorage.setItem('auth-token', data.token);
           localStorage.setItem('buyerToken', data.token);
           localStorage.setItem('buyerData', JSON.stringify(data.buyer));
+          localStorage.setItem('userType', 'buyer');
         }
 
         setSuccess('Login successful! Redirecting...');
         
-        setTimeout(() => router.push('/buyer-dashboard'), 1500);
+        // Immediate redirect without delay
+        router.push('/buyer-dashboard');
       } else {
         setError(data.error || 'Login failed');
       }

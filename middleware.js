@@ -10,23 +10,22 @@ export function middleware(request) {
                       pathname.startsWith('/admin-registration') ||
                       pathname.startsWith('/admin-login');
   
-  // Check if the request is for a dashboard route
+  // Check if the request is for a dashboard route (exclude login/registration pages)
   const isSellerDashboard = pathname.includes('seller-dashboard') || 
-                           pathname.includes('seller-complete-profile') ||
-                           pathname.includes('registration-seller');
+                           pathname.includes('seller-complete-profile');
   
   const isBuyerDashboard = pathname.includes('buyer-dashboard') || 
-                          pathname.includes('buyer-login') ||
-                          pathname.includes('buyer-registration') ||
                           pathname.includes('complete-profile');
+
+  // Allow access to login and registration pages
+  if (pathname === '/buyer-login' || pathname === '/buyer-registration' || 
+      pathname === '/seller-login' || pathname === '/seller-registration' ||
+      pathname === '/admin-login' || pathname === '/admin-registration') {
+    return NextResponse.next();
+  }
 
   // Handle Admin Routes
   if (isAdminRoute) {
-    // Allow access to login and registration pages
-    if (pathname === '/admin-login' || pathname === '/admin-registration') {
-      return NextResponse.next();
-    }
-
     // For admin dashboard routes, validate token
     if (pathname.startsWith('/admin-dashboard')) {
       const adminToken = request.cookies.get('admin-auth-token')?.value || 
@@ -52,7 +51,7 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // Handle Seller and Buyer Routes (existing logic with basic validation)
+  // Handle Seller and Buyer Dashboard Routes
   if (isSellerDashboard || isBuyerDashboard) {
     // Check for authentication token
     const token = request.cookies.get('auth-token')?.value || 
@@ -96,17 +95,21 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
-    // Existing protected routes
+    // Protected dashboard routes
     '/buyer-dashboard/:path*',
     '/seller-dashboard/:path*',
     '/seller-complete-profile/:path*',
     '/complete-profile/:path*',
     
-    // New admin protected routes
+    // Admin protected routes
     '/admin-dashboard/:path*',
     '/admin-login',
     '/admin-registration',
     
-    // Add other protected routes as needed
+    // Login and registration pages (for middleware processing)
+    '/buyer-login',
+    '/buyer-registration', 
+    '/seller-login',
+    '/seller-registration',
   ]
 };

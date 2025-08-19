@@ -44,6 +44,7 @@ import ProductViewModal from './quick-view/page';
 import { useWishlist } from '../../components/contexts/WishlistContext';
 import WishlistModal from './wishlist/page';
 import Link from 'next/link';
+import { getStoredToken, isAuthenticated, redirectToLogin } from '../../lib/auth';
 import './BuyerDashboard.css';
 
 const useBuyer = () => {
@@ -56,10 +57,15 @@ const useBuyer = () => {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      // Check authentication first
+      if (!isAuthenticated('buyer')) {
+        redirectToLogin('buyer');
+        return;
+      }
+
+      const token = getStoredToken('buyer');
       if (!token) {
-        setBuyer(null);
-        setLoading(false);
+        redirectToLogin('buyer');
         return;
       }
 
@@ -73,10 +79,7 @@ const useBuyer = () => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('buyerToken');
-          localStorage.removeItem('token');
-          setBuyer(null);
-          setLoading(false);
+          redirectToLogin('buyer');
           return;
         }
         throw new Error(`Failed to fetch profile: ${response.statusText}`);
@@ -97,10 +100,10 @@ const useBuyer = () => {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      const token = getStoredToken('buyer');
       if (!token) {
-        setLoading(false);
-        return { success: false, error: 'No authentication token found' };
+        redirectToLogin('buyer');
+        return;
       }
 
       const response = await fetch('/api/buyer/profile', {
@@ -114,10 +117,8 @@ const useBuyer = () => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('buyerToken');
-          localStorage.removeItem('token');
-          window.location.href = '/buyer-login';
-          return { success: false, error: 'Authentication failed' };
+          redirectToLogin('buyer');
+          return;
         }
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update profile');
@@ -575,7 +576,7 @@ const BuyerDashboard = () => {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      const token = getStoredToken('buyer');
       const headers = {
         'Content-Type': 'application/json'
       };
@@ -739,7 +740,7 @@ const BuyerDashboard = () => {
   // Fetch pending order count
   const fetchPendingOrderCount = async () => {
     try {
-      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      const token = getStoredToken('buyer');
       if (!token) return;
 
       const response = await fetch('/api/buyer/order-history?page=1&limit=1000', {

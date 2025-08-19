@@ -116,9 +116,9 @@ const UnifiedSellerRegistration = () => {
       }
 
       setSuccess('Registration successful! Redirecting...');
-      setTimeout(() => {
-        router.push('/seller-login');
-      }, 1500);
+      
+      // Immediate redirect to login page
+      router.push('/seller-login');
     } catch (err) {
       (err);
       setError(err.message || 'Something went wrong. Please try again.');

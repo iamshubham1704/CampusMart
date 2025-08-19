@@ -9,6 +9,7 @@ import {
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
+import { getStoredToken, isAuthenticated, redirectToLogin } from '../../lib/auth';
 // import NotificationBadge from '../../components/NotificationBadge';
 
 const SellerDashboard = () => {
@@ -28,9 +29,15 @@ const SellerDashboard = () => {
   const getCurrentUser = () => {
     if (typeof window === 'undefined') return null;
 
-    const token = localStorage.getItem('token');
+    // Check authentication first
+    if (!isAuthenticated('seller')) {
+      redirectToLogin('seller');
+      return null;
+    }
+
+    const token = getStoredToken('seller');
     if (!token) {
-      console.warn('No token found in localStorage');
+      redirectToLogin('seller');
       return null;
     }
 
@@ -38,7 +45,7 @@ const SellerDashboard = () => {
       const parts = token.split('.');
       if (parts.length !== 3) {
         console.error('Invalid token format - not a valid JWT');
-        localStorage.removeItem('token');
+        redirectToLogin('seller');
         return null;
       }
 
@@ -47,7 +54,7 @@ const SellerDashboard = () => {
       // Check if token is expired
       if (payload.exp && payload.exp < Date.now() / 1000) {
         console.error('Token has expired');
-        localStorage.removeItem('token');
+        redirectToLogin('seller');
         return null;
       }
 
@@ -60,7 +67,7 @@ const SellerDashboard = () => {
       };
     } catch (error) {
       console.error('Error decoding token:', error);
-      localStorage.removeItem('token');
+      redirectToLogin('seller');
       return null;
     }
   };
@@ -139,8 +146,7 @@ const SellerDashboard = () => {
       const tokenParts = user.token.split('.');
       if (tokenParts.length !== 3) {
         console.error('Invalid token format');
-        localStorage.removeItem('token');
-        router.push('/seller-login');
+        redirectToLogin('seller');
         return;
       }
 
@@ -149,14 +155,12 @@ const SellerDashboard = () => {
         tokenPayload = JSON.parse(atob(tokenParts[1]));
         if (tokenPayload.exp && tokenPayload.exp < Date.now() / 1000) {
           console.error('Token expired during fetch');
-          localStorage.removeItem('token');
-          router.push('/seller-login');
+          redirectToLogin('seller');
           return;
         }
       } catch (e) {
         console.error('Error parsing token payload:', e);
-        localStorage.removeItem('token');
-        router.push('/seller-login');
+        redirectToLogin('seller');
         return;
       }
 
@@ -208,8 +212,7 @@ const SellerDashboard = () => {
         
         // If it's a token error, redirect to login
         if (listingsResponse.message && listingsResponse.message.toLowerCase().includes('token')) {
-          localStorage.removeItem('token');
-          router.push('/seller-login');
+          redirectToLogin('seller');
           return;
         }
       }
@@ -233,8 +236,7 @@ const SellerDashboard = () => {
              statsResponse.message.toLowerCase().includes('unauthorized') ||
              statsResponse.message.toLowerCase().includes('authentication'))) {
           console.error('Authentication error detected, redirecting to login');
-          localStorage.removeItem('token');
-          router.push('/seller-login');
+          redirectToLogin('seller');
           return;
         }
 
@@ -300,8 +302,7 @@ const SellerDashboard = () => {
         
         // If it's a token error, redirect to login
         if (activityResponse.message && activityResponse.message.toLowerCase().includes('token')) {
-          localStorage.removeItem('token');
-          router.push('/seller-login');
+          redirectToLogin('seller');
           return;
         }
 
@@ -325,8 +326,7 @@ const SellerDashboard = () => {
       
       // Check if it's a token-related error
       if (err.message && err.message.toLowerCase().includes('token')) {
-        localStorage.removeItem('token');
-        router.push('/seller-login');
+        redirectToLogin('seller');
         return;
       }
 
