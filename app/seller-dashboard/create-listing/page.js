@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import { listingsAPI } from '../../utils/api';
+import { useImageUpload } from '../../../hooks/useImageUpload';
 import colleges from '../../utils/colleges';
 import styles from './CreateListing.module.css'; 
 
@@ -28,6 +29,7 @@ const CreateListing = () => {
   });
 
   const [tagInput, setTagInput] = useState('');
+  const { uploadSingleImage } = useImageUpload();
 
   // Categories for dropdown
   const categories = [
@@ -184,65 +186,34 @@ const CreateListing = () => {
     setError('');
 
     try {
-      // Check if API expects FormData or JSON
-      // For now, let's try both approaches
-      
-      // Approach 1: FormData (for APIs that handle multipart/form-data)
-      const submitData = new FormData();
-      
-      // Add text fields with explicit values
-      submitData.append('title', formData.title.trim());
-      submitData.append('description', formData.description.trim());
-      submitData.append('price', formData.price);
-      submitData.append('originalPrice', formData.originalPrice || '');
-      submitData.append('condition', formData.condition);
-      submitData.append('category', formData.category);
-      submitData.append('subcategory', formData.subcategory || '');
-      submitData.append('location', formData.location.trim());
-      submitData.append('college', formData.college || '');
-      
-      // Add tags as JSON string
-      submitData.append('tags', JSON.stringify(formData.tags));
-      
-      // Add image files
-      formData.images.forEach((imageData, index) => {
-        submitData.append('images', imageData.file);
-      });
-
-      // Debug: Log what we're sending
-      ('Submitting form data:');
-      for (let [key, value] of submitData.entries()) {
-        (key, value);
+      // 1) Upload images one-by-one to keep each request small
+      const uploadedImages = [];
+      for (const imageData of formData.images) {
+        const uploadRes = await uploadSingleImage(imageData.file, 'listings');
+        if (!uploadRes.success) {
+          throw new Error(uploadRes.error || 'Image upload failed');
+        }
+        uploadedImages.push(uploadRes.image);
       }
 
-      let result;
-      try {
-        result = await listingsAPI.createListing(submitData);
-      } catch (formDataError) {
-        ('FormData failed, trying JSON approach:', formDataError);
-        
-        // Approach 2: JSON (if your API expects JSON)
-        const jsonData = {
-          title: formData.title.trim(),
-          description: formData.description.trim(),
-          price: parseFloat(formData.price),
-          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
-          condition: formData.condition,
-          category: formData.category,
-          subcategory: formData.subcategory || '',
-          location: formData.location.trim(),
-          college: formData.college || '',
-          tags: formData.tags,
-          // For JSON approach, you might need to convert images to base64 or handle separately
-          images: formData.images.map(img => img.preview) // temporary - you'll need proper image handling
-        };
-        
-        ('Submitting JSON data:', jsonData);
-        result = await listingsAPI.createListing(jsonData);
-      }
-      
+      // 2) Submit listing with small JSON payload referencing uploaded images
+      const jsonData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        price: parseFloat(formData.price),
+        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+        condition: formData.condition,
+        category: formData.category,
+        subcategory: formData.subcategory || '',
+        location: formData.location.trim(),
+        college: formData.college || '',
+        tags: formData.tags,
+        images: uploadedImages
+      };
+
+      const result = await listingsAPI.createListing(jsonData);
+
       if (result.success) {
-        // Redirect back to dashboard
         router.push('/seller-dashboard');
       } else {
         setError(result.message || 'Failed to create listing');

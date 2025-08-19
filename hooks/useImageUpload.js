@@ -81,10 +81,12 @@ export const useImageUpload = () => {
       setUploadProgress(60); // 60% after processing
 
       // Upload to server
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
       const response = await fetch('/api/upload/images', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
         },
         body: JSON.stringify({
           images: processedFiles.map(f => f.base64Data),

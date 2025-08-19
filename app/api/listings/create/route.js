@@ -13,7 +13,18 @@ export async function POST(request) {
     }
 
     const userId = decoded.sellerId || decoded.userId || decoded.id || decoded.sub;
-    const body = await request.json();
+    // Support both JSON and multipart/form-data bodies
+    let body;
+    const contentType = request.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      body = Object.fromEntries(form.entries());
+      if (typeof body.tags === 'string') {
+        try { body.tags = JSON.parse(body.tags); } catch (_) {}
+      }
+    } else {
+      body = await request.json();
+    }
     
     const {
       title,
@@ -39,58 +50,69 @@ export async function POST(request) {
 
     let uploadedImages = [];
     
-    // Handle image uploads if images are provided
+    // Handle images: either pre-uploaded metadata objects or base64 strings
     if (images && images.length > 0) {
-      console.log(`📤 Processing ${images.length} images for listing: ${title}`);
-      
-      // Validate images first
-      const validationResult = await validateMultipleImages(images);
-      
-      if (!validationResult.valid) {
-        return NextResponse.json({
-          success: false,
-          message: 'Image validation failed',
-          errors: validationResult.invalidImages.map(img => img.error)
-        }, { status: 400 });
-      }
-
-      // Prepare images for upload with safe filenames
-      const imagesToUpload = validationResult.validImages.map((imageData, index) => ({
-        base64Data: images[imageData.index],
-        fileName: generateSafeFileName(`listing-image-${index + 1}.jpg`, userId)
-      }));
-
-      // Upload to ImageKit
-      const uploadResult = await uploadMultipleImages(
-        imagesToUpload, 
-        `listings/${userId}` // Organize by user folder
-      );
-
-      if (uploadResult.success && uploadResult.successful.length > 0) {
-        // Extract URLs from successful uploads
-        uploadedImages = uploadResult.successful.map(result => ({
-          url: result.data.url,
-          thumbnailUrl: result.data.thumbnailUrl,
-          fileId: result.data.fileId,
-          fileName: result.data.fileName,
-          width: result.data.width,
-          height: result.data.height
-        }));
-        
-        console.log(`✅ Successfully uploaded ${uploadedImages.length} images`);
+      if (typeof images[0] === 'object' && images[0] !== null && (images[0].url || images[0].fileId)) {
+        // Already uploaded via /api/upload/images
+        uploadedImages = images.map((img) => ({
+          url: img.url,
+          thumbnailUrl: img.thumbnailUrl,
+          fileId: img.fileId,
+          fileName: img.fileName,
+          width: img.width,
+          height: img.height,
+          size: img.size
+        })).filter(img => img.url);
       } else {
-        console.error('❌ Image upload failed:', uploadResult.error);
-        return NextResponse.json({
-          success: false,
-          message: 'Failed to upload images',
-          error: uploadResult.error
-        }, { status: 500 });
-      }
+        console.log(`📤 Processing ${images.length} images for listing: ${title}`);
+        
+        // Validate images first
+        const validationResult = await validateMultipleImages(images);
+        
+        if (!validationResult.valid) {
+          return NextResponse.json({
+            success: false,
+            message: 'Image validation failed',
+            errors: validationResult.invalidImages.map(img => img.error)
+          }, { status: 400 });
+        }
 
-      // Log any failed uploads
-      if (uploadResult.failed && uploadResult.failed.length > 0) {
-        console.warn(`⚠️ ${uploadResult.failed.length} images failed to upload:`, 
-          uploadResult.failed.map(f => f.error));
+        // Prepare images for upload with safe filenames
+        const imagesToUpload = validationResult.validImages.map((imageData, index) => ({
+          base64Data: images[imageData.index],
+          fileName: generateSafeFileName(`listing-image-${index + 1}.jpg`, userId)
+        }));
+
+        // Upload to ImageKit
+        const uploadResult = await uploadMultipleImages(
+          imagesToUpload, 
+          `listings/${userId}`
+        );
+
+        if (uploadResult.success && uploadResult.successful.length > 0) {
+          uploadedImages = uploadResult.successful.map(result => ({
+            url: result.data.url,
+            thumbnailUrl: result.data.thumbnailUrl,
+            fileId: result.data.fileId,
+            fileName: result.data.fileName,
+            width: result.data.width,
+            height: result.data.height
+          }));
+          console.log(`✅ Successfully uploaded ${uploadedImages.length} images`);
+        } else {
+          console.error('❌ Image upload failed:', uploadResult.error);
+          return NextResponse.json({
+            success: false,
+            message: 'Failed to upload images',
+            error: uploadResult.error
+          }, { status: 500 });
+        }
+
+        // Log any failed uploads
+        if (uploadResult.failed && uploadResult.failed.length > 0) {
+          console.warn(`⚠️ ${uploadResult.failed.length} images failed to upload:`, 
+            uploadResult.failed.map(f => f.error));
+        }
       }
     }
 

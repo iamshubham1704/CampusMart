@@ -31,17 +31,33 @@ export const listingsAPI = {
   // Create new listing
   createListing: async (listingData) => {
     try {
+      const isFormData = (typeof FormData !== 'undefined') && (listingData instanceof FormData);
+
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers = isFormData
+        ? {
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        : getAuthHeaders();
+
       const response = await fetch('/api/listings/create', {
         method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(listingData)
+        headers,
+        body: isFormData ? listingData : JSON.stringify(listingData)
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create listing');
+        // Try to parse JSON error first; if it fails, fall back to text
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        } catch (_) {
+          const text = await response.text();
+          throw new Error(text || `HTTP error! status: ${response.status}`);
+        }
       }
 
+      // Parse success JSON
       return await response.json();
     } catch (error) {
       console.error('Error creating listing:', error);
