@@ -589,7 +589,7 @@ const UnifiedBuyerLogin = () => {
             </div>
 
             {/* Google Button */}
-            <button
+            {/*<button
               type="button"
               onClick={handleGoogleLogin}
               style={{
@@ -601,7 +601,7 @@ const UnifiedBuyerLogin = () => {
               onMouseOut={(e) => !(loading || googleLoading) && (e.target.style.backgroundColor = '#dc2626')}
             >
               {googleLoading ? 'Signing in with Google...' : 'Continue with Google'}
-            </button>
+            </button>*/}
           </form>
         )}
 

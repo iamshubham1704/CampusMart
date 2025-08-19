@@ -817,7 +817,7 @@ const UnifiedBuyerRegistration = ({ updateProfile, isEditMode = false, initialDa
               <div style={styles.dividerLine}></div>
             </div>
 
-            <button
+            {/* <button
               type="button"
               onClick={handleGoogleSignup} 
               style={{
@@ -829,7 +829,7 @@ const UnifiedBuyerRegistration = ({ updateProfile, isEditMode = false, initialDa
               onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#dc2626')}
             >
               {loading ? 'Signing in...' : 'Continue with Google'}
-            </button>
+            </button> */}
           </>
         )}
 

@@ -664,7 +664,7 @@ const UnifiedSellerRegistration = () => {
         </div>
 
         {/* Google Button */}
-        <button
+        {/* <button
           type="button"
           onClick={handleGoogleSignup} 
           style={{
@@ -676,7 +676,7 @@ const UnifiedSellerRegistration = () => {
           onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#dc2626')}
         >
           {loading ? 'Signing in...' : 'Continue with Google'}
-        </button>
+        </button> */}
 
         {/* Footer */}
         <div style={styles.footer}>
