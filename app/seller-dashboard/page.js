@@ -245,9 +245,9 @@ const SellerDashboard = () => {
 
         // Mock payment data for demo purposes
         const mockPaymentData = {
-          totalEarnings: 15420,
-          pendingPayments: 3,
-          monthlyEarnings: 2350,
+          totalEarnings: 0,
+          pendingPayments: 0,
+          monthlyEarnings: 0,
           paymentHistory: [
             { id: '1', amount: 890, status: 'completed', date: '2 days ago' },
             { id: '2', amount: 1200, status: 'pending', date: '5 days ago' },
