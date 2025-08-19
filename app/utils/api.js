@@ -1,7 +1,40 @@
 // utils/api.js - Enhanced version with settings APIs
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+const getAuthHeaders = (userType = null) => {
+  let token = null;
+  
+  // Enhanced token retrieval with fallback mechanisms for mobile devices
+  if (typeof window !== 'undefined') {
+    // Try multiple token storage locations
+    const tokenKeys = [
+      'auth-token',
+      'token', 
+      'sellerToken',
+      'buyerToken',
+      'adminToken',
+      'admin-auth-token'
+    ];
+    
+    for (const key of tokenKeys) {
+      const storedToken = localStorage.getItem(key);
+      if (storedToken && storedToken.trim() !== '') {
+        token = storedToken;
+        break;
+      }
+    }
+    
+    // If no token found in localStorage, try sessionStorage
+    if (!token) {
+      for (const key of tokenKeys) {
+        const storedToken = sessionStorage.getItem(key);
+        if (storedToken && storedToken.trim() !== '') {
+          token = storedToken;
+          break;
+        }
+      }
+    }
+  }
+
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` })
@@ -33,34 +66,85 @@ export const listingsAPI = {
     try {
       const isFormData = (typeof FormData !== 'undefined') && (listingData instanceof FormData);
 
-      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+      // Enhanced token retrieval for mobile devices
+      let token = null;
+      if (typeof window !== 'undefined') {
+        const tokenKeys = [
+          'auth-token',
+          'token', 
+          'sellerToken',
+          'buyerToken'
+        ];
+        
+        for (const key of tokenKeys) {
+          const storedToken = localStorage.getItem(key);
+          if (storedToken && storedToken.trim() !== '') {
+            token = storedToken;
+            break;
+          }
+        }
+        
+        // Fallback to sessionStorage
+        if (!token) {
+          for (const key of tokenKeys) {
+            const storedToken = sessionStorage.getItem(key);
+            if (storedToken && storedToken.trim() !== '') {
+              token = storedToken;
+              break;
+            }
+          }
+        }
+      }
+
       const headers = isFormData
         ? {
             ...(token && { Authorization: `Bearer ${token}` })
           }
         : getAuthHeaders();
 
+      // Enhanced request with mobile device optimizations
       const response = await fetch('/api/listings/create', {
         method: 'POST',
         headers,
-        body: isFormData ? listingData : JSON.stringify(listingData)
+        body: isFormData ? listingData : JSON.stringify(listingData),
+        // Add mobile device specific options
+        cache: 'no-cache',
+        credentials: 'include'
       });
 
       if (!response.ok) {
-        // Try to parse JSON error first; if it fails, fall back to text
+        // Enhanced error handling for mobile devices
+        let errorMessage = '';
+        
         try {
           const errorData = await response.json();
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        } catch (_) {
+          errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+          
+          // Check for specific mobile-related errors
+          if (errorMessage.includes('pattern') || errorMessage.includes('string')) {
+            errorMessage = 'Data validation error. Please check your input and try again. If the problem persists, try clearing your browser cache and cookies.';
+          } else if (errorMessage.includes('Unauthorized') || errorMessage.includes('token')) {
+            errorMessage = 'Authentication error. Please log in again.';
+          }
+          
+        } catch (parseError) {
           const text = await response.text();
-          throw new Error(text || `HTTP error! status: ${response.status}`);
+          errorMessage = text || `HTTP error! status: ${response.status}`;
         }
+        
+        throw new Error(errorMessage);
       }
 
       // Parse success JSON
       return await response.json();
     } catch (error) {
       console.error('Error creating listing:', error);
+      
+      // Enhanced error logging for mobile devices
+      if (error.message.includes('pattern') || error.message.includes('string')) {
+        console.warn('Mobile device validation error detected:', error.message);
+      }
+      
       throw error;
     }
   },

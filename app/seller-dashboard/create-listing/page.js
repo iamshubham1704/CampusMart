@@ -236,31 +236,18 @@ const CreateListing = () => {
       return;
     }
 
-    // Validate price format
-    if (formData.price && isNaN(parseFloat(formData.price))) {
-      setError('Please enter a valid price');
+    // Enhanced price validation for mobile devices
+    if (formData.price && (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0)) {
+      setError('Please enter a valid price greater than 0');
       return;
     }
 
-    if (formData.originalPrice && isNaN(parseFloat(formData.originalPrice))) {
-      setError('Please enter a valid original price');
-      return;
-    }
-
-    // Validate price range
-    const price = parseFloat(formData.price);
-    if (price <= 0) {
-      setError('Price must be greater than 0');
-      return;
-    }
-
-    if (formData.originalPrice) {
-      const originalPrice = parseFloat(formData.originalPrice);
-      if (originalPrice <= 0) {
-        setError('Original price must be greater than 0');
+    if (formData.originalPrice && formData.originalPrice !== '') {
+      if (isNaN(parseFloat(formData.originalPrice)) || parseFloat(formData.originalPrice) <= 0) {
+        setError('Please enter a valid original price greater than 0');
         return;
       }
-      if (originalPrice <= price) {
+      if (parseFloat(formData.originalPrice) <= parseFloat(formData.price)) {
         setError('Original price should be higher than selling price');
         return;
       }
@@ -274,18 +261,8 @@ const CreateListing = () => {
     setLoading(true);
 
     try {
-      // 1) Upload images one-by-one to keep each request small
-      const uploadedImages = [];
-      for (const imageData of formData.images) {
-        const uploadRes = await uploadSingleImage(imageData.file, 'listings');
-        if (!uploadRes.success) {
-          throw new Error(uploadRes.error || 'Image upload failed');
-        }
-        uploadedImages.push(uploadRes.image);
-      }
-
-      // 2) Submit listing with small JSON payload referencing uploaded images
-      const jsonData = {
+      // Enhanced mobile device handling - ensure all data is properly formatted
+      const processedFormData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
@@ -295,7 +272,28 @@ const CreateListing = () => {
         subcategory: formData.subcategory || '',
         location: formData.location.trim(),
         college: formData.college || '',
-        tags: formData.tags,
+        tags: formData.tags || [],
+        images: []
+      };
+
+      // 1) Upload images one-by-one to keep each request small
+      const uploadedImages = [];
+      for (const imageData of formData.images) {
+        try {
+          const uploadRes = await uploadSingleImage(imageData.file, 'listings');
+          if (!uploadRes.success) {
+            throw new Error(uploadRes.error || 'Image upload failed');
+          }
+          uploadedImages.push(uploadRes.image);
+        } catch (imageError) {
+          console.error('Image upload error:', imageError);
+          throw new Error(`Failed to upload image: ${imageError.message}`);
+        }
+      }
+
+      // 2) Submit listing with processed data
+      const jsonData = {
+        ...processedFormData,
         images: uploadedImages
       };
 
@@ -311,7 +309,20 @@ const CreateListing = () => {
       }
     } catch (err) {
       console.error('Create listing error:', err);
-      setError(err.message || 'Failed to create listing');
+      
+      // Enhanced error handling for mobile devices
+      let errorMessage = err.message || 'Failed to create listing';
+      
+      // Check for specific mobile-related errors
+      if (errorMessage.includes('pattern') || errorMessage.includes('string')) {
+        errorMessage = 'Data validation error. Please check your input and try again. If the problem persists, try clearing your browser cache and cookies.';
+      } else if (errorMessage.includes('Unauthorized') || errorMessage.includes('token')) {
+        errorMessage = 'Authentication error. Please log in again.';
+      } else if (errorMessage.includes('upload')) {
+        errorMessage = 'Image upload failed. Please check your internet connection and try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

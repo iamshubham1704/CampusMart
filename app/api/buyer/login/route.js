@@ -113,18 +113,30 @@ export async function POST(req) {
 
     // Create response headers with cookie (dev-safe: no Secure in development)
     const isProd = process.env.NODE_ENV === 'production';
-    const cookie = [
+    
+    // Enhanced cookie configuration for iOS Safari compatibility
+    const cookieOptions = [
       `auth-token=${token}`,
       'Path=/',
       'HttpOnly',
       isProd ? 'Secure' : '',
       'SameSite=Lax',
-      `Max-Age=${7 * 24 * 60 * 60}`
-    ].filter(Boolean).join('; ');
+      `Max-Age=${7 * 24 * 60 * 60}`,
+      // Add domain if specified (helps with subdomain issues)
+      process.env.COOKIE_DOMAIN ? `Domain=${process.env.COOKIE_DOMAIN}` : '',
+      // iOS Safari specific optimizations
+      'Priority=High'
+    ].filter(Boolean);
+    
+    const cookie = cookieOptions.join('; ');
 
     const headers = new Headers({
       'Content-Type': 'application/json',
-      'Set-Cookie': cookie
+      'Set-Cookie': cookie,
+      // Add additional headers for mobile compatibility
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     });
 
     // Return success response with token and cookie

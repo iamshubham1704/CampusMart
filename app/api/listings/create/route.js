@@ -13,17 +13,47 @@ export async function POST(request) {
     }
 
     const userId = decoded.sellerId || decoded.userId || decoded.id || decoded.sub;
-    // Support both JSON and multipart/form-data bodies
+    
+    // Enhanced request body parsing with better error handling for mobile devices
     let body;
     const contentType = request.headers.get('content-type') || '';
-    if (contentType.includes('multipart/form-data')) {
-      const form = await request.formData();
-      body = Object.fromEntries(form.entries());
-      if (typeof body.tags === 'string') {
-        try { body.tags = JSON.parse(body.tags); } catch (_) {}
+    
+    try {
+      if (contentType.includes('multipart/form-data')) {
+        const form = await request.formData();
+        body = Object.fromEntries(form.entries());
+        
+        // Handle tags array parsing for mobile devices
+        if (typeof body.tags === 'string') {
+          try { 
+            body.tags = JSON.parse(body.tags); 
+          } catch (parseError) {
+            console.warn('Failed to parse tags JSON, treating as empty array:', parseError);
+            body.tags = [];
+          }
+        }
+        
+        // Ensure all string fields are properly trimmed and validated
+        if (body.title) body.title = body.title.toString().trim();
+        if (body.description) body.description = body.description.toString().trim();
+        if (body.location) body.location = body.location.toString().trim();
+        if (body.college) body.college = body.college.toString().trim();
+        
+      } else {
+        body = await request.json();
+        
+        // Ensure all string fields are properly trimmed and validated
+        if (body.title) body.title = body.title.toString().trim();
+        if (body.description) body.description = body.description.toString().trim();
+        if (body.location) body.location = body.location.toString().trim();
+        if (body.college) body.college = body.college.toString().trim();
       }
-    } else {
-      body = await request.json();
+    } catch (parseError) {
+      console.error('❌ Request body parsing error:', parseError);
+      return NextResponse.json({
+        success: false,
+        message: 'Invalid request format. Please try again or clear your browser cache.'
+      }, { status: 400 });
     }
     
     const {
@@ -36,15 +66,64 @@ export async function POST(request) {
       subcategory,
       location,
       college,
-      images, // This will now be an array of base64 images
+      images,
       tags
     } = body;
 
-    // Basic validation
-    if (!title || !description || !price || !condition || !category || !location) {
+    // Enhanced validation with specific error messages for mobile devices
+    const validationErrors = [];
+    
+    if (!title || title.length === 0) {
+      validationErrors.push('Title is required');
+    } else if (title.length < 5) {
+      validationErrors.push('Title must be at least 5 characters long');
+    } else if (title.length > 100) {
+      validationErrors.push('Title must be less than 100 characters');
+    }
+    
+    if (!description || description.length === 0) {
+      validationErrors.push('Description is required');
+    } else if (description.length < 20) {
+      validationErrors.push('Description must be at least 20 characters long');
+    } else if (description.length > 1000) {
+      validationErrors.push('Description must be less than 1000 characters');
+    }
+    
+    if (!price || price === '') {
+      validationErrors.push('Price is required');
+    } else if (isNaN(parseFloat(price))) {
+      validationErrors.push('Price must be a valid number');
+    } else if (parseFloat(price) <= 0) {
+      validationErrors.push('Price must be greater than 0');
+    }
+    
+    if (!condition || condition === '') {
+      validationErrors.push('Condition is required');
+    }
+    
+    if (!category || category === '') {
+      validationErrors.push('Category is required');
+    }
+    
+    if (!location || location.length === 0) {
+      validationErrors.push('Location is required');
+    }
+    
+    if (originalPrice && originalPrice !== '') {
+      if (isNaN(parseFloat(originalPrice))) {
+        validationErrors.push('Original price must be a valid number');
+      } else if (parseFloat(originalPrice) <= 0) {
+        validationErrors.push('Original price must be greater than 0');
+      } else if (parseFloat(originalPrice) <= parseFloat(price)) {
+        validationErrors.push('Original price should be higher than selling price');
+      }
+    }
+    
+    if (validationErrors.length > 0) {
       return NextResponse.json({
         success: false,
-        message: 'Required fields missing: title, description, price, condition, category, location'
+        message: `Validation failed: ${validationErrors.join(', ')}`,
+        errors: validationErrors
       }, { status: 400 });
     }
 

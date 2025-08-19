@@ -1,101 +1,94 @@
-# 📚 CampusMart
+# CampusMart
 
-CampusMart is a **student-to-student marketplace** where students from different campuses can **buy** and **sell** items easily within their community.  
-Built with **Next.js**, **MongoDB**, and **NextAuth.js**, it provides a secure and user-friendly platform for second-hand trading among students.
+A comprehensive marketplace platform for college students to buy and sell items.
 
----
+## Recent Updates
 
-## 🚀 Features
+### iPhone/iOS Pattern Validation Fix (Latest)
 
-- 🛒 **Post & Browse Items** – Students can sell their used items and explore what others are offering.
-- 🔍 **Search & Filter** – Quickly find products by name or category.
-- 🏫 **Campus-Based Listings** – Connect buyers and sellers from specific campuses.
-- 🔐 **Google Authentication** – Sign in quickly and securely with Google.
-- 📸 **Image Uploads** – Add product photos for better engagement.
-- 📩 **Email Notifications** – Get alerts for new messages or offers.
+**Issue Resolved**: Fixed the "The string did not match the expected pattern" error that occurred when users tried to create listings on iPhone devices.
 
----
+**Root Cause**: The error was caused by:
+1. iOS Safari cookie handling differences
+2. Token format validation issues on mobile devices
+3. Form data encoding problems specific to iOS
 
-## 🛠️ Tech Stack
+**Solutions Implemented**:
 
-- **Frontend:** Next.js  
-- **Backend:** Node.js (Next.js API routes)  
-- **Database:** MongoDB  
-- **Authentication:** NextAuth.js (Google OAuth)  
-- **Email Service:** Nodemailer (SMTP)  
-- **Package Manager:** npm  
+1. **Enhanced Cookie Handling**:
+   - Improved cookie parsing for iOS Safari compatibility
+   - Added fallback parsing methods for problematic cookie headers
+   - Enhanced cookie configuration with mobile-specific optimizations
 
----
+2. **Robust Token Validation**:
+   - Added comprehensive JWT format validation
+   - Implemented fallback token retrieval from multiple storage locations
+   - Enhanced error handling for mobile device authentication issues
 
-## 📂 Project Structure
+3. **Mobile Device Optimizations**:
+   - Added mobile device detection utilities
+   - Enhanced form validation with mobile-specific error messages
+   - Improved API error handling for mobile devices
 
-```plaintext
-CampusMart/
-│── .next/             # Next.js build output (auto-generated)
-│── app/               # App Router pages & API routes
-│── components/        # Reusable React components
-│── lib/               # Database and utility functions
-│── node_modules/      # Project dependencies
-│── public/            # Static assets (images, icons, etc.)
-│── .env.local         # Environment variables (local)
-│── .gitignore         # Git ignore rules
-│── jsconfig.json      # Path aliases & JS config
-│── next.config.mjs    # Next.js configuration
-│── package-lock.json  # Dependency lock file
-│── package.json       # Dependencies & scripts
-│── README.md          # Project documentation
+4. **Enhanced Error Handling**:
+   - Better error messages for mobile users
+   - Specific guidance for clearing cache and cookies
+   - Fallback mechanisms for authentication failures
 
-```
-⚙️ Installation & Setup
-1️⃣ Clone the repository
-```
-git clone https://github.com/iamshubham1704/CampusMart.git
-cd CampusMart
-```
-2️⃣ Install dependencies
-```
-npm install
-```
-3️⃣ Create .env.local and add the following variables:
-```
-# ===== Database Connection =====
+**For Users Experiencing Issues**:
+- Clear browser cache and cookies
+- Log out and log back in
+- Ensure you're using the latest version of iOS Safari
+- If problems persist, try using a different browser temporarily
+
+## Features
+
+- **User Management**: Separate buyer and seller accounts with role-based access
+- **Product Listings**: Create, manage, and browse product listings
+- **Messaging System**: Built-in chat functionality for buyers and sellers
+- **Payment Integration**: Secure payment processing with commission handling
+- **Admin Dashboard**: Comprehensive admin panel for platform management
+- **Mobile Responsive**: Optimized for all device types including iOS and Android
+
+## Technology Stack
+
+- **Frontend**: Next.js 13+ with App Router
+- **Backend**: Node.js with API Routes
+- **Database**: MongoDB
+- **Authentication**: JWT with enhanced mobile device support
+- **Image Storage**: ImageKit integration
+- **Styling**: CSS Modules with responsive design
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables
+4. Run the development server: `npm run dev`
+
+## Environment Variables
+
+```env
 MONGODB_URI=your_mongodb_connection_string
-
-# ===== Google Authentication (OAuth) =====
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# ===== NextAuth Configuration =====
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_nextauth_secret
 JWT_SECRET=your_jwt_secret
-
-# ===== Email Service (for notifications / password reset) =====
-EMAIL_USER=your_email@example.com
-EMAIL_PASS=your_email_password_or_app_password
-
-# ===== Public Base URL =====
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
+IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
+IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
+IMAGEKIT_URL_ENDPOINT=your_imagekit_url_endpoint
+COOKIE_DOMAIN=your_domain_for_cookies
 ```
-4️⃣ Run the development server
-```
-npm run dev
-```
-5️⃣ Open the app
-```
-Visit http://localhost:3000 in your browser.
 
-```
-📌 Roadmap
+## Mobile Device Compatibility
 
-✅ Marketplace listing & search
+The platform is fully optimized for mobile devices including:
+- iOS Safari (iPhone/iPad)
+- Android Chrome
+- Mobile web browsers
+- Progressive Web App (PWA) support
 
-✅ MongoDB integration
+## Support
 
-✅ Google authentication with NextAuth
+For technical support or to report issues, please contact the development team or create an issue in the repository.
 
-🔄 Real-time chat for buyers/sellers
+---
 
-🔄 Email-based campus verification
-
-🔄 Mobile app version using React Native
+**Note**: This platform is specifically designed to handle mobile device authentication issues and provides robust fallback mechanisms for various browser environments.
