@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import clientPromise from '../../../lib/mongo';
 import { verifyToken } from '../../../lib/auth';
 import { ObjectId } from 'mongodb';
+import { getThumbnailUrl } from '../../../lib/imagekit';
 
 // GET - Fetch user's cart
 export async function GET(request) {
@@ -34,47 +35,142 @@ export async function GET(request) {
       });
     }
 
-    // Get listing details for cart items
+    // Get listing details for cart items with seller information using aggregation
     const listingIds = cart.items.map(item => new ObjectId(item.listingId));
-    const listings = await db.collection('listings').find({
-      _id: { $in: listingIds },
-      status: 'active'
-    }).toArray();
+    
+    console.log('🔍 Fetching listings for cart items:', listingIds.map(id => id.toString()));
+    
+    // First, let's check what the listings look like without aggregation
+    const simpleListings = await db.collection('listings')
+      .find({
+        _id: { $in: listingIds },
+        status: 'active'
+      })
+      .toArray();
+    
+    console.log('📋 Simple listings found:', simpleListings.length);
+    simpleListings.forEach(listing => {
+      console.log(`📦 Simple listing ${listing._id}:`, {
+        title: listing.title,
+        sellerId: listing.sellerId,
+        sellerIdType: typeof listing.sellerId,
+        hasImages: listing.images && listing.images.length > 0
+      });
+    });
+    
+    // Let's also check what sellers exist
+    const allSellers = await db.collection('sellers').find({}).limit(5).toArray();
+    console.log('👥 Sample sellers:', allSellers.map(s => ({ id: s._id, name: s.name, businessName: s.businessName })));
+    
+    // Try a simpler aggregation approach
+    const listings = await db.collection('listings')
+      .aggregate([
+        {
+          $match: {
+            _id: { $in: listingIds },
+            status: 'active'
+          }
+        },
+        {
+          $lookup: {
+            from: 'sellers',
+            localField: 'sellerId',
+            foreignField: '_id',
+            as: 'seller'
+          }
+        }
+      ])
+      .toArray();
+
+    console.log('📋 Aggregated listings found:', listings.length);
+    listings.forEach(listing => {
+      console.log(`📦 Aggregated listing ${listing._id}:`, {
+        title: listing.title,
+        sellerId: listing.sellerId,
+        sellerIdType: typeof listing.sellerId,
+        seller: listing.seller,
+        sellerCount: listing.seller ? listing.seller.length : 0
+      });
+    });
 
     // Combine cart items with listing details
-    const cartWithDetails = cart.items.map(cartItem => {
+    const cartWithDetails = await Promise.all(cart.items.map(async (cartItem) => {
       const listing = listings.find(l => l._id.toString() === cartItem.listingId);
       if (!listing) return null; // Skip items where listing is no longer available
+      
+      // Get seller information with fallback to direct query
+      let sellerName = 'Anonymous Seller';
+      let seller = listing.seller?.[0];
+      
+      if (seller) {
+        sellerName = seller.name || seller.businessName || 'Anonymous Seller';
+        console.log(`👤 Seller found via lookup for ${listing.title}: ${sellerName}`);
+      } else if (listing.sellerId) {
+        // Fallback: try to get seller directly
+        try {
+          const sellerId = typeof listing.sellerId === 'string' ? new ObjectId(listing.sellerId) : listing.sellerId;
+          const directSeller = await db.collection('sellers').findOne({ _id: sellerId });
+          if (directSeller) {
+            sellerName = directSeller.name || directSeller.businessName || 'Anonymous Seller';
+            console.log(`👤 Seller found via direct query for ${listing.title}: ${sellerName}`);
+          } else {
+            console.log(`⚠️ No seller found via direct query for ${listing.title}, sellerId: ${listing.sellerId}`);
+          }
+        } catch (sellerError) {
+          console.error(`❌ Error fetching seller directly for ${listing.title}:`, sellerError);
+        }
+      } else {
+        console.log(`⚠️ No sellerId found for ${listing.title}`);
+      }
+      
+      // Process images to ensure proper format
+      let imageUrl = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop';
+      if (listing.images && listing.images.length > 0) {
+        const firstImage = listing.images[0];
+        if (typeof firstImage === 'string') {
+          // Old format - base64 string
+          imageUrl = firstImage;
+        } else if (typeof firstImage === 'object' && firstImage.url) {
+          // New format - ImageKit object
+          imageUrl = firstImage.url;
+        }
+        console.log(`🖼️ Image for ${listing.title}: ${imageUrl.substring(0, 50)}...`);
+      } else {
+        console.log(`⚠️ No images found for ${listing.title}`);
+      }
       
       return {
         id: cartItem._id || cartItem.listingId,
         listingId: listing._id.toString(),
         title: listing.title,
         price: Math.round(listing.price * 1.1),
-        image: listing.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
-        seller: listing.seller?.[0]?.name || listing.sellerName || 'Unknown Seller',
+        image: imageUrl,
+        seller: sellerName,
         condition: listing.condition,
         quantity: cartItem.quantity || 1,
         addedAt: cartItem.addedAt,
         subtotal: (Math.round(listing.price * 1.1) * (cartItem.quantity || 1))
       };
-    }).filter(Boolean);
+    }));
 
-    const totalItems = cartWithDetails.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPrice = cartWithDetails.reduce((sum, item) => sum + item.subtotal, 0);
+    const validCartItems = cartWithDetails.filter(Boolean);
+    const totalItems = validCartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = validCartItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+    console.log(`✅ Cart processed successfully: ${totalItems} items, ₹${totalPrice}`);
 
     return NextResponse.json({
       success: true,
       cart: {
         userId: user.userId,
-        items: cartWithDetails,
+        items: validCartItems,
         totalItems,
         totalPrice: parseFloat(totalPrice.toFixed(2))
       }
     });
 
   } catch (error) {
-
+    console.error('❌ Error fetching cart:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to fetch cart', error: error.message },
       { status: 500 }
