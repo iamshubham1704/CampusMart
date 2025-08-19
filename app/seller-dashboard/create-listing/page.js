@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import { listingsAPI } from '../../utils/api';
+import colleges from '../../utils/colleges';
 import styles from './CreateListing.module.css'; 
 
 const CreateListing = () => {
@@ -394,14 +395,17 @@ const CreateListing = () => {
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>College</label>
-              <input
-                type="text"
+              <select
                 name="college"
                 value={formData.college}
                 onChange={handleInputChange}
-                placeholder="College name (optional)"
-                className={styles.input}
-              />
+                className={styles.select}
+              >
+                <option value="">Select College</option>
+                {colleges.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
