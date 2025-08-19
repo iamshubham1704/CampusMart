@@ -174,11 +174,17 @@
   
   .sidebar {
     position: fixed;
-    top: 80px;
+    top: 120px;
     width: 240px;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 120px);
     z-index: 999;
     transform: translateX(-100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar.sidebarMobileOpen {
+    transform: translateX(0);
   }
   
   .mainLayout {
@@ -419,7 +425,7 @@
   max-width: 1600px;
   margin: 0 auto;
   position: relative;
-  z-index: 1;
+  z-index: auto;
   min-height: calc(100vh - 80px);
 }
 
@@ -431,18 +437,26 @@
   min-height: calc(100vh - 80px);
   border-right: 1px solid rgba(148, 163, 184, 0.15);
   position: relative;
-  z-index: 1;
+  z-index: 1000;
   flex-shrink: 0;
   box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.1);
   /* ENSURE VISIBILITY AT ALL SCREEN SIZES */
-  display: block;
+  display: flex;
+  flex-direction: column;
   transform: translateX(0);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
-.nav {
-  padding: 24px 20px;
-}
+  .nav {
+    padding: 16px 20px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
 .navList {
   display: flex;
@@ -1626,10 +1640,10 @@
   
   .sidebar {
     position: fixed;
-    top: 88px;
+    top: 128px;
     left: 0;
     width: 280px;
-    height: calc(100vh - 88px);
+    height: calc(100vh - 128px);
     z-index: 999;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1637,10 +1651,12 @@
   
   .sidebar.sidebarMobileOpen {
     transform: translateX(0);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .mainLayout {
-    margin-top: 88px;
+    margin-top: 128px;
   }
 }
 
@@ -1714,11 +1730,13 @@
   
   .sidebar {
     position: fixed;
-    top: 84px;
+    top: 124px;
     width: 260px;
-    height: calc(100vh - 84px);
+    height: calc(100vh - 124px);
     z-index: 999;
     transform: translateX(-100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .mainLayout {
@@ -1805,11 +1823,13 @@
   
   .sidebar {
     position: fixed;
-    top: 80px;
+    top: 120px;
     width: 240px;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 120px);
     z-index: 999;
     transform: translateX(-100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .mainLayout {
@@ -1903,11 +1923,13 @@
   
   .sidebar {
     position: fixed;
-    top: 84px;
+    top: 124px;
     width: 260px;
-    height: calc(100vh - 84px);
+    height: calc(100vh - 124px);
     z-index: 999;
     transform: translateX(-100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .mainLayout {
@@ -1958,12 +1980,15 @@
   
   .sidebar {
     position: fixed;
-    top: 70px;
+    top: 120px;
     left: 0;
     width: 260px;
-    height: calc(100vh - 70px);
-    z-index: 998;
+    height: calc(100vh - 120px);
+    z-index: 1001;
     transform: translateX(-100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
   
   .sidebar.sidebarMobileOpen {
@@ -2037,12 +2062,14 @@
   
   .sidebar {
     position: fixed;
-    top: 65px;
+    top: 120px;
     left: 0;
     width: 240px;
-    height: calc(100vh - 65px);
-    z-index: 998;
+    height: calc(100vh - 120px);
+    z-index: 1001;
     transform: translateX(-100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .sidebar.sidebarMobileOpen {

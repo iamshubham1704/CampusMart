@@ -854,15 +854,15 @@ const BuyerDashboard = () => {
               {isDarkTheme ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
-            <button className="actionButton">
+            {/* <button className="actionButton">
               <Bell size={20} />
               <span className="badge">3</span>
-            </button>
+            </button> */}
 
-            <button className="actionButton" onClick={() => setIsWishlistOpen(true)}>
+            {/* <button className="actionButton" onClick={() => setIsWishlistOpen(true)}>
               <Heart size={20} />
               {getWishlistCount() > 0 && <span className="badge">{getWishlistCount()}</span>}
-            </button>
+            </button> */}
 
             <Link href="/buyer-dashboard/order-history" className="actionButton">
               <Package size={20} />
