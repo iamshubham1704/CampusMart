@@ -548,7 +548,7 @@ export default function AdminManagementPage() {
           >
             Listings Management
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab('conversations')}
             style={{
               padding: '0.75rem 1.5rem',
@@ -561,8 +561,8 @@ export default function AdminManagementPage() {
             }}
           >
             Conversations
-          </button>
-          <button
+          </button> */}
+          {/* <button
             onClick={() => setActiveTab('messages')}
             style={{
               padding: '0.75rem 1.5rem',
@@ -575,7 +575,7 @@ export default function AdminManagementPage() {
             }}
           >
             Messages
-          </button>
+          </button> */}
           {/* PAYMENT VERIFICATION TAB */}
           <button
             onClick={() => setActiveTab('payments')}
