@@ -127,6 +127,12 @@ export async function PUT(request, { params }) {
         error: 'Details are required when marking step as completed' 
       }, { status: 400 });
     }
+    
+    if (status === 'failed' && !details) {
+      return Response.json({ 
+        error: 'Reason is required when marking order as failed' 
+      }, { status: 400 });
+    }
 
     let objectId;
     try {
@@ -256,6 +262,18 @@ export async function PUT(request, { params }) {
         }
       }
     }
+    
+    if (status === 'failed') {
+      // Only allow failing the current step to keep state consistent
+      if (stepNum !== currentOrderStatus.currentStep) {
+        return Response.json({
+          error: `Only current step (${currentOrderStatus.currentStep}) can be marked as failed`
+        }, { status: 400 });
+      }
+      updateData[`steps.${stepNum}.completedAt`] = new Date();
+      updateData.overallStatus = 'failed';
+      updateData.failedAt = new Date();
+    }
 
     const result = await db.collection('order_status').updateOne(
       { _id: objectId },
@@ -280,7 +298,9 @@ export async function PUT(request, { params }) {
 
     return Response.json({
       success: true,
-      message: `Step ${stepNum} (${ORDER_STEPS[stepNum].name}) marked as ${status}`,
+      message: status === 'failed'
+        ? `Order marked as failed at step ${stepNum} (${ORDER_STEPS[stepNum].name})`
+        : `Step ${stepNum} (${ORDER_STEPS[stepNum].name}) marked as ${status}`,
       data: { 
         orderId, 
         step: stepNum,
