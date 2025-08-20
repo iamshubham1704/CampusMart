@@ -54,6 +54,15 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
   const { addToCart, isInCart, cartLoading } = useCart();
   const router = useRouter();
 
+  // Helper function to calculate commission-inclusive price
+  const getCommissionInclusivePrice = () => {
+    if (!product) return 0;
+    if (product.commission !== undefined) {
+      return Math.round((product.price || 0) + ((product.price || 0) * ((product.commission || 0) / 100)));
+    }
+    return product.price || 0;
+  };
+
   // Fetch product details when modal opens
   useEffect(() => {
     if (isOpen && productId) {
@@ -209,7 +218,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
       formData.append('screenshot', uploadedScreenshot);
       formData.append('productId', product._id || product.id);
       formData.append('sellerId', product.seller?._id || product.sellerId);
-      formData.append('amount', product.price.toString());
+      formData.append('amount', getCommissionInclusivePrice().toString());
       formData.append('paymentMethod', 'upi');
       formData.append('upiId', '8750471736@ptsbi');
 
@@ -517,10 +526,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                 <div className="product-details-section">
                   <div className="price-section">
                     <div className="price">
-                      ₹ {product.commission !== undefined 
-                        ? Math.round((product.price || 0) + ((product.price || 0) * ((product.commission || 0) / 100)))
-                        : product.price
-                      }
+                      ₹ {getCommissionInclusivePrice()}
                     </div>
                     {product.originalPrice && (
                       <>
@@ -689,7 +695,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                         </div>
                         <div className="summary-row total">
                           <span>Total Amount:</span>
-                          <span>₹{product?.price}</span>
+                          <span>₹{getCommissionInclusivePrice()}</span>
                         </div>
                       </div>
                     </div>
@@ -731,7 +737,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                           </div>
                           <div className="detail-row">
                             <span className="detail-label">Amount:</span>
-                            <span className="detail-value">₹{product?.price}</span>
+                            <span className="detail-value">₹{getCommissionInclusivePrice()}</span>
                           </div>
                           <div className="detail-row">
                             <span className="detail-label">Product:</span>
@@ -745,7 +751,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                             <li>Open any UPI app (PhonePe, GPay, Paytm, etc.)</li>
                             <li>Tap on 'Scan & Pay' or QR scanner</li>
                             <li>Scan the QR code above</li>
-                            <li>Enter amount ₹{product?.price} and confirm payment</li>
+                            <li>Enter amount ₹{getCommissionInclusivePrice()} and confirm payment</li>
                             <li>Take a screenshot of successful payment</li>
                           </ol>
                         </div>
@@ -787,7 +793,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                         <div className="payment-details">
                           <div className="detail-row">
                             <span className="detail-label">Amount to Send:</span>
-                            <span className="detail-value amount">₹{product?.price}</span>
+                            <span className="detail-value amount">₹{getCommissionInclusivePrice()}</span>
                           </div>
                           <div className="detail-row">
                             <span className="detail-label">Product:</span>
@@ -801,7 +807,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                             <li>Open your UPI app</li>
                             <li>Choose 'Send Money' or 'Pay'</li>
                             <li>Enter UPI ID: <strong>8750471736@ptsbi</strong></li>
-                            <li>Enter amount: <strong>₹{product?.price}</strong></li>
+                            <li>Enter amount: <strong>₹{getCommissionInclusivePrice()}</strong></li>
                             <li>Complete the payment</li>
                             <li>Take screenshot of successful transaction</li>
                           </ol>
@@ -860,7 +866,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                           <h5>Screenshot should contain:</h5>
                           <ul>
                             <li>✓ Transaction successful message</li>
-                            <li>✓ Amount: ₹{product?.price}</li>
+                            <li>✓ Amount: ₹{getCommissionInclusivePrice()}</li>
                             <li>✓ UPI ID: 8750471736@ptsbi</li>
                             <li>✓ Date and time of transaction</li>
                           </ul>
