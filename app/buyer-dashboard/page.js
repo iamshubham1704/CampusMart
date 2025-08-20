@@ -171,16 +171,19 @@ const useBuyer = () => {
   return { buyer, updateProfile, loading, error, refetch: fetchBuyerProfile };
 };
 
-const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
+const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     location: '',
-    College: '',
+    university: '',
     year: ''
   });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState('');
 
   useEffect(() => {
     if (buyer) {
@@ -196,8 +199,33 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
   }, [buyer]);
 
   const handleSave = async () => {
-    alert('Save functionality needs to be wired up with a real updateProfile function passed as prop.');
-    setIsEditing(false);
+    if (!onUpdate) {
+      setIsEditing(false);
+      return;
+    }
+    try {
+      setSaving(true);
+      setSaveError('');
+      setSaveSuccess('');
+      const payload = {
+        name: formData.name,
+        phone: formData.phone,
+        location: formData.location,
+        university: formData.university,
+        year: formData.year
+      };
+      const result = await onUpdate(payload);
+      if (result && result.success) {
+        setSaveSuccess('Profile updated successfully');
+        setIsEditing(false);
+      } else {
+        setSaveError(result?.error || 'Failed to update profile');
+      }
+    } catch (e) {
+      setSaveError(e.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogout = () => {
@@ -253,6 +281,16 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
               ✓ Verified Student
             </span>
           )}
+          <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8' }}>
+            <a href={`mailto:${buyer.email}`} style={{ color: 'inherit', textDecoration: 'none', marginRight: 12 }}>
+              <Mail size={14} style={{ marginRight: 4 }} /> {buyer.email}
+            </a>
+            {buyer.phone && (
+              <a href={`tel:${buyer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                <Phone size={14} style={{ marginRight: 4 }} /> {buyer.phone}
+              </a>
+            )}
+          </div>
         </div>
 
         <div className="personalInfo">
@@ -261,12 +299,24 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
             <button
               className="editButton"
               onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-              disabled={loading}
+              disabled={loading || saving}
             >
-              {loading ? <Loader2 size={16} className="spinner" /> : isEditing ? <Save size={16} /> : <Edit3 size={16} />}
-              {loading ? 'Saving...' : isEditing ? 'Save' : 'Edit'}
+              {(loading || saving) ? <Loader2 size={16} className="spinner" /> : isEditing ? <Save size={16} /> : <Edit3 size={16} />}
+              {(loading || saving) ? 'Saving...' : isEditing ? 'Save' : 'Edit'}
             </button>
           </div>
+
+          {(saveError || saveSuccess) && (
+            <div style={{
+              background: saveError ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+              color: saveError ? '#ef4444' : '#10b981',
+              padding: '8px 12px',
+              borderRadius: 8,
+              marginBottom: 12
+            }}>
+              {saveError || saveSuccess}
+            </div>
+          )}
 
           <div className="formFields">
             {[
@@ -286,6 +336,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
                     value={formData[key]}
                     onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
                     className="fieldInput"
+                    disabled={saving}
                   />
                 ) : (
                   <div className="fieldDisplay">
@@ -305,6 +356,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="fieldInput"
+                  disabled={saving}
                 >
                   <option value="">Select Location</option>
                   <option value="MAIN CANTEEN">MAIN CANTEEN</option>
@@ -329,6 +381,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading }) => {
                   value={formData.year}
                   onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                   className="fieldInput"
+                  disabled={saving}
                 >
                   <option value="">Select Year</option>
                   <option value="1">1</option>
@@ -436,6 +489,7 @@ const BuyerDashboard = () => {
   });
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
   // Location dropdown state
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
@@ -511,6 +565,13 @@ const BuyerDashboard = () => {
           x: ((e.clientX - rect.left) / rect.width) * 100,
           y: ((e.clientY - rect.top) / rect.height) * 100,
         });
+
+        // Update CSS var for searchBar glow
+        const search = document.querySelector('.searchBar');
+        if (search) {
+          const mx = ((e.clientX - rect.left) / rect.width) * 100;
+          search.style.setProperty('--mx', mx + '%');
+        }
       }
     };
 
@@ -762,6 +823,16 @@ const BuyerDashboard = () => {
     };
   }, []);
 
+  // Header scroll shrink effect
+  useEffect(() => {
+    const onScroll = () => {
+      setIsHeaderScrolled(window.scrollY > 8);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -850,14 +921,14 @@ const BuyerDashboard = () => {
       </div>
 
       {/* Header */}
-      <header className="header">
+      <header className={`header ${isHeaderScrolled ? 'scrolled' : ''}`}>
         <div className="headerContent">
           <div className="logoSection">
-            <button className="menuToggle" onClick={openSidebar}>
-              <Menu size={24} />
+            <button className="menuToggle" onClick={openSidebar} aria-label="Open menu">
+              <Menu size={22} />
             </button>
             <div className="logo">
-              <img src="/logo.png" alt="CampusMart" style={{ height: 100, width: 'auto' }} />
+              <img src="/logo.png" alt="CampusMart" />
             </div>
           </div>
 
@@ -1268,6 +1339,7 @@ const BuyerDashboard = () => {
         isDarkTheme={isDarkTheme}
         buyer={buyer}
         loading={buyerLoading}
+        onUpdate={updateBuyerProfile}
       />
 
       {/* Sidebar Overlay for Mobile */}
