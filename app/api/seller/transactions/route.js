@@ -282,6 +282,32 @@ export async function POST(request) {
       // Don't fail the main operation
     }
 
+    // Create notification for seller (request initiated)
+    try {
+      await db.collection('notifications').insertOne({
+        _id: new ObjectId(),
+        userId: decoded.sellerId,
+        userType: 'seller',
+        type: 'seller_payment_request_initiated',
+        title: 'Payment Request Submitted',
+        message: `We received your payment request for order ${orderId}. We will process it shortly.`,
+        isRead: false,
+        createdAt: new Date(),
+        relatedId: transactionId,
+        relatedType: 'seller_transaction',
+        data: {
+          transactionId,
+          status: 'pending',
+          amount: order.amount,
+          orderId: orderId,
+          upiId: upiId
+        }
+      });
+    } catch (sellerNotificationError) {
+      console.error('Error creating seller initiation notification:', sellerNotificationError);
+      // Don't fail the main operation
+    }
+
     console.log('✅ Seller payment request created:', {
       transactionId,
       sellerId: decoded.sellerId,

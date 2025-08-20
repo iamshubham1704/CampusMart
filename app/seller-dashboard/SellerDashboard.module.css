@@ -2272,6 +2272,40 @@
   animation: pulse 2s infinite;
 }
 
+.paymentsAttention {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.dotPulse {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.dotPulse span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f59e0b;
+  opacity: 0.6;
+  animation: dotPulse 1.2s infinite ease-in-out;
+}
+
+.dotPulse span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dotPulse span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
 .paymentOverview {
   display: flex;
   flex-direction: column;

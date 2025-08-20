@@ -183,23 +183,41 @@ const SellerDashboard = () => {
           dashboardAPI.getRecentActivity().catch(err => {
             console.error('Activity API error:', err);
             return { success: false, activities: [], message: err.message || 'Failed to fetch activity' };
+          }),
+          dashboardAPI.getPendingPaymentRequestsCount().catch(err => {
+            console.error('Pending payments count API error:', err);
+            return { success: false, count: 0, message: err.message || 'Failed to fetch pending payments count' };
+          }),
+          dashboardAPI.getReadyToRequestPaymentCount().catch(err => {
+            console.error('Ready-to-request count API error:', err);
+            return { success: false, count: 0, message: err.message || 'Failed to fetch ready-to-request count' };
           })
         ];
       } else {
-        // Only fetch listings for now
+        // Fetch listings and pending payments count even when other APIs are disabled
         apiCalls = [
           listingsAPI.getMyListings().catch(err => {
             console.error('Listings API error:', err);
             return { success: false, listings: [], message: err.message || 'Failed to fetch listings' };
+          }),
+          dashboardAPI.getPendingPaymentRequestsCount().catch(err => {
+            console.error('Pending payments count API error:', err);
+            return { success: false, count: 0, message: err.message || 'Failed to fetch pending payments count' };
+          }),
+          dashboardAPI.getReadyToRequestPaymentCount().catch(err => {
+            console.error('Ready-to-request count API error:', err);
+            return { success: false, count: 0, message: err.message || 'Failed to fetch ready-to-request count' };
           })
         ];
       }
 
       const responses = await Promise.all(apiCalls);
-      const [listingsResponse, statsResponse, activityResponse] = useRealAPIs ? responses : [
+      const [listingsResponse, statsResponse, activityResponse, pendingPaymentsResponse, readyToRequestResponse] = useRealAPIs ? responses : [
         responses[0], 
         { success: false, stats: null, message: 'Stats API disabled for debugging' },
-        { success: false, activities: [], message: 'Activity API disabled for debugging' }
+        { success: false, activities: [], message: 'Activity API disabled for debugging' },
+        responses[1],
+        responses[2]
       ];
 
       // Handle listings response
@@ -280,6 +298,15 @@ const SellerDashboard = () => {
             earningsMonthly: `+₹${mockPaymentData.monthlyEarnings.toLocaleString()} this month`
           }
         };
+      }
+
+      // Merge pending payments count if available
+      if (pendingPaymentsResponse && pendingPaymentsResponse.success) {
+        sellerStats.pendingPayments = pendingPaymentsResponse.count || 0;
+      }
+
+      if (readyToRequestResponse && readyToRequestResponse.success) {
+        sellerStats.readyToRequest = readyToRequestResponse.count || 0;
       }
 
       // Combine user data with stats
@@ -376,6 +403,31 @@ const SellerDashboard = () => {
     
     fetchData();
   }, [router]);
+
+  // Periodically refresh pending payment requests count
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshPendingPayments = async () => {
+      try {
+        const response = await dashboardAPI.getPendingPaymentRequestsCount();
+        if (isMounted && response && response.success) {
+          setSellerData(prev => prev ? { ...prev, pendingPayments: response.count || 0 } : prev);
+        }
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    // initial fetch and interval
+    refreshPendingPayments();
+    const intervalId = setInterval(refreshPendingPayments, 30000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   // Cleanup body scroll on unmount
   useEffect(() => {
@@ -562,9 +614,16 @@ const SellerDashboard = () => {
                 <DollarSign size={16} />
                 <span>Payments</span>
                 {sellerData?.pendingPayments > 0 && (
-                  <span className={styles.notificationBadge}>
-                    {sellerData.pendingPayments}
-                  </span>
+                  <>
+                    <span className={styles.notificationBadge}>
+                      {sellerData.pendingPayments}
+                    </span>
+                    <span className={styles.paymentsAttention} aria-hidden="true">
+                      <span className={styles.dotPulse}>
+                        <span></span><span></span><span></span>
+                      </span>
+                    </span>
+                  </>
                 )}
               </button>
 
@@ -687,9 +746,16 @@ const SellerDashboard = () => {
                 <DollarSign size={20} />
                 <span>Payments</span>
                 {sellerData?.pendingPayments > 0 && (
-                  <span className={styles.navNotificationBadge}>
-                    {sellerData.pendingPayments}
-                  </span>
+                  <>
+                    <span className={styles.navNotificationBadge}>
+                      {sellerData.pendingPayments}
+                    </span>
+                    <span className={styles.paymentsAttention} aria-hidden="true">
+                      <span className={styles.dotPulse}>
+                        <span></span><span></span><span></span>
+                      </span>
+                    </span>
+                  </>
                 )}
               </button>
 
@@ -810,9 +876,16 @@ const SellerDashboard = () => {
                     </span>
                   </div>
                   <div className={styles.paymentStat}>
-                    <span className={styles.paymentLabel}>Pending</span>
+                    <span className={styles.paymentLabel}>Ready to Request</span>
                     <span className={styles.paymentValue}>
-                      {sellerData?.pendingPayments || 0} requests
+                      {sellerData?.readyToRequest || 0} {((sellerData?.readyToRequest || 0) === 1 ? 'request' : 'requests')}
+                      {(sellerData?.readyToRequest || 0) > 0 && (
+                        <span className={styles.paymentsAttention} aria-hidden="true" style={{ marginLeft: 6 }}>
+                          <span className={styles.dotPulse}>
+                            <span></span><span></span><span></span>
+                          </span>
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>

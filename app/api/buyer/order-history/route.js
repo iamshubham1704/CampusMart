@@ -92,31 +92,38 @@ export async function GET(request) {
       });
     }
 
-    // Build filter for buyer's orders - handle both string and ObjectId formats
-    let filter = {};
-    
-    // Try to match buyerId in different possible formats
+    // Build flexible filter for buyer's orders handling string/ObjectId and email fallbacks
+    const idCandidates = [];
     try {
-      if (ObjectId.isValid(buyerId)) {
-        // If buyerId is a valid ObjectId string, convert it
-        filter.buyerId = new ObjectId(buyerId);
-        console.log('🔍 Using ObjectId filter:', filter.buyerId);
-      } else {
-        // If it's not a valid ObjectId, try to match as string
-        filter.buyerId = buyerId;
-        console.log('🔍 Using string filter:', filter.buyerId);
+      if (buyerId) {
+        idCandidates.push(buyerId);
+        if (typeof buyerId === 'string' && ObjectId.isValid(buyerId)) {
+          try { idCandidates.push(new ObjectId(buyerId)); } catch (_) {}
+        }
       }
-    } catch (error) {
-      console.error('Error creating ObjectId from buyerId:', error);
-      // Fallback to string matching
-      filter.buyerId = buyerId;
+    } catch (_) {}
+
+    const emailCandidate = buyer.email || buyer.userEmail || buyer.preferred_username || null;
+
+    const possibleFields = ['buyerId', 'buyer_id', 'buyer', 'userId', 'user_id', 'user'];
+    const orConditions = [];
+    for (const field of possibleFields) {
+      if (idCandidates.length > 0) {
+        orConditions.push({ [field]: { $in: idCandidates } });
+      }
     }
-    
-    if (status && status !== 'all') {
-      filter.status = status;
+    if (emailCandidate) {
+      orConditions.push({ buyerEmail: emailCandidate });
+      orConditions.push({ email: emailCandidate });
+      orConditions.push({ 'buyer.email': emailCandidate });
     }
 
-    console.log('🔍 Final filter for orders:', filter);
+    let filter = orConditions.length > 0 ? { $or: orConditions } : {};
+    if (status && status !== 'all') {
+      filter = { $and: [filter, { status }] };
+    }
+
+    console.log('🔍 Final OR filter for orders:', JSON.stringify(filter));
 
     // Calculate pagination
     const skip = (page - 1) * limit;
@@ -131,51 +138,7 @@ export async function GET(request) {
 
     console.log('📋 Found orders with buyerId filter:', orders.length);
 
-    // If no orders found with buyerId, try alternative field names
-    if (orders.length === 0) {
-      console.log('🔍 No orders found with buyerId, trying alternative field names...');
-      
-      // Try different possible field names for buyer ID
-      const alternativeFields = ['buyer_id', 'buyer', 'userId', 'user_id', 'user'];
-      
-      for (const field of alternativeFields) {
-        try {
-          if (ObjectId.isValid(buyerId)) {
-            const altFilter = { [field]: new ObjectId(buyerId) };
-            const altOrders = await db.collection('orders').find(altFilter).limit(5).toArray();
-            if (altOrders.length > 0) {
-              console.log(`🔍 Found ${altOrders.length} orders using field: ${field}`);
-              // Use this field for the main query
-              filter = altFilter;
-              break;
-            }
-          } else {
-            const altFilter = { [field]: buyerId };
-            const altOrders = await db.collection('orders').find(altFilter).limit(5).toArray();
-            if (altOrders.length > 0) {
-              console.log(`🔍 Found ${altOrders.length} orders using field: ${field}`);
-              // Use this field for the main query
-              filter = altFilter;
-              break;
-            }
-          }
-        } catch (error) {
-          console.log(`⚠️ Error trying field ${field}:`, error.message);
-        }
-      }
-      
-      // Re-run the main query with the new filter
-      if (filter.buyerId === undefined) {
-        orders = await db.collection('orders')
-          .find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .toArray();
-        
-        console.log('📋 Found orders with alternative filter:', orders.length);
-      }
-    }
+    // If still nothing, no further fallback needed because we already used a broad $or
 
     // Get total count
     const totalCount = await db.collection('orders').countDocuments(filter);
@@ -202,70 +165,68 @@ export async function GET(request) {
     const ordersWithDetails = await Promise.all(
       orders.map(async (order) => {
         try {
-          // Get product details with better error handling
+          // Get product details with robust cross-type matching (string/ObjectId)
           let product = null;
           if (order.productId) {
             try {
-              // Handle both string and ObjectId formats
-              let productId;
+              const productIdCandidates = [];
               if (typeof order.productId === 'string') {
-                // Check if it's a valid ObjectId string
+                productIdCandidates.push(order.productId);
                 if (ObjectId.isValid(order.productId)) {
-                  productId = new ObjectId(order.productId);
-                } else {
-                  // Skip this product lookup but continue processing the order
-                  console.log(`⚠️ Invalid productId format: ${order.productId}`);
+                  try { productIdCandidates.push(new ObjectId(order.productId)); } catch (_) {}
                 }
               } else {
-                productId = order.productId;
+                productIdCandidates.push(order.productId);
+                try { productIdCandidates.push(new ObjectId(String(order.productId))); } catch (_) {}
               }
-              
-              if (productId) {
-                product = await db.collection('listings').findOne(
-                  { _id: productId },
-                  { projection: { title: 1, price: 1, images: 1, category: 1, description: 1, condition: 1 } }
-                );
-              }
+
+              product = await db.collection('listings').findOne(
+                { _id: { $in: productIdCandidates } },
+                { projection: { title: 1, price: 1, images: 1, category: 1, description: 1, condition: 1 } }
+              );
             } catch (productError) {
               console.error(`❌ Error fetching product ${order.productId}:`, productError);
             }
           }
 
-          // Get seller details with better error handling
+          // Get seller details with robust cross-type matching (string/ObjectId)
           let seller = null;
           if (order.sellerId) {
             try {
-              // Handle both string and ObjectId formats
-              let sellerId;
+              const sellerIdCandidates = [];
               if (typeof order.sellerId === 'string') {
-                // Check if it's a valid ObjectId string
+                sellerIdCandidates.push(order.sellerId);
                 if (ObjectId.isValid(order.sellerId)) {
-                  sellerId = new ObjectId(order.sellerId);
-                } else {
-                  // Skip this seller lookup but continue processing the order
-                  console.log(`⚠️ Invalid sellerId format: ${order.sellerId}`);
+                  try { sellerIdCandidates.push(new ObjectId(order.sellerId)); } catch (_) {}
                 }
               } else {
-                sellerId = order.sellerId;
+                sellerIdCandidates.push(order.sellerId);
+                try { sellerIdCandidates.push(new ObjectId(String(order.sellerId))); } catch (_) {}
               }
-              
-              if (sellerId) {
-                seller = await db.collection('sellers').findOne(
-                  { _id: sellerId },
-                  { projection: { name: 1, email: 1, phone: 1, businessName: 1 } }
-                );
-              }
+
+              seller = await db.collection('sellers').findOne(
+                { _id: { $in: sellerIdCandidates } },
+                { projection: { name: 1, email: 1, phone: 1, businessName: 1 } }
+              );
             } catch (sellerError) {
               console.error(`❌ Error fetching seller ${order.sellerId}:`, sellerError);
             }
           }
 
-          // Get payment screenshot details
+          // Get payment screenshot details (match both string/ObjectId)
           let paymentScreenshot = null;
           if (order.paymentScreenshotId) {
             try {
+              const ssCandidates = [];
+              ssCandidates.push(order.paymentScreenshotId);
+              try {
+                if (typeof order.paymentScreenshotId === 'string' && ObjectId.isValid(order.paymentScreenshotId)) {
+                  ssCandidates.push(new ObjectId(order.paymentScreenshotId));
+                }
+              } catch (_) {}
+
               paymentScreenshot = await db.collection('payment_screenshots').findOne(
-                { _id: order.paymentScreenshotId },
+                { _id: { $in: ssCandidates } },
                 { projection: { status: 1, verifiedAt: 1, amount: 1, imageKit: 1 } }
               );
             } catch (screenshotError) {
@@ -311,16 +272,14 @@ export async function GET(request) {
             }
           }
 
-          // Prepare image URL with better handling
+          // Prepare image URL with more fallbacks
           let productImage = null;
           if (product && product.images && product.images.length > 0) {
             const firstImage = product.images[0];
             if (typeof firstImage === 'string') {
-              // Handle base64 or direct URL strings
               productImage = firstImage;
-            } else if (typeof firstImage === 'object' && firstImage.url) {
-              // Handle ImageKit object format
-              productImage = firstImage.url;
+            } else if (typeof firstImage === 'object') {
+              productImage = firstImage.url || firstImage.imageKit?.url || firstImage.path || null;
             }
           }
 

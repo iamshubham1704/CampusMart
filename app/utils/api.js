@@ -288,6 +288,72 @@ export const dashboardAPI = {
     }
   },
 
+  // Get pending seller payment requests count
+  getPendingPaymentRequestsCount: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/transactions/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch pending payments count');
+      }
+
+      return {
+        success: true,
+        count: data.count
+      };
+    } catch (error) {
+      console.error('Error fetching pending payments count:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch pending payments count'
+      };
+    }
+  },
+
+  // Get count of orders ready to request payment
+  getReadyToRequestPaymentCount: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
+      const response = await fetch('/api/seller/orders/ready/count', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch ready-to-request count');
+      }
+
+      return {
+        success: true,
+        count: data.count
+      };
+    } catch (error) {
+      console.error('Error fetching ready-to-request count:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch ready-to-request count'
+      };
+    }
+  },
+
   // Get recent activity for the seller
   getRecentActivity: async () => {
     try {
