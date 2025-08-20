@@ -15,6 +15,12 @@ export default function AdminManagementPage() {
   const [listingsFilter, setListingsFilter] = useState('all');
   const [selectedListing, setSelectedListing] = useState(null);
   const [showListingModal, setShowListingModal] = useState(false);
+  const [listingsSearchTerm, setListingsSearchTerm] = useState('');
+  const [listingsCurrentPage, setListingsCurrentPage] = useState(1);
+  const [listingsPerPage, setListingsPerPage] = useState(20); // Changed from 10 to 20
+  const [listingsTotal, setListingsTotal] = useState(0);
+  const [jumpToPage, setJumpToPage] = useState('');
+  const [listingsLoading, setListingsLoading] = useState(false);
   
   // Conversations state
   const [conversations, setConversations] = useState([]);
@@ -53,7 +59,17 @@ export default function AdminManagementPage() {
       localStorage.removeItem('adminData');
       router.push('/admin-login');
     }
-  }, [activeTab, listingsFilter, conversationsFilter, messagesFilter, paymentsFilter, router]);
+  }, [activeTab, listingsFilter, conversationsFilter, messagesFilter, paymentsFilter, listingsCurrentPage, router]);
+
+  // Reset pagination when filter or search changes
+  useEffect(() => {
+    setListingsCurrentPage(1);
+  }, [listingsFilter, listingsSearchTerm]);
+
+  // Reset pagination when items per page changes
+  useEffect(() => {
+    setListingsCurrentPage(1);
+  }, [listingsPerPage]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -100,19 +116,73 @@ export default function AdminManagementPage() {
   };
 
   const fetchListings = async (token) => {
-    const statusParam = listingsFilter !== 'all' ? `?status=${listingsFilter}` : '';
-    const response = await fetch(`/api/admin/listings${statusParam}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    setListingsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (listingsFilter !== 'all') {
+        params.append('status', listingsFilter);
       }
-    });
+      params.append('page', listingsCurrentPage);
+      params.append('limit', listingsPerPage);
+      
+      const response = await fetch(`/api/admin/listings?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-    const data = await response.json();
-    if (response.ok) {
-      setListings(data.data.listings);
-    } else {
-      setError(data.error || 'Failed to fetch listings');
+      const data = await response.json();
+      if (response.ok) {
+        setListings(data.data.listings);
+        // Update total count if available from API
+        if (data.data.pagination && data.data.pagination.total) {
+          setListingsTotal(data.data.pagination.total);
+        }
+      } else {
+        setError(data.error || 'Failed to fetch listings');
+      }
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+      setError('Network error while fetching listings');
+    } finally {
+      setListingsLoading(false);
     }
+  };
+
+  // Filter listings by search term (client-side filtering for better UX)
+  const filteredListings = listings.filter(listing => {
+    if (!listingsSearchTerm) return true;
+    
+    const lowerSearch = listingsSearchTerm.toLowerCase();
+    return (
+      listing.title?.toLowerCase().includes(lowerSearch) ||
+      listing.description?.toLowerCase().includes(lowerSearch) ||
+      listing.seller_name?.toLowerCase().includes(lowerSearch) ||
+      listing.seller_email?.toLowerCase().includes(lowerSearch) ||
+      listing.category?.toLowerCase().includes(lowerSearch) ||
+      listing.price?.toString().includes(lowerSearch)
+    );
+  });
+
+  // Calculate pagination based on server-side total
+  const totalListingsPages = Math.ceil(listingsTotal / listingsPerPage);
+
+  const handleListingsPageChange = (pageNumber) => {
+    setListingsCurrentPage(pageNumber);
+  };
+
+  const handleJumpToPage = () => {
+    const pageNum = parseInt(jumpToPage);
+    if (pageNum >= 1 && pageNum <= totalListingsPages) {
+      setListingsCurrentPage(pageNum);
+      setJumpToPage('');
+    } else {
+      alert(`Please enter a page number between 1 and ${totalListingsPages}`);
+    }
+  };
+
+  const handleItemsPerPageChange = (newPerPage) => {
+    setListingsPerPage(newPerPage);
   };
 
   const fetchConversations = async (token) => {
@@ -555,7 +625,24 @@ export default function AdminManagementPage() {
             alignItems: 'center',
             marginBottom: '2rem'
           }}>
-            <h2 style={{ margin: 0, color: '#333' }}>Listings Management</h2>
+            <div>
+              <h2 style={{ margin: 0, color: '#333' }}>Listings Management</h2>
+              <div style={{ 
+                fontSize: '0.9rem', 
+                color: '#666', 
+                marginTop: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem'
+              }}>
+                <span>
+                  <strong>Total:</strong> {listingsTotal} listings
+                </span>
+                <span>
+                  <strong>Filter:</strong> {listingsFilter === 'all' ? 'All Statuses' : listingsFilter.charAt(0).toUpperCase() + listingsFilter.slice(1)}
+                </span>
+              </div>
+            </div>
             
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               {['all', 'active', 'inactive', 'sold', 'pending'].map(status => (
@@ -578,7 +665,71 @@ export default function AdminManagementPage() {
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          {/* Search Bar */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+            gap: '1rem'
+          }}>
+            <div style={{ flex: 1, maxWidth: '400px' }}>
+              <input
+                type="text"
+                placeholder="Search listings by title, description, seller, category, or price..."
+                value={listingsSearchTerm}
+                onChange={(e) => setListingsSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '0.9rem'
+                }}
+              />
+            </div>
+            <div style={{ 
+              fontSize: '0.9rem', 
+              color: '#666',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: '0.25rem'
+            }}>
+              <div>
+                Showing <strong>{filteredListings.length}</strong> of <strong>{listingsTotal}</strong> total listings
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                Page {listingsCurrentPage} of {totalListingsPages} • {listingsPerPage} per page
+              </div>
+            </div>
+          </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+            {listingsLoading && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '2rem',
+                color: '#666',
+                fontSize: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '2px solid #f3f3f3',
+                    borderTop: '2px solid #007bff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  Loading listings...
+                </div>
+              </div>
+            )}
+            
+            {!listingsLoading && (
             <table style={{ 
               width: '100%', 
               borderCollapse: 'collapse',
@@ -597,7 +748,7 @@ export default function AdminManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {listings.map((listing) => (
+                {filteredListings.map((listing) => (
                   <tr key={listing._id} style={{ borderBottom: '1px solid #dee2e6' }}>
                     <td style={{ padding: '0.75rem' }}>
                       <div>
@@ -694,14 +845,256 @@ export default function AdminManagementPage() {
                 ))}
               </tbody>
             </table>
+            )}
 
-            {listings.length === 0 && (
+            {!listingsLoading && filteredListings.length === 0 && (
               <div style={{
                 textAlign: 'center',
                 padding: '2rem',
-                color: '#666'
+                color: '#666',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                border: '1px solid #dee2e6'
               }}>
-                No listings found.
+                {listingsSearchTerm 
+                  ? 'No listings match your search criteria.' 
+                  : 'No listings found.'}
+                {listingsSearchTerm && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <button
+                      onClick={() => setListingsSearchTerm('')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      Clear Search
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Enhanced Pagination Controls */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '2rem',
+              padding: '1rem',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #dee2e6'
+            }}>
+              {/* Pagination Info */}
+              <div style={{ fontSize: '0.9rem', color: '#666' }}>
+                <strong>Page {listingsCurrentPage}</strong> of <strong>{totalListingsPages}</strong> 
+                ({listingsTotal} total listings)
+              </div>
+
+              {/* Items Per Page Selector */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.9rem', color: '#666' }}>Show:</span>
+                <select
+                  value={listingsPerPage}
+                  onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    border: '1px solid #ced4da',
+                    borderRadius: '4px',
+                    fontSize: '0.9rem',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span style={{ fontSize: '0.9rem', color: '#666' }}>per page</span>
+              </div>
+
+              {/* Jump to Page */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.9rem', color: '#666' }}>Go to:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={totalListingsPages}
+                  value={jumpToPage}
+                  onChange={(e) => setJumpToPage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
+                  style={{
+                    width: '60px',
+                    padding: '0.25rem 0.5rem',
+                    border: '1px solid #ced4da',
+                    borderRadius: '4px',
+                    fontSize: '0.9rem',
+                    textAlign: 'center'
+                  }}
+                  placeholder="Page"
+                />
+                <button
+                  onClick={handleJumpToPage}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    backgroundColor: '#6c757d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  Go
+                </button>
+              </div>
+            </div>
+
+            {/* Page Navigation Buttons */}
+            {totalListingsPages > 1 && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginTop: '1rem',
+                padding: '1rem'
+              }}>
+                {/* First Page Button */}
+                <button
+                  onClick={() => handleListingsPageChange(1)}
+                  disabled={listingsCurrentPage === 1}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: listingsCurrentPage === 1 ? '#e9ecef' : '#007bff',
+                    color: listingsCurrentPage === 1 ? '#666' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: listingsCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold'
+                  }}
+                  title="First Page"
+                >
+                  ««
+                </button>
+
+                {/* Previous Button */}
+                <button
+                  onClick={() => handleListingsPageChange(listingsCurrentPage - 1)}
+                  disabled={listingsCurrentPage === 1}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: listingsCurrentPage === 1 ? '#e9ecef' : '#007bff',
+                    color: listingsCurrentPage === 1 ? '#666' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: listingsCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Previous
+                </button>
+                
+                {/* Page Numbers with Smart Display */}
+                {(() => {
+                  const pages = [];
+                  const maxVisiblePages = 7;
+                  
+                  if (totalListingsPages <= maxVisiblePages) {
+                    // Show all pages if total is small
+                    for (let i = 1; i <= totalListingsPages; i++) {
+                      pages.push(i);
+                    }
+                  } else {
+                    // Smart pagination for large numbers
+                    if (listingsCurrentPage <= 4) {
+                      // Near start: show first 5 + ... + last
+                      for (let i = 1; i <= 5; i++) pages.push(i);
+                      pages.push('...');
+                      pages.push(totalListingsPages);
+                    } else if (listingsCurrentPage >= totalListingsPages - 3) {
+                      // Near end: show first + ... + last 5
+                      pages.push(1);
+                      pages.push('...');
+                      for (let i = totalListingsPages - 4; i <= totalListingsPages; i++) pages.push(i);
+                    } else {
+                      // Middle: show first + ... + current-1, current, current+1 + ... + last
+                      pages.push(1);
+                      pages.push('...');
+                      for (let i = listingsCurrentPage - 1; i <= listingsCurrentPage + 1; i++) pages.push(i);
+                      pages.push('...');
+                      pages.push(totalListingsPages);
+                    }
+                  }
+                  
+                  return pages.map((pageNum, index) => (
+                    <span key={index}>
+                      {pageNum === '...' ? (
+                        <span style={{ padding: '0.5rem 0.75rem', color: '#666' }}>...</span>
+                      ) : (
+                        <button
+                          onClick={() => handleListingsPageChange(pageNum)}
+                          style={{
+                            padding: '0.5rem 0.75rem',
+                            backgroundColor: pageNum === listingsCurrentPage ? '#007bff' : '#e9ecef',
+                            color: pageNum === listingsCurrentPage ? 'white' : '#333',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            minWidth: '40px',
+                            fontWeight: pageNum === listingsCurrentPage ? 'bold' : 'normal'
+                          }}
+                        >
+                          {pageNum}
+                        </button>
+                      )}
+                    </span>
+                  ));
+                })()}
+                
+                {/* Next Button */}
+                <button
+                  onClick={() => handleListingsPageChange(listingsCurrentPage + 1)}
+                  disabled={listingsCurrentPage === totalListingsPages}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: listingsCurrentPage === totalListingsPages ? '#e9ecef' : '#007bff',
+                    color: listingsCurrentPage === totalListingsPages ? '#666' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: listingsCurrentPage === totalListingsPages ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Next
+                </button>
+
+                {/* Last Page Button */}
+                <button
+                  onClick={() => handleListingsPageChange(totalListingsPages)}
+                  disabled={listingsCurrentPage === totalListingsPages}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: listingsCurrentPage === totalListingsPages ? '#e9ecef' : '#007bff',
+                    color: listingsCurrentPage === totalListingsPages ? '#666' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: listingsCurrentPage === totalListingsPages ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold'
+                  }}
+                  title="Last Page"
+                >
+                  »»
+                </button>
               </div>
             )}
           </div>
