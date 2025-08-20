@@ -25,6 +25,15 @@ export default function OrderStatusManagement() {
     loading: false
   });
 
+  // Fail order modal state
+  const [failModal, setFailModal] = useState({
+    show: false,
+    orderId: null,
+    step: null,
+    reason: '',
+    loading: false
+  });
+
   const router = useRouter();
 
   useEffect(() => {
@@ -138,6 +147,26 @@ export default function OrderStatusManagement() {
     });
   };
 
+  const openFailModal = (orderId, step) => {
+    setFailModal({
+      show: true,
+      orderId,
+      step,
+      reason: '',
+      loading: false
+    });
+  };
+
+  const closeFailModal = () => {
+    setFailModal({
+      show: false,
+      orderId: null,
+      step: null,
+      reason: '',
+      loading: false
+    });
+  };
+
   const updateOrderStep = async () => {
     try {
       setUpdateModal(prev => ({ ...prev, loading: true }));
@@ -170,6 +199,41 @@ export default function OrderStatusManagement() {
       alert('Network error. Please try again.');
     } finally {
       setUpdateModal(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const failOrder = async () => {
+    try {
+      setFailModal(prev => ({ ...prev, loading: true }));
+      const token = localStorage.getItem('adminToken');
+
+      const response = await fetch(`/api/admin/order-status/${failModal.orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          step: failModal.step,
+          status: 'failed',
+          details: failModal.reason
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message);
+        closeFailModal();
+        fetchOrders();
+      } else {
+        alert(data.error || 'Failed to mark as failed');
+      }
+    } catch (error) {
+      console.error('Error failing order:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setFailModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -479,6 +543,7 @@ export default function OrderStatusManagement() {
             <tbody>
               {orders.map((order) => {
                 const progress = getProgressPercentage(order);
+                const progressColor = progress === 100 ? '#28a745' : '#007bff';
                 const currentStepInfo = orderSteps[order.currentStep];
                 const stepColors = getStepStatusColor(order.steps[order.currentStep] || { status: 'pending' });
                 
@@ -528,21 +593,28 @@ export default function OrderStatusManagement() {
                           width: '60px',
                           height: '60px',
                           borderRadius: '50%',
-                          border: '4px solid #e9ecef',
-                          borderTop: `4px solid ${progress === 100 ? '#28a745' : '#007bff'}`,
+                          background: `conic-gradient(${progressColor} ${progress}%, #e9ecef ${progress}% 100%)`,
                           margin: '0 auto',
-                          position: 'relative',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
+                          display: 'grid',
+                          placeItems: 'center'
                         }}>
-                          <span style={{ 
-                            fontSize: '0.75rem', 
-                            fontWeight: 'bold',
-                            color: progress === 100 ? '#28a745' : '#007bff'
+                          <div style={{
+                            width: '46px',
+                            height: '46px',
+                            borderRadius: '50%',
+                            backgroundColor: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                           }}>
-                            {Math.round(progress)}%
-                          </span>
+                            <span style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              color: progressColor
+                            }}>
+                              {Math.round(progress)}%
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>
@@ -608,6 +680,23 @@ export default function OrderStatusManagement() {
                             }}
                           >
                             ✅ Complete Step {order.currentStep}
+                          </button>
+                        )}
+                        {order.overallStatus !== 'failed' && (
+                          <button
+                            onClick={() => openFailModal(order._id, order.currentStep)}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              backgroundColor: '#dc3545',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.8rem',
+                              fontWeight: '500'
+                            }}
+                          >
+                            ❌ Fail Order
                           </button>
                         )}
                       </div>
@@ -942,6 +1031,94 @@ export default function OrderStatusManagement() {
                 }}
               >
                 {updateModal.loading ? '⏳ Updating...' : '✅ Complete Step'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fail Order Modal */}
+      {failModal.show && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1002
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '520px',
+            width: '90%'
+          }}>
+            <h3 style={{ margin: '0 0 0.75rem 0', color: '#333' }}>
+              Mark Order as Failed
+            </h3>
+            <p style={{ margin: '0 0 1rem 0', color: '#6c757d', fontSize: '0.9rem' }}>
+              You are failing this order at step {failModal.step}. Please provide a clear reason. This action will set the overall status to failed.
+            </p>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#333'
+              }}>
+                Reason (Required):
+              </label>
+              <textarea
+                value={failModal.reason}
+                onChange={(e) => setFailModal(prev => ({ ...prev, reason: e.target.value }))}
+                placeholder={'Explain why the order is being failed...'}
+                rows={4}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #ced4da',
+                  borderRadius: '6px',
+                  fontSize: '0.9rem',
+                  fontFamily: 'inherit',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={closeFailModal}
+                disabled={failModal.loading}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: failModal.loading ? 'not-allowed' : 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={failOrder}
+                disabled={failModal.loading || !failModal.reason.trim()}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: failModal.loading || !failModal.reason.trim() ? '#6c757d' : '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: failModal.loading || !failModal.reason.trim() ? 'not-allowed' : 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                {failModal.loading ? '⏳ Failing...' : '❌ Mark as Failed'}
               </button>
             </div>
           </div>
