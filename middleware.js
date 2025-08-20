@@ -77,8 +77,8 @@ function isValidTokenFormat(token) {
     return false;
   }
   
-  // Check if parts contain only valid base64 characters (with padding)
-  const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+  // Check if parts contain only valid base64/base64url characters (with padding)
+  const base64Regex = /^[A-Za-z0-9+/_-]*={0,2}$/;
   if (!parts.every(part => base64Regex.test(part))) {
     return false;
   }
@@ -104,7 +104,12 @@ function validateTokenBasic(token) {
     }
 
     // Try to decode the payload (without verification)
-    const payload = JSON.parse(atob(parts[1]));
+    let payloadPart = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pad = payloadPart.length % 4;
+    if (pad) {
+      payloadPart += '='.repeat(4 - pad);
+    }
+    const payload = JSON.parse(atob(payloadPart));
     
     // Check if token is expired
     if (payload.exp && payload.exp < Date.now() / 1000) {

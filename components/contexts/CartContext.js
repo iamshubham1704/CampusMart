@@ -30,14 +30,12 @@ export const CartProvider = ({ children }) => {
   const fetchCart = async () => {
     const token = getAuthToken();
     if (!token) {
-      console.log('No auth token found, skipping cart fetch');
+      ('No auth token found, skipping cart fetch');
       return;
     }
 
     try {
       setIsLoading(true);
-      console.log('🛒 Fetching cart data...');
-      
       const response = await fetch('/api/cart', {
         method: 'GET',
         headers: {
@@ -47,13 +45,8 @@ export const CartProvider = ({ children }) => {
       });
 
       const data = await response.json();
-      console.log('🛒 Cart API response:', data);
 
       if (data.success) {
-        console.log('🛒 Cart items received:', data.cart.items);
-        console.log('🛒 Cart total items:', data.cart.totalItems);
-        console.log('🛒 Cart total price:', data.cart.totalPrice);
-        
         setCartItems(data.cart.items || []);
         setTotalItems(data.cart.totalItems || 0);
         setTotalPrice(data.cart.totalPrice || 0);
@@ -214,7 +207,6 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     const token = getAuthToken();
     if (token) {
-      console.log('🛒 Initial cart fetch on mount');
       fetchCart();
     }
   }, []);
@@ -224,11 +216,9 @@ export const CartProvider = ({ children }) => {
     const handleStorageChange = () => {
       const token = getAuthToken();
       if (token) {
-        console.log('🛒 Auth change detected, fetching cart');
         fetchCart();
       } else {
         // Clear cart if user logs out
-        console.log('🛒 User logged out, clearing cart');
         setCartItems([]);
         setTotalItems(0);
         setTotalPrice(0);

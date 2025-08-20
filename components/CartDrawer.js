@@ -1,6 +1,6 @@
 // components/CartDrawer.js
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import { useCart } from './contexts/CartContext';
 import {
   X,
@@ -11,8 +11,7 @@ import {
   DollarSign,
   User,
   ArrowRight,
-  Package,
-  Image
+  Package
 } from 'lucide-react';
 import './CartDrawer.css';
 
@@ -29,42 +28,11 @@ const CartDrawer = () => {
     clearCart
   } = useCart();
 
-  const [imageErrors, setImageErrors] = useState({});
-  const [imageLoading, setImageLoading] = useState({});
-
-  const handleImageError = (listingId) => {
-    console.log(`🖼️ Image failed to load for listing ${listingId}, using fallback`);
-    setImageErrors(prev => ({ ...prev, [listingId]: true }));
-  };
-
-  const handleImageLoad = (listingId) => {
-    console.log(`🖼️ Image loaded successfully for listing ${listingId}`);
-    setImageLoading(prev => ({ ...prev, [listingId]: false }));
-  };
-
-  const handleImageLoadStart = (listingId) => {
-    console.log(`🖼️ Starting to load image for listing ${listingId}`);
-    setImageLoading(prev => ({ ...prev, [listingId]: true }));
-  };
-
-  const getImageUrl = (item) => {
-    if (imageErrors[item.listingId]) {
-      console.log(`🖼️ Using fallback image for listing ${item.listingId}`);
-      return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop';
-    }
-    
-    if (!item.image || item.image === '') {
-      console.log(`🖼️ No image URL for listing ${item.listingId}, using fallback`);
-      return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop';
-    }
-    
-    console.log(`🖼️ Using image URL for listing ${item.listingId}: ${item.image.substring(0, 50)}...`);
-    return item.image;
-  };
+ 
 
   const handleCheckout = () => {
     // Implement checkout logic
-    console.log('Proceeding to checkout with items:', cartItems);
+    ('Proceeding to checkout with items:', cartItems);
     // You can navigate to checkout page or open checkout modal
   };
 
@@ -111,39 +79,26 @@ const CartDrawer = () => {
                 {cartItems.map((item) => (
                   <div key={item.listingId} className="cart-item">
                     <div className="item-image">
-                      {imageLoading[item.listingId] && (
-                        <div className="image-loading">
-                          <Image size={24} />
-                          <span>Loading...</span>
-                        </div>
-                      )}
-                      <img 
-                        src={getImageUrl(item)} 
-                        alt={item.title}
-                        onError={() => handleImageError(item.listingId)}
-                        onLoad={() => handleImageLoad(item.listingId)}
-                        onLoadStart={() => handleImageLoadStart(item.listingId)}
-                        loading="lazy"
-                        style={{ 
-                          display: imageLoading[item.listingId] ? 'none' : 'block',
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
-                      />
+                      <img src={item.image} alt={item.title} />
                     </div>
                     
                     <div className="item-details">
                       <h4 className="item-title">{item.title}</h4>
+                      <div className="item-seller">
+                        <User size={14} />
+                        <span>{item.seller}</span>
+                      </div>
                       <div className="item-condition">
                         <span className="condition-badge">{item.condition}</span>
                       </div>
                       <div className="item-price">
+                        <DollarSign size={16} />
                         <span>₹{item.price}</span>
                       </div>
                     </div>
 
                     <div className="item-actions">
+                      
                       <button
                         className="remove-item-btn"
                         onClick={() => removeFromCart(item.listingId)}
@@ -182,14 +137,7 @@ const CartDrawer = () => {
                     Clear Cart
                   </button>
                   
-                  <button
-                    className="checkout-btn"
-                    onClick={handleCheckout}
-                    disabled={isLoading || cartItems.length === 0}
-                  >
-                    Proceed to Checkout
-                    <ArrowRight size={16} />
-                  </button>
+                  
                 </div>
               </div>
             </>
