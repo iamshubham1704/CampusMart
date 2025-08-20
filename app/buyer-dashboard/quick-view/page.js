@@ -634,6 +634,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                     <div className="banner-contacts">
                       <span>Shubham Solanki: <a href="tel:+919315863073">+91 93158 63073</a></span>
                       <span>Krish: <a href="tel:+919821646882">+91 98216 46882</a></span>
+                      <span>In case of a damaged or defective product, you may refuse to accept it at the time of delivery, and a full refund will be issued.</span>
                     </div>
                     <div className="banner-note">Feel free to reach out!</div>
                   </div>
