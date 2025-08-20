@@ -15,6 +15,18 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
   
+  // Order analytics state
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const last30Iso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [analyticsFilters, setAnalyticsFilters] = useState({
+    from: last30Iso,
+    to: todayIso,
+    groupBy: 'day' // 'day' | 'month'
+  });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState('');
+  const [orderAnalytics, setOrderAnalytics] = useState(null);
+  
   const [dashboardStats, setDashboardStats] = useState({
     totalUsers: 0,
     totalBuyers: 0,
@@ -119,6 +131,7 @@ export default function AdminDashboard() {
       fetchDashboardStats();
       fetchData();
       fetchCommission();
+      fetchOrderAnalytics(true);
     } catch (error) {
       console.error('Error initializing admin:', error);
       clearAuthData();
@@ -276,7 +289,7 @@ export default function AdminDashboard() {
         totalUsers: (usersData?.data?.buyers?.length || 0) + (usersData?.data?.sellers?.length || 0),
         totalBuyers: usersData?.data?.buyers?.length || 0,
         totalSellers: usersData?.data?.sellers?.length || 0,
-        totalProducts: productsData?.data?.listings?.length || 0,
+        totalProducts: (productsData?.data?.pagination?.total ?? productsData?.data?.listings?.length ?? 0),
         totalOrders: ordersData?.data?.orderStatuses?.length || 0,
         pendingPayments: paymentsData?.data?.screenshots?.filter(p => p.status === 'pending_verification')?.length || 0,
         verifiedPayments: paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.length || 0,
@@ -401,6 +414,7 @@ export default function AdminDashboard() {
   const handleRefresh = () => {
     fetchDashboardStats();
     fetchData();
+    fetchOrderAnalytics(true);
   };
 
   const formatCurrency = (amount) => {
@@ -421,6 +435,52 @@ export default function AdminDashboard() {
       console.error('Navigation error:', error);
       setError('Navigation failed. Please try again.');
     }
+  };
+
+  // Fetch order analytics
+  const fetchOrderAnalytics = async (silent = false) => {
+    try {
+      if (!silent) setAnalyticsLoading(true);
+      setAnalyticsError('');
+      const token = localStorage.getItem('adminToken');
+      if (!token) throw new Error('No authentication token');
+
+      const params = new URLSearchParams({
+        groupBy: analyticsFilters.groupBy,
+        from: analyticsFilters.from,
+        to: analyticsFilters.to
+      });
+      const res = await fetch(`/api/admin/analytics/orders?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to fetch order analytics');
+      }
+      setOrderAnalytics(data.data);
+    } catch (e) {
+      console.error('Error fetching order analytics:', e);
+      setAnalyticsError(e.message || 'Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const setQuickRange = (range) => {
+    const now = new Date();
+    const to = now.toISOString().slice(0, 10);
+    let fromDate = to;
+    if (range === '7') {
+      fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    } else if (range === '30') {
+      fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    } else if (range === 'month') {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+      fromDate = first;
+    } else if (range === 'today') {
+      fromDate = to;
+    }
+    setAnalyticsFilters(prev => ({ ...prev, from: fromDate, to }));
   };
 
   // Loading state
@@ -1045,7 +1105,10 @@ export default function AdminDashboard() {
                 </span>
               </button>
               <button
-                onClick={() => alert('📋 Order analytics coming soon!\n\n• Order completion rates\n• Average processing time\n• Step-wise analytics\n• Performance metrics')}
+                onClick={() => {
+                  const section = document.getElementById('order-analytics-section');
+                  if (section) section.scrollIntoView({ behavior: 'smooth' });
+                }}
                 style={{
                   padding: '0.875rem 1rem',
                   backgroundColor: '#20c997',
@@ -1845,6 +1908,109 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Order Analytics */}
+      <div id="order-analytics-section" style={{
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '16px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        border: '1px solid #e9ecef',
+        marginTop: '2rem'
+      }}>
+        <h2 style={{ color: '#212529', margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Order Analytics</h2>
+        <p style={{ margin: '0.5rem 0 1rem 0', color: '#6c757d' }}>Completed orders, total revenue, and commission. Filter by date and group by day or month.</p>
+        <div style={{ backgroundColor: '#e7f3ff', border: '1px solid #b3d9ff', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#004085' }}>
+          <strong>Note:</strong> Data is based on completed orders (overallStatus: 'completed') from the order status tracking system, not just payment verifications.
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          <label style={{ color: '#6c757d' }}>From</label>
+          <input
+            type="date"
+            value={analyticsFilters.from}
+            onChange={(e) => setAnalyticsFilters(prev => ({ ...prev, from: e.target.value }))}
+            style={{ padding: '0.5rem', border: '1px solid #ced4da', borderRadius: '6px' }}
+          />
+          <label style={{ color: '#6c757d' }}>To</label>
+          <input
+            type="date"
+            value={analyticsFilters.to}
+            onChange={(e) => setAnalyticsFilters(prev => ({ ...prev, to: e.target.value }))}
+            style={{ padding: '0.5rem', border: '1px solid #ced4da', borderRadius: '6px' }}
+          />
+          <select
+            value={analyticsFilters.groupBy}
+            onChange={(e) => setAnalyticsFilters(prev => ({ ...prev, groupBy: e.target.value }))}
+            style={{ padding: '0.5rem', border: '1px solid #ced4da', borderRadius: '6px' }}
+          >
+            <option value="day">Group by Day</option>
+            <option value="month">Group by Month</option>
+          </select>
+          <button
+            onClick={() => fetchOrderAnalytics()}
+            disabled={analyticsLoading}
+            style={{ padding: '0.5rem 1rem', backgroundColor: '#20c997', color: 'white', border: 'none', borderRadius: '6px', cursor: analyticsLoading ? 'not-allowed' : 'pointer' }}
+          >
+            {analyticsLoading ? 'Loading…' : 'Apply'}
+          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={() => { setQuickRange('today'); fetchOrderAnalytics(true); }} style={{ padding: '0.4rem 0.6rem', border: '1px solid #ced4da', borderRadius: '6px', background: '#f8f9fa' }}>Today</button>
+            <button onClick={() => { setQuickRange('7'); fetchOrderAnalytics(true); }} style={{ padding: '0.4rem 0.6rem', border: '1px solid #ced4da', borderRadius: '6px', background: '#f8f9fa' }}>Last 7d</button>
+            <button onClick={() => { setQuickRange('30'); fetchOrderAnalytics(true); }} style={{ padding: '0.4rem 0.6rem', border: '1px solid #ced4da', borderRadius: '6px', background: '#f8f9fa' }}>Last 30d</button>
+            <button onClick={() => { setQuickRange('month'); fetchOrderAnalytics(true); }} style={{ padding: '0.4rem 0.6rem', border: '1px solid #ced4da', borderRadius: '6px', background: '#f8f9fa' }}>This Month</button>
+          </div>
+        </div>
+
+        {analyticsError && (
+          <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #f1aeb5', marginBottom: '1rem' }}>{analyticsError}</div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#198754', fontWeight: 700, fontSize: '1.75rem' }}>{orderAnalytics ? orderAnalytics.totals.soldProducts.toLocaleString() : '—'}</div>
+            <div style={{ color: '#6c757d' }}>Sold Products</div>
+          </div>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#0d6efd', fontWeight: 700, fontSize: '1.75rem' }}>{orderAnalytics ? formatCurrency(orderAnalytics.totals.totalRevenue) : '—'}</div>
+            <div style={{ color: '#6c757d' }}>Total Revenue</div>
+          </div>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#e83e8c', fontWeight: 700, fontSize: '1.75rem' }}>{orderAnalytics ? formatCurrency(orderAnalytics.totals.totalCommission) : '—'}</div>
+            <div style={{ color: '#6c757d' }}>Commission (@ {orderAnalytics ? orderAnalytics.totals.commissionPercent : commissionPercent}%)</div>
+          </div>
+        </div>
+
+        {orderAnalytics && (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e9ecef' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8f9fa' }}>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>Period</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>Sold</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>Revenue</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>Commission</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderAnalytics.series.map((row) => (
+                  <tr key={row.period} style={{ borderBottom: '1px solid #f1f3f5' }}>
+                    <td style={{ padding: '0.75rem' }}>{row.period}</td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>{row.soldCount.toLocaleString()}</td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>{formatCurrency(row.revenue)}</td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>{formatCurrency(row.commission)}</td>
+                  </tr>
+                ))}
+                {orderAnalytics.series.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ padding: '1rem', textAlign: 'center', color: '#6c757d' }}>No data for selected range</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
