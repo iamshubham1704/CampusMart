@@ -50,24 +50,56 @@ export async function GET(request) {
       transactions.map(async (transaction) => {
         try {
           // Get seller details
-          const seller = await db.collection('sellers').findOne({
-            _id: transaction.sellerId
-          }, { projection: { name: 1, email: 1, phone: 1, profileImage: 1 } });
+          // Resolve seller by either string or ObjectId
+          const sellerCandidates = [];
+          if (transaction.sellerId) {
+            sellerCandidates.push(transaction.sellerId);
+            if (typeof transaction.sellerId === 'string' && ObjectId.isValid(transaction.sellerId)) {
+              try { sellerCandidates.push(new ObjectId(transaction.sellerId)); } catch (_) {}
+            }
+          }
+          const seller = await db.collection('sellers').findOne(
+            sellerCandidates.length > 0 ? { _id: { $in: sellerCandidates } } : { _id: null },
+            { projection: { name: 1, email: 1, phone: 1, profileImage: 1 } }
+          );
 
           // Get buyer details
-          const buyer = await db.collection('buyers').findOne({
-            _id: transaction.buyerId
-          }, { projection: { name: 1, email: 1, phone: 1 } });
+          const buyerCandidates = [];
+          if (transaction.buyerId) {
+            buyerCandidates.push(transaction.buyerId);
+            if (typeof transaction.buyerId === 'string' && ObjectId.isValid(transaction.buyerId)) {
+              try { buyerCandidates.push(new ObjectId(transaction.buyerId)); } catch (_) {}
+            }
+          }
+          const buyer = await db.collection('buyers').findOne(
+            buyerCandidates.length > 0 ? { _id: { $in: buyerCandidates } } : { _id: null },
+            { projection: { name: 1, email: 1, phone: 1 } }
+          );
 
           // Get product details
-          const product = await db.collection('listings').findOne({
-            _id: transaction.productId
-          }, { projection: { title: 1, price: 1, images: 1 } });
+          const productCandidates = [];
+          if (transaction.productId) {
+            productCandidates.push(transaction.productId);
+            if (typeof transaction.productId === 'string' && ObjectId.isValid(transaction.productId)) {
+              try { productCandidates.push(new ObjectId(transaction.productId)); } catch (_) {}
+            }
+          }
+          const product = await db.collection('listings').findOne(
+            productCandidates.length > 0 ? { _id: { $in: productCandidates } } : { _id: null },
+            { projection: { title: 1, price: 1, images: 1 } }
+          );
 
           // Get order details
-          const order = await db.collection('orders').findOne({
-            _id: transaction.orderId
-          });
+          const orderCandidates = [];
+          if (transaction.orderId) {
+            orderCandidates.push(transaction.orderId);
+            if (typeof transaction.orderId === 'string' && ObjectId.isValid(transaction.orderId)) {
+              try { orderCandidates.push(new ObjectId(transaction.orderId)); } catch (_) {}
+            }
+          }
+          const order = await db.collection('orders').findOne(
+            orderCandidates.length > 0 ? { _id: { $in: orderCandidates } } : { _id: null }
+          );
 
           return {
             ...transaction,
@@ -165,9 +197,17 @@ export async function PUT(request) {
     const client = await clientPromise;
     const db = client.db('campusmart');
 
-    // Get transaction details
+    // Get transaction details - support both string and ObjectId _id
+    const idCandidates = [];
+    if (transactionId) {
+      idCandidates.push(transactionId);
+      if (ObjectId.isValid(transactionId)) {
+        try { idCandidates.push(new ObjectId(transactionId)); } catch (_) {}
+      }
+    }
+
     const transaction = await db.collection('seller_transactions').findOne({
-      _id: transactionId
+      _id: { $in: idCandidates }
     });
 
     if (!transaction) {
@@ -194,13 +234,18 @@ export async function PUT(request) {
 
     if (status === 'completed') {
       updateData.completedAt = new Date();
+      if (!updateData.transactionReference) {
+        return Response.json({ 
+          error: 'transactionReference is required when marking as completed' 
+        }, { status: 400 });
+      }
     } else if (status === 'failed') {
       updateData.failedAt = new Date();
     }
 
     // Update transaction
     const result = await db.collection('seller_transactions').updateOne(
-      { _id: transactionId },
+      { _id: { $in: idCandidates } },
       { $set: updateData }
     );
 
@@ -212,8 +257,15 @@ export async function PUT(request) {
 
     // Update related order status
     if (status === 'completed') {
+      const orderCandidates = [];
+      if (transaction.orderId) {
+        orderCandidates.push(transaction.orderId);
+        if (typeof transaction.orderId === 'string' && ObjectId.isValid(transaction.orderId)) {
+          try { orderCandidates.push(new ObjectId(transaction.orderId)); } catch (_) {}
+        }
+      }
       await db.collection('orders').updateOne(
-        { _id: transaction.orderId },
+        { _id: { $in: orderCandidates } },
         { 
           $set: { 
             sellerPaymentStatus: 'completed',
@@ -224,8 +276,15 @@ export async function PUT(request) {
         }
       );
     } else if (status === 'failed') {
+      const orderCandidates = [];
+      if (transaction.orderId) {
+        orderCandidates.push(transaction.orderId);
+        if (typeof transaction.orderId === 'string' && ObjectId.isValid(transaction.orderId)) {
+          try { orderCandidates.push(new ObjectId(transaction.orderId)); } catch (_) {}
+        }
+      }
       await db.collection('orders').updateOne(
-        { _id: transaction.orderId },
+        { _id: { $in: orderCandidates } },
         { 
           $set: { 
             sellerPaymentStatus: 'failed',
@@ -248,7 +307,7 @@ export async function PUT(request) {
           break;
         case 'completed':
           notificationTitle = 'Payment Completed!';
-          notificationMessage = `Payment of ₹${transaction.amount} has been sent to your UPI ID.`;
+          notificationMessage = `Payment of ₹${transaction.amount} has been sent to your UPI ID. Ref: ${updateData.transactionReference}`;
           break;
         case 'failed':
           notificationTitle = 'Payment Failed';
@@ -268,13 +327,14 @@ export async function PUT(request) {
         message: notificationMessage,
         isRead: false,
         createdAt: new Date(),
-        relatedId: transactionId,
+        relatedId: transaction._id,
         relatedType: 'seller_transaction',
         data: {
-          transactionId,
+          transactionId: transaction._id,
           status,
           amount: transaction.amount,
-          orderId: transaction.orderId
+          orderId: transaction.orderId,
+          reference: updateData.transactionReference
         }
       });
     } catch (notificationError) {
@@ -283,7 +343,7 @@ export async function PUT(request) {
     }
 
     console.log('✅ Seller transaction updated by admin:', {
-      transactionId,
+      transactionId: transaction._id,
       status,
       adminId: admin.adminId || admin.userId,
       amount: transaction.amount,
@@ -294,7 +354,7 @@ export async function PUT(request) {
       success: true,
       message: `Transaction ${status} successfully`,
       data: {
-        transactionId,
+        transactionId: transaction._id,
         status,
         processedAt: updateData.processedAt,
         processedBy: admin.name || admin.adminId
