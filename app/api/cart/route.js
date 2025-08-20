@@ -60,13 +60,13 @@ export async function GET(request) {
         id: cartItem._id || cartItem.listingId,
         listingId: listing._id.toString(),
         title: listing.title,
-        price: Math.round(listing.price * 1.1),
+        price: Math.round((listing.price || 0) + ((listing.price || 0) * ((listing.commission || 10) / 100))),
         image: imageUrl,
         seller: listing.seller?.[0]?.name || listing.sellerName || 'Unknown Seller',
         condition: listing.condition,
         quantity: cartItem.quantity || 1,
         addedAt: cartItem.addedAt,
-        subtotal: (Math.round(listing.price * 1.1) * (cartItem.quantity || 1))
+        subtotal: (Math.round((listing.price || 0) + ((listing.price || 0) * ((listing.commission || 10) / 100))) * (cartItem.quantity || 1))
       };
     }).filter(Boolean);
 
