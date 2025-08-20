@@ -1225,7 +1225,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Reports & Analytics */}
-          <div style={{ 
+          {/* <div style={{ 
             padding: '1.5rem', 
             border: '1px solid #e9ecef', 
             borderRadius: '12px',
@@ -1274,7 +1274,7 @@ export default function AdminDashboard() {
                 📈 Analytics Dashboard
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -1791,7 +1791,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Stats Summary */}
-        <div style={{
+        {/* <div style={{
           marginTop: '2rem',
           padding: '1.5rem',
           backgroundColor: '#f8f9fa',
@@ -1844,7 +1844,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Footer */}
