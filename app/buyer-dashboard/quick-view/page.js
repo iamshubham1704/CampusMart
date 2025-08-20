@@ -628,6 +628,15 @@ We will verify your payment and confirm your order shortly. You can track your o
                 </div>
 
                 <div className="modal-body">
+                  {/* Trust & Support Banner */}
+                  <div className="payment-support-banner">
+                    <div className="banner-title">For Payment Inquiries, Please Contact:</div>
+                    <div className="banner-contacts">
+                      <span>Shubham Solanki: <a href="tel:+919315863073">+91 93158 63073</a></span>
+                      <span>Krish: <a href="tel:+919821646882">+91 98216 46882</a></span>
+                    </div>
+                    <div className="banner-note">Feel free to reach out!</div>
+                  </div>
                   {/* Step 1: Payment Options */}
                   {paymentStep === 'options' && (
                     <div className="payment-options-step">
