@@ -11,10 +11,13 @@ export default function OrderStatusManagement() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [stepFilter, setStepFilter] = useState('all');
+  const [adminFilter, setAdminFilter] = useState('all');
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [statistics, setStatistics] = useState({});
   const [orderSteps, setOrderSteps] = useState({});
   const [syncLoading, setSyncLoading] = useState(false);
+  const [admins, setAdmins] = useState([]);
+  const [assigningAdmin, setAssigningAdmin] = useState({});
 
   // Step update modal state
   const [updateModal, setUpdateModal] = useState({
@@ -39,7 +42,8 @@ export default function OrderStatusManagement() {
   useEffect(() => {
     checkAuth();
     fetchOrders();
-  }, [filter, stepFilter, pagination.page]);
+    fetchAdmins();
+  }, [filter, stepFilter, adminFilter, pagination.page]);
 
   const checkAuth = () => {
     const token = localStorage.getItem('adminToken');
@@ -70,6 +74,7 @@ export default function OrderStatusManagement() {
       let url = `/api/admin/order-status?page=${pagination.page}&limit=20`;
       if (filter !== 'all') url += `&status=${filter}`;
       if (stepFilter !== 'all') url += `&step=${stepFilter}`;
+      if (adminFilter !== 'all') url += `&admin=${adminFilter}`;
 
       const response = await fetch(url, {
         headers: {
@@ -95,6 +100,91 @@ export default function OrderStatusManagement() {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/admins', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setAdmins(data.data.admins);
+      } else {
+        console.error('Failed to fetch admins:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+    }
+  };
+
+  const assignAdmin = async (orderId, adminId) => {
+    try {
+      setAssigningAdmin(prev => ({ ...prev, [orderId]: true }));
+      const token = localStorage.getItem('adminToken');
+
+      const response = await fetch(`/api/admin/order-status/${orderId}/assign-admin`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ assignedAdminId: adminId })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Order assigned to admin successfully!`);
+        fetchOrders(); // Refresh orders to show updated assignment
+      } else {
+        alert(data.error || 'Failed to assign admin');
+      }
+    } catch (error) {
+      console.error('Error assigning admin:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setAssigningAdmin(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
+
+  const bulkAssignAdmin = async (adminId, ordersToAssign) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const order of ordersToAssign) {
+        try {
+          const response = await fetch(`/api/admin/order-status/${order._id}/assign-admin`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ assignedAdminId: adminId })
+          });
+
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (error) {
+          failCount++;
+        }
+      }
+
+      alert(`Bulk assignment completed!\n✅ Successfully assigned: ${successCount}\n❌ Failed: ${failCount}`);
+      fetchOrders(); // Refresh orders to show updated assignments
+    } catch (error) {
+      console.error('Error in bulk assignment:', error);
+      alert('Network error during bulk assignment. Please try again.');
     }
   };
 
@@ -376,6 +466,57 @@ export default function OrderStatusManagement() {
           >
             {syncLoading ? '🔄 Syncing...' : '🔄 Sync Verified Payments'}
           </button>
+          
+          {/* Bulk Assign Admin */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <select
+              id="bulkAssignAdmin"
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #ced4da',
+                borderRadius: '6px',
+                fontSize: '0.875rem',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="">Select Admin</option>
+              {admins.map(admin => (
+                <option key={admin._id} value={admin._id}>
+                  {admin.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                const adminId = document.getElementById('bulkAssignAdmin').value;
+                if (!adminId) {
+                  alert('Please select an admin first');
+                  return;
+                }
+                const unassignedOrders = orders.filter(o => !o.assignedAdminId);
+                if (unassignedOrders.length === 0) {
+                  alert('No unassigned orders found');
+                  return;
+                }
+                if (confirm(`Assign ${unassignedOrders.length} unassigned orders to ${admins.find(a => a._id === adminId)?.name}?`)) {
+                  bulkAssignAdmin(adminId, unassignedOrders);
+                }
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#6f42c1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
+            >
+              📋 Bulk Assign
+            </button>
+          </div>
+          
           <button
             onClick={() => router.push('/admin-dashboard')}
             style={{
@@ -437,6 +578,35 @@ export default function OrderStatusManagement() {
               </div>
             );
           })}
+          
+          {/* Admin Assignment Stats */}
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👤</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#6f42c1', marginBottom: '0.5rem' }}>
+              {orders.filter(o => o.assignedAdminId).length}
+            </div>
+            <div style={{ color: '#6c757d', fontSize: '0.9rem' }}>Assigned</div>
+          </div>
+          
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>❓</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#6c757d', marginBottom: '0.5rem' }}>
+              {orders.filter(o => !o.assignedAdminId).length}
+            </div>
+            <div style={{ color: '#6c757d', fontSize: '0.9rem' }}>Unassigned</div>
+          </div>
         </div>
       )}
 
@@ -493,6 +663,50 @@ export default function OrderStatusManagement() {
               <option value="7">Step 7: Order Complete</option>
             </select>
           </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#333' }}>
+              Assigned Admin:
+            </label>
+            <select
+              value={adminFilter}
+              onChange={(e) => setAdminFilter(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #ced4da',
+                borderRadius: '6px',
+                fontSize: '0.9rem'
+              }}
+            >
+              <option value="all">All Admins</option>
+              <option value="unassigned">Unassigned</option>
+              {admins.map(admin => (
+                <option key={admin._id} value={admin._id}>
+                  {admin.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginTop: '1rem' }}>
+            <button
+              onClick={() => {
+                setFilter('all');
+                setStepFilter('all');
+                setAdminFilter('all');
+                setPagination(prev => ({ ...prev, page: 1 }));
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              🔄 Reset All Filters
+            </button>
+          </div>
         </div>
       </div>
 
@@ -514,6 +728,18 @@ export default function OrderStatusManagement() {
           <p style={{ margin: '0.5rem 0 0 0', color: '#6c757d', fontSize: '0.9rem' }}>
             Manage the 7-step order fulfillment process
           </p>
+          <div style={{ 
+            marginTop: '1rem', 
+            padding: '0.75rem', 
+            backgroundColor: '#e7f3ff', 
+            border: '1px solid #b3d9ff', 
+            borderRadius: '6px',
+            fontSize: '0.85rem',
+            color: '#004085'
+          }}>
+            <strong>💡 Assigned Admin Feature:</strong> Use the "Assigned Admin" column to assign specific admins to handle each order. 
+            This helps with workload distribution and accountability. You can also use the bulk assign feature to assign multiple unassigned orders at once.
+          </div>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
@@ -534,6 +760,9 @@ export default function OrderStatusManagement() {
                 </th>
                 <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid #dee2e6', fontWeight: '600' }}>
                   Current Step
+                </th>
+                <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid #dee2e6', fontWeight: '600' }}>
+                  Assigned Admin
                 </th>
                 <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid #dee2e6', fontWeight: '600' }}>
                   Actions
@@ -646,6 +875,59 @@ export default function OrderStatusManagement() {
                       }}>
                         {currentStepInfo?.name}
                       </div>
+                    </td>
+                    
+                    <td style={{ padding: '1rem', textAlign: 'center', verticalAlign: 'top' }}>
+                      <div style={{ marginBottom: '0.5rem' }}>
+                        <select
+                          value={order.assignedAdminId || ''}
+                          onChange={(e) => assignAdmin(order._id, e.target.value)}
+                          disabled={assigningAdmin[order._id]}
+                          style={{
+                            padding: '0.5rem',
+                            border: '1px solid #ced4da',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            backgroundColor: 'white',
+                            minWidth: '150px'
+                          }}
+                        >
+                          <option value="">Select Admin</option>
+                          {admins.map(admin => (
+                            <option key={admin._id} value={admin._id}>
+                              {admin.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {order.assignedAdminId ? (
+                        <div style={{ 
+                          fontSize: '0.8rem', 
+                          color: '#28a745',
+                          backgroundColor: '#d4edda',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '12px',
+                          display: 'inline-block'
+                        }}>
+                          ✅ {admins.find(a => a._id === order.assignedAdminId)?.name || 'Unknown Admin'}
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          fontSize: '0.8rem', 
+                          color: '#6c757d',
+                          backgroundColor: '#f8f9fa',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '12px',
+                          display: 'inline-block'
+                        }}>
+                          ❓ Unassigned
+                        </div>
+                      )}
+                      {assigningAdmin[order._id] && (
+                        <div style={{ fontSize: '0.75rem', color: '#007bff', marginTop: '0.25rem' }}>
+                          ⏳ Assigning...
+                        </div>
+                      )}
                     </td>
                     
                     <td style={{ padding: '1rem', textAlign: 'center', verticalAlign: 'top' }}>
@@ -842,6 +1124,59 @@ export default function OrderStatusManagement() {
                   <p><strong>Seller Phone:</strong> {selectedOrder.sellerPhone}</p>
                 </div>
               </div>
+            </div>
+
+            {/* Assigned Admin Info */}
+            <div style={{
+              backgroundColor: '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '2rem',
+              border: '1px solid #e9ecef'
+            }}>
+              <h3 style={{ margin: '0 0 1rem 0', color: '#333' }}>👤 Assigned Admin</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1', minWidth: '200px' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#333' }}>
+                    Assign Admin:
+                  </label>
+                  <select
+                    value={selectedOrder.assignedAdminId || ''}
+                    onChange={(e) => assignAdmin(selectedOrder._id, e.target.value)}
+                    disabled={assigningAdmin[selectedOrder._id]}
+                    style={{
+                      padding: '0.5rem',
+                      border: '1px solid #ced4da',
+                      borderRadius: '6px',
+                      fontSize: '0.9rem',
+                      backgroundColor: 'white',
+                      width: '100%'
+                    }}
+                  >
+                    <option value="">Select Admin</option>
+                    {admins.map(admin => (
+                      <option key={admin._id} value={admin._id}>
+                        {admin.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedOrder.assignedAdminId && (
+                  <div style={{ flex: '1', minWidth: '200px' }}>
+                    <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                      <p><strong>Current Admin:</strong> {admins.find(a => a._id === selectedOrder.assignedAdminId)?.name || 'Unknown Admin'}</p>
+                      {selectedOrder.assignedAt && (
+                        <p><strong>Assigned:</strong> {formatDate(selectedOrder.assignedAt)}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {assigningAdmin[selectedOrder._id] && (
+                <div style={{ fontSize: '0.85rem', color: '#007bff', marginTop: '0.5rem' }}>
+                  ⏳ Updating assignment...
+                </div>
+              )}
             </div>
 
             {/* Steps Progress */}

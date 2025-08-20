@@ -52,6 +52,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit')) || 20;
     const status = searchParams.get('status'); // 'in_progress', 'completed', 'failed'
     const step = searchParams.get('step'); // current step filter
+    const adminFilter = searchParams.get('admin'); // assigned admin filter
 
     const client = await clientPromise;
     const db = client.db('campusmart');
@@ -63,6 +64,20 @@ export async function GET(request) {
     }
     if (step && step !== 'all') {
       filter.currentStep = parseInt(step);
+    }
+    if (adminFilter && adminFilter !== 'all') {
+      if (adminFilter === 'unassigned') {
+        filter.$or = [
+          { assignedAdminId: { $exists: false } },
+          { assignedAdminId: null }
+        ];
+      } else {
+        try {
+          filter.assignedAdminId = new ObjectId(adminFilter);
+        } catch (error) {
+          console.error('Invalid admin ID format:', error);
+        }
+      }
     }
 
     // Calculate pagination

@@ -47,7 +47,7 @@ export async function GET(request, { params }) {
       }, { status: 401 });
     }
 
-    const { orderId } = params;
+    const { orderId } = await params;
     
     if (!orderId) {
       return Response.json({ 
@@ -99,8 +99,8 @@ export async function PUT(request, { params }) {
       }, { status: 401 });
     }
 
-    const { orderId } = params;
-    const { step, status, details } = await request.json();
+    const { orderId } = await params;
+    const { step, status, details, assignedAdminId } = await request.json();
 
     // Validate input
     if (!orderId || !step || !status) {
@@ -132,6 +132,18 @@ export async function PUT(request, { params }) {
       return Response.json({ 
         error: 'Reason is required when marking order as failed' 
       }, { status: 400 });
+    }
+
+    // Handle assigned admin update
+    if (assignedAdminId) {
+      // Validate assigned admin ID format
+      try {
+        new ObjectId(assignedAdminId);
+      } catch (error) {
+        return Response.json({ 
+          error: 'Invalid assigned admin ID format' 
+        }, { status: 400 });
+      }
     }
 
     let objectId;
@@ -180,6 +192,13 @@ export async function PUT(request, { params }) {
       [`steps.${stepNum}.completedBy`]: new ObjectId(admin.adminId || admin.userId),
       updatedAt: new Date()
     };
+
+    // Update assigned admin if provided
+    if (assignedAdminId) {
+      updateData.assignedAdminId = new ObjectId(assignedAdminId);
+      updateData.assignedAt = new Date();
+      updateData.assignedBy = new ObjectId(admin.adminId || admin.userId);
+    }
 
     if (status === 'completed') {
       updateData[`steps.${stepNum}.completedAt`] = new Date();
