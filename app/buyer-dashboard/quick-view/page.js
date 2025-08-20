@@ -538,6 +538,13 @@ We will verify your payment and confirm your order shortly. You can track your o
                         <span>Same as Current address</span>
                         <span className="change-link">📍 Need at {product.location}</span>
                       </div>
+                      {(product.college || product.location) && (
+                        <div className="delivery-option" style={{ marginTop: 6 }}>
+                          <span>🏫</span>
+                          <span>College</span>
+                          <span className="change-link">{product.college || 'N/A'}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -938,7 +945,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                       </ul>
                     </div>
 
-                    <div className="policy-section">
+                    {/* <div className="policy-section">
                       <h4>🔄 Return Policy</h4>
                       <ul>
                         <li>7-day return policy for defective items</li>
@@ -946,7 +953,7 @@ We will verify your payment and confirm your order shortly. You can track your o
                         <li>Buyer responsible for return shipping</li>
                         <li>No returns on used items unless defective</li>
                       </ul>
-                    </div>
+                    </div> */}
 
                     <div className="policy-section">
                       <h4>🛡️ Warranty</h4>

@@ -712,9 +712,11 @@ const BuyerDashboard = () => {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesPrice = product.price >= filters.priceRange.min && product.price <= filters.priceRange.max;
     const matchesCondition = filters.conditions.length === 0 || filters.conditions.includes(product.condition);
-    const matchesLocation = filters.locations.length === 0 || filters.locations.includes(product.location);
+    const locationFilters = (filters.locations || []).map(l => (l || '').toLowerCase());
+    const productCollege = (product.college || product.location || '').toLowerCase();
+    const matchesCollege = locationFilters.length === 0 || locationFilters.includes(productCollege);
 
-    return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesLocation;
+    return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesCollege;
   }).sort((a, b) => {
     switch (filters.sortBy) {
       case 'newest': return new Date(b.createdAt) - new Date(a.createdAt);
@@ -1122,14 +1124,14 @@ const BuyerDashboard = () => {
 
               <div className="locationGroup">
                 <label>
-                  <MapPin size={18} className="filter-icon" />
-                  College Location
+                  <BookOpen size={18} className="filter-icon" />
+                  College
                 </label>
                 <div className="locationSelector" ref={locationDropdownRef}>
                   <input
                     type="text"
                     className="locationInput js-location-dropdown"
-                    placeholder="Select College Location"
+                    placeholder="Select College"
                     value={selectedLocation}
                     onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
                     onChange={() => {}} // Read-only for display
@@ -1140,7 +1142,7 @@ const BuyerDashboard = () => {
                       <input
                         type="text"
                         className="locationSearchInput"
-                        placeholder="Search locations..."
+                        placeholder="Search colleges..."
                         value={locationSearchQuery}
                         onChange={(e) => setLocationSearchQuery(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
@@ -1151,7 +1153,7 @@ const BuyerDashboard = () => {
                         className="locationOption"
                         onClick={() => handleLocationSelect('')}
                       >
-                        <span>All Locations</span>
+                        <span>All Colleges</span>
                       </div>
                       {filteredLocations.map(location => (
                         <div
