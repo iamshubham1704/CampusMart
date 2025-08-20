@@ -68,8 +68,11 @@ export default function AdminDashboard() {
   // Filter and paginate users
   const filteredUsers = users.filter(user => {
     const matchesFilter = filter === "all" || user.userType === filter;
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const lowerSearch = searchTerm.toLowerCase();
+    const phoneString = (user.phone || "").toString();
+    const matchesSearch = user.name.toLowerCase().includes(lowerSearch) ||
+                         user.email.toLowerCase().includes(lowerSearch) ||
+                         phoneString.includes(lowerSearch);
     return matchesFilter && matchesSearch;
   });
 
@@ -1367,7 +1370,7 @@ export default function AdminDashboard() {
           }}>
             <input
               type="text"
-              placeholder="Search users by name or email..."
+              placeholder="Search users by name, email or phone..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -1462,6 +1465,14 @@ export default function AdminDashboard() {
                   borderBottom: "1px solid #dee2e6",
                   fontWeight: "bold",
                 }}>
+                  Phone
+                </th>
+                <th style={{
+                  padding: "0.75rem",
+                  textAlign: "left",
+                  borderBottom: "1px solid #dee2e6",
+                  fontWeight: "bold",
+                }}>
                   Type
                 </th>
                 <th style={{
@@ -1512,6 +1523,7 @@ export default function AdminDashboard() {
                 <tr key={user._id} style={{ borderBottom: "1px solid #dee2e6" }}>
                   <td style={{ padding: "0.75rem" }}>{user.name}</td>
                   <td style={{ padding: "0.75rem" }}>{user.email}</td>
+                  <td style={{ padding: "0.75rem" }}>{user.phone || '—'}</td>
                   <td style={{ padding: "0.75rem" }}>
                     <span style={{
                       padding: "0.25rem 0.5rem",
