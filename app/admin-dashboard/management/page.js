@@ -13,6 +13,8 @@ export default function AdminManagementPage() {
   // Listings state
   const [listings, setListings] = useState([]);
   const [listingsFilter, setListingsFilter] = useState('all');
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [showListingModal, setShowListingModal] = useState(false);
   
   // Conversations state
   const [conversations, setConversations] = useState([]);
@@ -75,6 +77,26 @@ export default function AdminManagementPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helpers
+  const openListingDetails = (listing) => {
+    setSelectedListing(listing);
+    setShowListingModal(true);
+  };
+
+  const closeListingDetails = () => {
+    setShowListingModal(false);
+    setSelectedListing(null);
+  };
+
+  const getListingImageUrl = (listing) => {
+    const fallback = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop';
+    if (!listing || !listing.images) return fallback;
+    const first = Array.isArray(listing.images) ? listing.images[0] : listing.images;
+    if (typeof first === 'string' && first.trim().length > 0) return first;
+    if (first && typeof first === 'object') return first.url || first.thumbnailUrl || first.secure_url || first.path || fallback;
+    return fallback;
   };
 
   const fetchListings = async (token) => {
@@ -587,8 +609,11 @@ export default function AdminManagementPage() {
                     </td>
                     <td style={{ padding: '0.75rem' }}>
                       <div>
-                        <div>{listing.seller_name}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#666' }}>{listing.seller_email}</div>
+                        <div>{listing.seller_name || 'Unknown Seller'}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#666' }}>{listing.seller_email || 'No email'}</div>
+                        {listing.seller_phone && (
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>{listing.seller_phone}</div>
+                        )}
                       </div>
                     </td>
                     <td style={{ padding: '0.75rem' }}>₹{listing.price}</td>
@@ -632,22 +657,38 @@ export default function AdminManagementPage() {
                       </div>
                     </td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                      <select
-                        value={listing.status || 'active'}
-                        onChange={(e) => handleListingStatusChange(listing._id, e.target.value)}
-                        style={{
-                          padding: '0.25rem 0.5rem',
-                          border: '1px solid #ccc',
-                          borderRadius: '4px',
-                          fontSize: '0.875rem'
-                        }}
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="sold">Sold</option>
-                        <option value="pending">Pending</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', alignItems: 'center' }}>
+                        <button
+                          onClick={() => openListingDetails(listing)}
+                          style={{
+                            padding: '0.375rem 0.75rem',
+                            backgroundColor: '#17a2b8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          View
+                        </button>
+                        <select
+                          value={listing.status || 'active'}
+                          onChange={(e) => handleListingStatusChange(listing._id, e.target.value)}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="sold">Sold</option>
+                          <option value="pending">Pending</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1128,6 +1169,97 @@ export default function AdminManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Listing Details Modal */}
+      <ListingDetailsModal
+        open={showListingModal}
+        listing={selectedListing}
+        onClose={closeListingDetails}
+        getImageUrl={getListingImageUrl}
+      />
+    </div>
+  );
+}
+
+// Listing Details Modal (inline component styles)
+// Rendered conditionally within the main component return above
+// Inject the modal at the bottom to avoid layout shifts
+// eslint-disable-next-line react/display-name
+export function ListingDetailsModal({ open, listing, onClose, getImageUrl }) {
+  if (!open || !listing) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'white',
+          width: 'min(900px, 95vw)',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          borderRadius: '10px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #eee' }}>
+          <h3 style={{ margin: 0 }}>Listing Details</h3>
+          <button onClick={onClose} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: 6, cursor: 'pointer' }}>Close</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1rem', padding: '1rem' }}>
+          <div>
+            <img
+              src={getImageUrl(listing)}
+              alt={listing.title}
+              style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+              onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop'; }}
+            />
+            <div style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#555' }}>
+              <div><strong>Status:</strong> <span style={{ textTransform: 'capitalize' }}>{listing.status || 'active'}</span></div>
+              <div><strong>Category:</strong> {listing.category || 'N/A'}</div>
+              {listing.subcategory && (<div><strong>Subcategory:</strong> {listing.subcategory}</div>)}
+              {listing.location && (<div><strong>Location:</strong> {listing.location}</div>)}
+              {listing.college && (<div><strong>College:</strong> {listing.college}</div>)}
+              <div><strong>Views:</strong> {listing.views || 0}</div>
+              <div><strong>Commission:</strong> {listing.commission ?? 10}%</div>
+            </div>
+          </div>
+
+          <div>
+            <h2 style={{ margin: '0 0 0.5rem 0' }}>{listing.title}</h2>
+            <div style={{ fontSize: '1.25rem', color: '#28a745', marginBottom: '0.75rem' }}>₹{listing.price}</div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.25rem 0' }}>Seller</h4>
+              <div style={{ background: '#f8f9fa', padding: '0.75rem', borderRadius: 6, border: '1px solid #eee' }}>
+                <div><strong>Name:</strong> {listing.seller_name || 'Unknown'}</div>
+                <div><strong>Email:</strong> {listing.seller_email || 'N/A'}</div>
+                <div><strong>Phone:</strong> {listing.seller_phone || 'N/A'}</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ margin: '0 0 0.25rem 0' }}>Description</h4>
+              <div style={{ whiteSpace: 'pre-wrap', background: '#fff', border: '1px solid #eee', borderRadius: 6, padding: '0.75rem', color: '#444' }}>
+                {listing.description || 'No description provided.'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
