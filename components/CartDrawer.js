@@ -9,7 +9,6 @@ import {
   Trash2,
   ShoppingBag,
   DollarSign,
-  User,
   ArrowRight,
   Package
 } from 'lucide-react';
@@ -79,15 +78,17 @@ const CartDrawer = () => {
                 {cartItems.map((item) => (
                   <div key={item.listingId} className="cart-item">
                     <div className="item-image">
-                      <img src={item.image} alt={item.title} />
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop';
+                        }}
+                      />
                     </div>
                     
                     <div className="item-details">
                       <h4 className="item-title">{item.title}</h4>
-                      <div className="item-seller">
-                        <User size={14} />
-                        <span>{item.seller}</span>
-                      </div>
                       <div className="item-condition">
                         <span className="condition-badge">{item.condition}</span>
                       </div>

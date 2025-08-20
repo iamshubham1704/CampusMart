@@ -45,13 +45,23 @@ export async function GET(request) {
     const cartWithDetails = cart.items.map(cartItem => {
       const listing = listings.find(l => l._id.toString() === cartItem.listingId);
       if (!listing) return null; // Skip items where listing is no longer available
-      
+
+      // Resolve a safe image URL from various possible image formats
+      const defaultImage = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop';
+      const firstImage = Array.isArray(listing.images) ? listing.images[0] : listing.images;
+      let imageUrl = defaultImage;
+      if (typeof firstImage === 'string' && firstImage.trim().length > 0) {
+        imageUrl = firstImage;
+      } else if (firstImage && typeof firstImage === 'object') {
+        imageUrl = firstImage.url || firstImage.thumbnailUrl || firstImage.secure_url || firstImage.path || firstImage.filePath || defaultImage;
+      }
+
       return {
         id: cartItem._id || cartItem.listingId,
         listingId: listing._id.toString(),
         title: listing.title,
         price: Math.round(listing.price * 1.1),
-        image: listing.images?.[0] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+        image: imageUrl,
         seller: listing.seller?.[0]?.name || listing.sellerName || 'Unknown Seller',
         condition: listing.condition,
         quantity: cartItem.quantity || 1,
