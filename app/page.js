@@ -43,27 +43,27 @@ const CampusMart = () => {
   const testimonialImages = [
     {
       id: 1,
-      imageUrl: "test1.jpg"
+      imageUrl: "https://ik.imagekit.io/zuxeumnng/Testimonials/ananya%20goyal.jpg?updatedAt=1755797239781"
     },
     {
       id: 2,
-      imageUrl: "test2.jpg"
+      imageUrl: "https://ik.imagekit.io/zuxeumnng/Testimonials/test2.jpg"
     },
     {
       id: 3,
-      imageUrl: "test3.jpg"
+      imageUrl: "https://ik.imagekit.io/zuxeumnng/Testimonials/test3.jpg"
     },
     {
       id: 4,
-      imageUrl: "test4.jpg"
+      imageUrl: "https://ik.imagekit.io/zuxeumnng/Testimonials/test4.jpg"
     },
     {
       id: 5,
-      imageUrl: "test5.jpg"
+      imageUrl: "https://ik.imagekit.io/zuxeumnng/Testimonials/test5.jpg"
     },
     {
       id: 6,
-      imageUrl: "test6.jpg"
+      imageUrl: "https://ik.imagekit.io/zuxeumnng/Testimonials/test6.jpg"
     }
   ];
 
