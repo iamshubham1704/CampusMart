@@ -416,7 +416,13 @@ We will verify your payment and confirm your order shortly. You can track your o
 
   const calculateSavings = () => {
     if (!product || !product.originalPrice) return 0;
-    return ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0);
+    const buyerPrice = (product.finalPrice !== undefined
+      ? product.finalPrice
+      : (product.price || 0) + ((product.price || 0) * ((product.commission || 0) / 100))
+    );
+    if (product.originalPrice <= 0 || buyerPrice <= 0) return 0;
+    const percent = ((product.originalPrice - buyerPrice) / product.originalPrice) * 100;
+    return Math.max(0, Math.round(percent));
   };
 
   const handleImageError = (e) => {
