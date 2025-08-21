@@ -215,6 +215,23 @@ export async function POST(request) {
       }, { status: 409 });
     }
 
+    // Determine seller payout amount as the listing price (not buyer price)
+    let listingPrice = null;
+    try {
+      const productIdObj = (typeof order.productId === 'string' && ObjectId.isValid(order.productId))
+        ? new ObjectId(order.productId)
+        : order.productId;
+      const product = await db.collection('listings').findOne(
+        { _id: productIdObj },
+        { projection: { price: 1 } }
+      );
+      listingPrice = typeof product?.price === 'number' ? product.price : null;
+    } catch (priceErr) {
+      console.error('Error fetching listing price for payout:', priceErr);
+    }
+
+    const payoutAmount = typeof listingPrice === 'number' ? listingPrice : (order.amount || 0);
+
     // Create new seller transaction record
     const transactionId = new ObjectId().toString();
     const transactionData = {
@@ -223,7 +240,7 @@ export async function POST(request) {
       buyerId: order.buyerId,
       orderId: orderId,
       productId: order.productId,
-      amount: order.amount,
+      amount: payoutAmount,
       sellerUpiId: upiId,
       accountHolderName: accountHolderName || '',
       bankName: bankName || '',
@@ -273,7 +290,7 @@ export async function POST(request) {
         data: {
           sellerId: decoded.sellerId,
           orderId: orderId,
-          amount: order.amount,
+          amount: payoutAmount,
           upiId: upiId
         }
       });
@@ -298,7 +315,7 @@ export async function POST(request) {
         data: {
           transactionId,
           status: 'pending',
-          amount: order.amount,
+          amount: payoutAmount,
           orderId: orderId,
           upiId: upiId
         }
@@ -312,7 +329,7 @@ export async function POST(request) {
       transactionId,
       sellerId: decoded.sellerId,
       orderId,
-      amount: order.amount,
+      amount: payoutAmount,
       upiId: upiId
     });
 
@@ -323,7 +340,7 @@ export async function POST(request) {
         transactionId,
         status: 'pending',
         requestedAt: transactionData.requestedAt,
-        amount: order.amount
+        amount: payoutAmount
       }
     }, { status: 201 });
 

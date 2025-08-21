@@ -118,8 +118,12 @@ export async function GET(request) {
             }
           }
 
+          // Ensure order.amount reflects seller payout (listing price) for UI convenience
+          const sellerPayoutAmount = typeof product?.price === 'number' ? product.price : (order.amount || 0);
+
           return {
             ...order,
+            amount: sellerPayoutAmount,
             product: product || { title: 'Product Deleted', price: 0, images: [], category: 'Unknown' },
             buyer: buyer || { name: 'Unknown Buyer', email: '', phone: '' },
             sellerTransaction: sellerTransaction || null,
