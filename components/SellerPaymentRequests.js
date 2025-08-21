@@ -17,10 +17,11 @@ import {
   ArrowLeft,
   Download,
   Filter,
-  RefreshCw,
   FileText,
   Mail,
-  Phone
+  Phone,
+  Shield,
+  Search
 } from 'lucide-react';
 
 const SellerPaymentRequests = () => {
@@ -41,10 +42,14 @@ const SellerPaymentRequests = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [adminDetails, setAdminDetails] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
   }, []);
+
+
 
   const fetchData = async () => {
     try {
@@ -152,6 +157,11 @@ const SellerPaymentRequests = () => {
         setVerifiedOrders(verifiedOrdersData);
         setTransactions(transactionsDataArray);
         
+        // Fetch admin details for each order
+        if (verifiedOrdersData.length > 0) {
+          fetchAdminDetailsForOrders(verifiedOrdersData, token);
+        }
+        
         console.log('✅ Real API data loaded successfully');
       } catch (apiError) {
         console.error('❌ API Error:', apiError.message);
@@ -173,6 +183,41 @@ const SellerPaymentRequests = () => {
       setLoading(false);
     }
   };
+
+  const fetchAdminDetailsForOrders = async (orders, token) => {
+    console.log('🔄 Fetching admin details for', orders.length, 'orders');
+    const adminDetailsMap = {};
+    
+    for (const order of orders) {
+      try {
+        console.log('🔍 Fetching admin details for order:', order._id);
+        const response = await fetch(`/api/seller/order-admin?orderId=${order._id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Admin details response for order', order._id, ':', data);
+          if (data.success) {
+            adminDetailsMap[order._id] = data.data;
+          }
+        } else {
+          console.error('❌ Failed to fetch admin details for order', order._id, ':', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching admin details for order:', order._id, error);
+      }
+    }
+    
+    console.log('📋 Final admin details map:', adminDetailsMap);
+    setAdminDetails(adminDetailsMap);
+  };
+
+
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -358,11 +403,16 @@ const SellerPaymentRequests = () => {
 
   const exportData = () => {
     const csvContent = [
-      ['Transaction ID', 'Product', 'Buyer', 'Amount', 'Status', 'Request Date', 'UPI ID'],
+      ['Transaction ID', 'Product', 'Assigned Admin', 'Admin Email', 'Amount', 'Status', 'Request Date', 'UPI ID'],
       ...transactions.map(t => [
         t._id,
         t.product?.title || 'N/A',
-        t.buyer?.name || 'N/A',
+        adminDetails[t.orderId]?.hasAssignedAdmin && adminDetails[t.orderId].admin 
+          ? adminDetails[t.orderId].admin.name 
+          : 'Not assigned',
+        adminDetails[t.orderId]?.hasAssignedAdmin && adminDetails[t.orderId].admin 
+          ? adminDetails[t.orderId].admin.email 
+          : 'N/A',
         t.amount,
         t.status,
         formatDate(t.createdAt),
@@ -385,6 +435,21 @@ const SellerPaymentRequests = () => {
   });
 
   const pendingOrdersCount = verifiedOrders.filter(order => !order.hasPaymentRequest && !order.paymentRequested).length;
+
+  const filteredOrders = verifiedOrders.filter(order => {
+    if (!searchQuery) return true;
+    
+    const searchLower = searchQuery.toLowerCase();
+    const productTitle = order.product?.title?.toLowerCase() || '';
+    const adminName = adminDetails[order._id]?.admin?.name?.toLowerCase() || '';
+    const adminEmail = adminDetails[order._id]?.admin?.email?.toLowerCase() || '';
+    const category = order.product?.category?.toLowerCase() || '';
+    
+    return productTitle.includes(searchLower) ||
+           adminName.includes(searchLower) ||
+           adminEmail.includes(searchLower) ||
+           category.includes(searchLower);
+  });
   
 
   if (loading) {
@@ -447,7 +512,7 @@ const SellerPaymentRequests = () => {
               className="action-button"
               title="Refresh Data"
             >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              <Loader2 size={16} className={refreshing ? 'animate-spin' : ''} />
               <span>Refresh</span>
             </button>
             <button 
@@ -458,10 +523,32 @@ const SellerPaymentRequests = () => {
               <Download size={16} />
               <span>Export</span>
             </button>
+
           </div>
         </div>
 
         
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div className="relative max-w-md">
+            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by product, admin, or category..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+            />
+          </div>
+          {searchQuery && (
+            <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+              {filteredOrders.length} of {verifiedOrders.length} orders
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tab Navigation */}
@@ -483,6 +570,8 @@ const SellerPaymentRequests = () => {
           </nav>
         </div>
       </div>
+
+
 
       {/* Content based on active tab */}
       {activeTab === 'pending' && (
@@ -507,14 +596,26 @@ const SellerPaymentRequests = () => {
             </div>
           </div>
 
-          {verifiedOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <div className="p-12 text-center">
               <Package size={64} className="mx-auto text-gray-400 mb-6" />
-              <h3 className="text-xl font-medium text-gray-900 mb-3">No verified orders</h3>
+              <h3 className="text-xl font-medium text-gray-900 mb-3">
+                {searchQuery ? 'No orders found' : 'No verified orders'}
+              </h3>
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Orders will appear here once buyers complete their payments and admin verifies them.
-                Check back regularly for new orders.
+                {searchQuery 
+                  ? 'Try adjusting your search terms or clear the search to see all orders.'
+                  : 'Orders will appear here once buyers complete their payments and admin verifies them. Check back regularly for new orders.'
+                }
               </p>
+              {searchQuery ? (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors mr-3"
+                >
+                  Clear Search
+                </button>
+              ) : null}
               <button 
                 onClick={handleRefresh}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -524,8 +625,8 @@ const SellerPaymentRequests = () => {
             </div>
           ) : (
             <div className="items-list">
-              {verifiedOrders.map((order) => (
-                <div key={order._id} className="item-row">
+              {filteredOrders.map((order) => (
+                <div key={order._id} className="item-row hover:shadow-md transition-shadow duration-200">
                   <div className="item-content">
                     <div className="item-left">
                       <img
@@ -540,7 +641,7 @@ const SellerPaymentRequests = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="item-title">{order.product?.title || 'Unknown Product'}</h3>
-                            <div className="item-meta">
+                            <div className="item-meta mt-2">
                               <div className="item-meta-item">
                                 <span>📂</span>
                                 <span>{order.product?.category || 'Unknown'}</span>
@@ -550,44 +651,84 @@ const SellerPaymentRequests = () => {
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                          <div>
-                            <p className="text-sm text-gray-600 flex items-center">
-                              <User size={14} className="mr-2" />
-                              <span className="font-medium">Buyer:</span>
-                              <span className="ml-1">{order.buyer?.name || 'Unknown Buyer'}</span>
-                            </p>
-                            <p className="text-sm text-gray-600 flex items-center mt-1">
-                              <Mail size={14} className="mr-2" />
-                              <span>{order.buyer?.email || 'No email'}</span>
-                            </p>
-                            <p className="text-sm text-gray-600 flex items-center mt-1">
-                              <Phone size={14} className="mr-2" />
-                              <span>{order.buyer?.phone || 'No phone'}</span>
-                            </p>
+                        <div className="mt-4 space-y-3">
+                          {/* Order Info */}
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Calendar size={14} className="mr-2" />
+                            <span className="font-medium">Order Date:</span>
+                            <span className="ml-1">{safeFormatDate(order.createdAt || order.orderDate, '—')}</span>
                           </div>
-                          <div>
-                            <p className="text-sm text-gray-600 flex items-center">
-                              <Calendar size={14} className="mr-2" />
-                              <span className="font-medium">Order Date:</span>
-                              <span className="ml-1">{safeFormatDate(order.createdAt || order.orderDate, '—')}</span>
-                            </p>
-                            <p className="text-sm text-gray-600 flex items-center mt-1">
-                              <CheckCircle size={14} className="mr-2" />
-                              <span className="font-medium">Verified:</span>
-                              <span className="ml-1">{safeFormatDate(order.verifiedAt, '—')}</span>
-                            </p>
-                            <p className="text-sm text-gray-600 flex items-center mt-1">
-                              <Package size={14} className="mr-2" />
-                              <span className="font-medium">Delivery:</span>
-                              <span className="ml-1">{order.deliveryAddress || '—'}</span>
-                            </p>
+                          
+                          {/* Admin Info */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Shield size={14} className="mr-2" />
+                              <span className="font-medium">Admin:</span>
+                              {adminDetails[order._id]?.hasAssignedAdmin && adminDetails[order._id].admin ? (
+                                <button 
+                                  className="ml-1 text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                  onClick={() => {
+                                    if (adminDetails[order._id]?.admin?.email) {
+                                      window.open(`mailto:${adminDetails[order._id].admin.email}`, '_blank');
+                                    }
+                                  }}
+                                  title={`Click to email ${adminDetails[order._id].admin.email}`}
+                                >
+                                  {adminDetails[order._id].admin.name}
+                                </button>
+                              ) : (
+                                <span className="ml-1 text-gray-500">Not assigned</span>
+                              )}
+                            </div>
+
                           </div>
+                          
+
                         </div>
 
                         {order.product?.description && (
                           <p className="text-sm text-gray-600 mt-3 line-clamp-2">{order.product.description}</p>
                         )}
+                        
+                        {/* Admin Info */}
+                        <div className="mt-4 pt-3 border-t border-gray-100">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Shield size={14} className="mr-2" />
+                            <span className="font-medium">Admin:</span>
+                            {adminDetails[order._id]?.hasAssignedAdmin && adminDetails[order._id].admin ? (
+                              <button 
+                                className="ml-1 text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                onClick={() => {
+                                  if (adminDetails[order._id]?.admin?.email) {
+                                    window.open(`mailto:${adminDetails[order._id].admin.email}`, '_blank');
+                                  }
+                                }}
+                                title={`Click to email ${adminDetails[order._id].admin.email}`}
+                              >
+                                {adminDetails[order._id].admin.name}
+                              </button>
+                            ) : (
+                              <span className="ml-1 text-gray-500">Not assigned</span>
+                            )}
+                          </div>
+                          
+                          {/* Admin Contact Details (Compact) */}
+                          {adminDetails[order._id]?.hasAssignedAdmin && adminDetails[order._id].admin && (
+                            <div className="ml-6 mt-2 text-xs text-gray-500 space-y-1">
+                              <div className="flex items-center">
+                                <Mail size={10} className="mr-1" />
+                                <span>{adminDetails[order._id].admin.email}</span>
+                              </div>
+                              {adminDetails[order._id].admin.phone && (
+                                <div className="flex items-center">
+                                  <Phone size={10} className="mr-1" />
+                                  <span>{adminDetails[order._id].admin.phone}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
                       </div>
                     </div>
                     
@@ -691,7 +832,7 @@ const SellerPaymentRequests = () => {
           ) : (
             <div className="items-list">
               {filteredTransactions.map((transaction) => (
-                <div key={transaction._id} className="item-row">
+                <div key={transaction._id} className="item-row hover:shadow-md transition-shadow duration-200">
                   <div className="item-content">
                     <div className="item-left" style={{gap: '1rem'}}>
                       <div className="item-details" style={{flex: 1}}>
@@ -702,35 +843,25 @@ const SellerPaymentRequests = () => {
                           {getStatusBadge(transaction.status)}
                         </div>
 
-                        <div className="details-grid" style={{margin: 0}}>
-                          <div className="detail-section">
-                            <div className="detail-item">
-                              <span className="label">Transaction ID:</span>
-                              <span className="overview-value mono">#{transaction._id}</span>
-                            </div>
-                            <div className="detail-item">
-                              <span className="label">Request Date:</span>
-                              <span>{safeFormatDateTime(transaction.createdAt || transaction.requestDate, '—')}</span>
-                            </div>
-                            <div className="detail-item">
-                              <span className="label">UPI ID:</span>
-                              <span className="overview-value mono">{transaction.sellerUpiId || transaction.upiId || 'N/A'}</span>
-                            </div>
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Transaction ID:</span>
+                            <span className="font-mono text-gray-900">#{transaction._id.substring(transaction._id.length - 8)}</span>
                           </div>
-                          <div className="detail-section">
-                            <div className="detail-item">
-                              <span className="label">Buyer:</span>
-                              <span>{transaction.buyer?.name || 'Unknown'}</span>
-                            </div>
-                            <div className="detail-item">
-                              <span className="label">Email:</span>
-                              <span>{transaction.buyer?.email || 'No email'}</span>
-                            </div>
-                            {transaction.buyer?.phone && (
-                              <div className="detail-item">
-                                <span className="label">Phone:</span>
-                                <span>{transaction.buyer.phone}</span>
-                              </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Request Date:</span>
+                            <span>{safeFormatDateTime(transaction.createdAt || transaction.requestDate, '—')}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">UPI ID:</span>
+                            <span className="font-mono text-gray-900">{transaction.sellerUpiId || transaction.upiId || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Admin:</span>
+                            {adminDetails[transaction.orderId]?.hasAssignedAdmin && adminDetails[transaction.orderId].admin ? (
+                              <span className="text-blue-600">{adminDetails[transaction.orderId].admin.name}</span>
+                            ) : (
+                              <span className="text-gray-500">Not assigned</span>
                             )}
                           </div>
                         </div>
@@ -842,8 +973,19 @@ const SellerPaymentRequests = () => {
                 />
                 <div className="order-summary-details">
                   <h4 className="order-summary-title">{selectedOrder.product?.title}</h4>
-                  <p className="order-summary-meta">Buyer: {selectedOrder.buyer?.name}</p>
-                  <p className="order-summary-meta">Order: #{selectedOrder._id.substring(selectedOrder._id.length - 8)}</p>
+                  <div className="space-y-1">
+                    <p className="order-summary-meta">
+                      Admin: {adminDetails[selectedOrder._id]?.hasAssignedAdmin && adminDetails[selectedOrder._id].admin 
+                        ? adminDetails[selectedOrder._id].admin.name 
+                        : 'Not assigned yet'}
+                    </p>
+                    <p className="order-summary-meta">Order: #{selectedOrder._id.substring(selectedOrder._id.length - 8)}</p>
+                    {adminDetails[selectedOrder._id]?.hasAssignedAdmin && adminDetails[selectedOrder._id].admin?.email && (
+                      <p className="text-xs text-gray-500">
+                        {adminDetails[selectedOrder._id].admin.email}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="order-amount-section">
@@ -978,26 +1120,40 @@ const SellerPaymentRequests = () => {
                 </div>
               </div>
 
-              {/* Buyer Information */}
+              {/* Admin Information */}
               <div>
                 <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
-                  <User size={16} className="mr-2" />
-                  Buyer Information
+                  <Shield size={16} className="mr-2" />
+                  Assigned Admin Information
                 </h5>
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Name</p>
-                      <p className="font-medium text-gray-900">{selectedTransaction.buyer?.name || 'N/A'}</p>
+                      {adminDetails[selectedTransaction.orderId]?.hasAssignedAdmin && adminDetails[selectedTransaction.orderId].admin ? (
+                        <p className="font-medium text-gray-900">{adminDetails[selectedTransaction.orderId].admin.name}</p>
+                      ) : (
+                        <p className="font-medium text-gray-500">Not assigned yet</p>
+                      )}
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Email</p>
-                      <p className="font-medium text-gray-900">{selectedTransaction.buyer?.email || 'N/A'}</p>
+                      {adminDetails[selectedTransaction.orderId]?.hasAssignedAdmin && adminDetails[selectedTransaction.orderId].admin ? (
+                        <p className="font-medium text-gray-900">{adminDetails[selectedTransaction.orderId].admin.email}</p>
+                      ) : (
+                        <p className="font-medium text-gray-500">N/A</p>
+                      )}
                     </div>
-                    {selectedTransaction.buyer?.phone && (
+                    {adminDetails[selectedTransaction.orderId]?.hasAssignedAdmin && adminDetails[selectedTransaction.orderId].admin?.phone && (
                       <div>
                         <p className="text-sm text-gray-600">Phone</p>
-                        <p className="font-medium text-gray-900">{selectedTransaction.buyer.phone}</p>
+                        <p className="font-medium text-gray-900">{adminDetails[selectedTransaction.orderId].admin.phone}</p>
+                      </div>
+                    )}
+                    {adminDetails[selectedTransaction.orderId]?.hasAssignedAdmin && adminDetails[selectedTransaction.orderId].admin?.role && (
+                      <div>
+                        <p className="text-sm text-gray-600">Role</p>
+                        <p className="font-medium text-gray-900">{adminDetails[selectedTransaction.orderId].admin.role}</p>
                       </div>
                     )}
                   </div>
