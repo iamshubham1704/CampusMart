@@ -68,11 +68,37 @@ export async function GET(request) {
     const [series, totals, completedOrdersCount] = await Promise.all([
       db.collection('order_status').aggregate([
         { $match: matchStage },
+        // Join with listings to fetch fallback price/commission if missing on order_status
+        { $lookup: { from: 'listings', localField: 'productId', foreignField: '_id', as: 'listing' } },
+        {
+          $addFields: {
+            derivedListingPrice: { $ifNull: ['$listingPrice', { $arrayElemAt: ['$listing.price', 0] }] },
+            derivedCommissionPercent: {
+              $ifNull: [
+                '$commissionPercent',
+                { $ifNull: [ { $arrayElemAt: ['$listing.commission', 0] }, commissionPercent ] }
+              ]
+            }
+          }
+        },
         {
           $group: {
             _id: { $dateToString: { format: dateFormat, date: `$${dateField}` } },
             soldCount: { $sum: 1 },
-            revenue: { $sum: { $ifNull: ['$orderAmount', 0] } }
+            revenue: { $sum: { $ifNull: ['$orderAmount', 0] } },
+            commission: {
+              $sum: {
+                $ifNull: [
+                  '$commissionAmount',
+                  {
+                    $multiply: [
+                      '$derivedListingPrice',
+                      { $divide: ['$derivedCommissionPercent', 100] }
+                    ]
+                  }
+                ]
+              }
+            }
           }
         },
         { $sort: { _id: 1 } }
@@ -80,11 +106,36 @@ export async function GET(request) {
 
       db.collection('order_status').aggregate([
         { $match: matchStage },
+        { $lookup: { from: 'listings', localField: 'productId', foreignField: '_id', as: 'listing' } },
+        {
+          $addFields: {
+            derivedListingPrice: { $ifNull: ['$listingPrice', { $arrayElemAt: ['$listing.price', 0] }] },
+            derivedCommissionPercent: {
+              $ifNull: [
+                '$commissionPercent',
+                { $ifNull: [ { $arrayElemAt: ['$listing.commission', 0] }, commissionPercent ] }
+              ]
+            }
+          }
+        },
         {
           $group: {
             _id: null,
             soldCount: { $sum: 1 },
-            revenue: { $sum: { $ifNull: ['$orderAmount', 0] } }
+            revenue: { $sum: { $ifNull: ['$orderAmount', 0] } },
+            commission: {
+              $sum: {
+                $ifNull: [
+                  '$commissionAmount',
+                  {
+                    $multiply: [
+                      '$derivedListingPrice',
+                      { $divide: ['$derivedCommissionPercent', 100] }
+                    ]
+                  }
+                ]
+              }
+            }
           }
         }
       ]).toArray(),
@@ -96,16 +147,16 @@ export async function GET(request) {
       })
     ]);
 
-    const totalsDoc = totals?.[0] || { soldCount: 0, revenue: 0 };
+    const totalsDoc = totals?.[0] || { soldCount: 0, revenue: 0, commission: 0 };
     const totalRevenue = totalsDoc.revenue || 0;
-    const totalCommission = (totalRevenue * (commissionPercent / 100));
+    const totalCommission = totalsDoc.commission || 0;
 
     // Prepare series with commission calculated based on completed orders
     const seriesWithCommission = (series || []).map(item => ({
       period: item._id,
       soldCount: item.soldCount || 0,
       revenue: item.revenue || 0,
-      commission: (item.revenue || 0) * (commissionPercent / 100)
+      commission: item.commission || 0
     }));
 
     return Response.json({
