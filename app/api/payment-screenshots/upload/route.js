@@ -4,6 +4,7 @@ import clientPromise from '../../../../lib/mongo';
 import { verifyToken } from '../../../../lib/auth';
 import { uploadImageToImageKit } from '../../../../lib/imagekit';
 import { v4 as uuidv4 } from 'uuid';
+import { ObjectId } from 'mongodb';
 
 export async function POST(request) {
   try {
@@ -161,6 +162,37 @@ export async function POST(request) {
         console.error('❌ Failed to cleanup ImageKit image after order creation error:', cleanupError);
       }
       throw new Error('Failed to create order record');
+    }
+
+    // Immediately mark the listing as inactive to prevent duplicate purchases
+    try {
+      const listingsCollection = db.collection('listings');
+      let listingObjectId;
+      try {
+        listingObjectId = new ObjectId(productId);
+      } catch (_) {
+        // If not a valid ObjectId, leave as undefined so the update doesn't run
+      }
+
+      if (listingObjectId) {
+        await listingsCollection.updateOne(
+          { _id: listingObjectId },
+          {
+            $set: {
+              status: 'inactive',
+              reservedBy: user.buyerId,
+              reservedAt: new Date(),
+              reservedOrderId: screenshotData.orderId
+            }
+          }
+        );
+        console.log('✅ Listing marked inactive after payment submission:', productId);
+      } else {
+        console.warn('⚠️ Could not convert productId to ObjectId; listing status not updated:', productId);
+      }
+    } catch (listingUpdateError) {
+      console.error('❌ Error setting listing inactive after payment submission:', listingUpdateError);
+      // Do not fail the request; admin can manage status later
     }
 
     console.log('✅ Payment screenshot uploaded successfully:', {
