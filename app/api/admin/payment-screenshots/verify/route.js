@@ -122,12 +122,23 @@ export async function POST(request) {
       { $set: orderUpdate }
     );
 
-    // If verified, also update the listing status to 'sold'
+    // If verified, also update the listing status to 'sold';
+    // If rejected, revert listing back to 'active'
+    // Prepare ObjectId for listing updates
+    let productObjectId = null;
+    try {
+      productObjectId = typeof screenshot.productId === 'string'
+        ? new ObjectId(screenshot.productId)
+        : screenshot.productId;
+    } catch (_) {
+      productObjectId = null;
+    }
+
     if (status === 'verified') {
       try {
         const listingsCollection = db.collection('listings');
         await listingsCollection.updateOne(
-          { _id: screenshot.productId },
+          { _id: productObjectId || screenshot.productId },
           { 
             $set: { 
               status: 'sold',
@@ -140,6 +151,26 @@ export async function POST(request) {
       } catch (listingError) {
         console.error('❌ Error updating listing status:', listingError);
         // Don't fail the entire operation if listing update fails
+      }
+    } else if (status === 'rejected') {
+      try {
+        const listingsCollection = db.collection('listings');
+        await listingsCollection.updateOne(
+          { _id: productObjectId || screenshot.productId },
+          {
+            $set: {
+              status: 'active'
+            },
+            $unset: {
+              reservedBy: '',
+              reservedAt: '',
+              reservedOrderId: ''
+            }
+          }
+        );
+        console.log('↩️ Listing reactivated after payment rejection:', screenshot.productId);
+      } catch (listingError) {
+        console.error('❌ Error reactivating listing after rejection:', listingError);
       }
     }
 

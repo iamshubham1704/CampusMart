@@ -50,6 +50,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
   const [paymentStep, setPaymentStep] = useState('options'); // 'options', 'qr', 'upi-id', or 'screenshot'
   const [uploadedScreenshot, setUploadedScreenshot] = useState(null);
   const [selectedUpiOption, setSelectedUpiOption] = useState(''); // 'qr' or 'upi-id'
+  const [submittingOrder, setSubmittingOrder] = useState(false);
 
   const { addToCart, isInCart, cartLoading } = useCart();
   const router = useRouter();
@@ -208,6 +209,7 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
     }
 
     try {
+      setSubmittingOrder(true);
       console.log('📤 Uploading payment screenshot...', {
         file: uploadedScreenshot.name,
         size: uploadedScreenshot.size,
@@ -256,11 +258,25 @@ We will verify your payment and confirm your order shortly. You can track your o
       setPaymentStep('options');
       setSelectedUpiOption('');
       setUploadedScreenshot(null);
+      // Force a hard refresh so item status updates everywhere
       onClose();
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('r', Date.now().toString());
+            window.location.replace(url.toString());
+          } catch (e) {
+            window.location.reload();
+          }
+        }, 300);
+      }
 
     } catch (error) {
       console.error('❌ Error submitting payment:', error);
       alert(`Failed to submit order: ${error.message}`);
+    } finally {
+      setSubmittingOrder(false);
     }
   };
 
@@ -416,7 +432,13 @@ We will verify your payment and confirm your order shortly. You can track your o
 
   const calculateSavings = () => {
     if (!product || !product.originalPrice) return 0;
-    return ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0);
+    const buyerPrice = (product.finalPrice !== undefined
+      ? product.finalPrice
+      : (product.price || 0) + ((product.price || 0) * ((product.commission || 0) / 100))
+    );
+    if (product.originalPrice <= 0 || buyerPrice <= 0) return 0;
+    const percent = ((product.originalPrice - buyerPrice) / product.originalPrice) * 100;
+    return Math.max(0, Math.round(percent));
   };
 
   const handleImageError = (e) => {
@@ -874,10 +896,17 @@ We will verify your payment and confirm your order shortly. You can track your o
 
                         <button
                           onClick={handlePaymentSubmit}
-                          disabled={!uploadedScreenshot}
-                          className={`submit-order-btn ${!uploadedScreenshot ? 'disabled' : ''}`}
+                          disabled={!uploadedScreenshot || submittingOrder}
+                          className={`submit-order-btn ${(!uploadedScreenshot || submittingOrder) ? 'disabled' : ''}`}
                         >
-                          {!uploadedScreenshot ? 'Upload Screenshot First' : 'Submit Order'}
+                          {submittingOrder ? (
+                            <>
+                              <Loader2 size={20} className="spinner" />
+                              <span style={{ marginLeft: 8 }}>Submitting...</span>
+                            </>
+                          ) : (
+                            !uploadedScreenshot ? 'Upload Screenshot First' : 'Submit Order'
+                          )}
                         </button>
                       </div>
                     </div>

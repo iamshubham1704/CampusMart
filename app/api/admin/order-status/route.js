@@ -52,6 +52,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit')) || 20;
     const status = searchParams.get('status'); // 'in_progress', 'completed', 'failed'
     const step = searchParams.get('step'); // current step filter
+    const adminFilter = searchParams.get('admin'); // assigned admin filter
 
     const client = await clientPromise;
     const db = client.db('campusmart');
@@ -64,16 +65,84 @@ export async function GET(request) {
     if (step && step !== 'all') {
       filter.currentStep = parseInt(step);
     }
+    if (adminFilter && adminFilter !== 'all') {
+      if (adminFilter === 'unassigned') {
+        filter.$or = [
+          { assignedAdminId: { $exists: false } },
+          { assignedAdminId: null }
+        ];
+      } else {
+        try {
+          filter.assignedAdminId = new ObjectId(adminFilter);
+        } catch (error) {
+          console.error('Invalid admin ID format:', error);
+        }
+      }
+    }
 
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Fetch order statuses with pagination
+    // Fetch order statuses with pagination and include listing details
     const orderStatuses = await db.collection('order_status')
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'listings',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'listing'
+          }
+        },
+        // Pull listing snapshot fields for fallback calculations
+        {
+          $addFields: {
+            listingPrice: { $arrayElemAt: ['$listing.price', 0] },
+            listingCommission: { $arrayElemAt: ['$listing.commission', 0] }
+          }
+        },
+        // Ensure commissionAmount and buyerPrice are always present
+        {
+          $addFields: {
+            commissionAmount: {
+              $ifNull: [
+                '$commissionAmount',
+                {
+                  $multiply: [
+                    { $ifNull: ['$listingPrice', 0] },
+                    { $divide: [ { $ifNull: ['$commissionPercent', { $ifNull: ['$listingCommission', 10] } ] }, 100 ] }
+                  ]
+                }
+              ]
+            },
+            buyerPrice: {
+              $ifNull: [
+                '$buyerPrice',
+                {
+                  $add: [
+                    { $ifNull: ['$listingPrice', 0] },
+                    {
+                      $multiply: [
+                        { $ifNull: ['$listingPrice', 0] },
+                        { $divide: [ { $ifNull: ['$commissionPercent', { $ifNull: ['$listingCommission', 10] } ] }, 100 ] }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          $project: {
+            listing: 0 // Remove the full listing object to keep response clean
+          }
+        },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit }
+      ])
       .toArray();
 
     // Get total count
@@ -205,13 +274,19 @@ async function syncVerifiedPayments(db) {
           ),
           db.collection('listings').findOne(
             { _id: toObjectId(payment.productId) || payment.productId },
-            { projection: { title: 1, price: 1 } }
+            { projection: { title: 1, price: 1, commission: 1 } }
           )
         ]);
 
         if (!buyer || !seller || !product) {
           continue;
         }
+
+        // Calculate pricing breakdown
+        const listingPrice = product.price || 0;
+        const commissionPercent = product.commission || 10; // Default 10% if not set
+        const commissionAmount = (listingPrice * commissionPercent) / 100;
+        const buyerPrice = listingPrice + commissionAmount;
 
         // Create order status record
         const orderStatus = {
@@ -228,7 +303,13 @@ async function syncVerifiedPayments(db) {
           sellerPhone: seller.phone,
           sellerEmail: seller.email,
           productTitle: product.title,
-          orderAmount: payment.amount || product.price,
+          orderAmount: payment.amount || buyerPrice, // Use payment amount or calculated buyer price
+          
+          // Add pricing breakdown
+          listingPrice: listingPrice,
+          commissionPercent: commissionPercent,
+          commissionAmount: commissionAmount,
+          buyerPrice: buyerPrice,
           
           currentStep: 2,
           steps: {

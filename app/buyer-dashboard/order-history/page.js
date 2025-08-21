@@ -16,8 +16,9 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  User, // Added for Seller icon
+  User, // Added for Admin icon
   Tag, // Added for Category icon
+  Shield, // Added for Admin icon
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,6 +31,9 @@ const OrderHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [adminDetails, setAdminDetails] = useState({});
+  const [refreshingAdmin, setRefreshingAdmin] = useState({});
+  const [adminRefreshMessage, setAdminRefreshMessage] = useState('');
 
   const statusOptions = [
     { value: 'all', label: 'All Orders', icon: Package, color: 'default' },
@@ -85,6 +89,9 @@ const OrderHistory = () => {
         setOrders(data.data.orders || []);
         setTotalPages(data.data.pagination?.totalPages || 1);
         setCurrentPage(page);
+        
+        // Fetch admin details for each order
+        fetchAdminDetailsForOrders(data.data.orders, token);
       } else {
         setOrders([]);
         setTotalPages(1);
@@ -95,6 +102,71 @@ const OrderHistory = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdminDetailsForOrders = async (orders, token) => {
+    console.log('🔄 Fetching admin details for', orders.length, 'orders');
+    const adminDetailsMap = {};
+    
+    for (const order of orders) {
+      try {
+        console.log('🔍 Fetching admin details for order:', order._id);
+        const response = await fetch(`/api/buyer/order-admin?orderId=${order._id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Admin details response for order', order._id, ':', data);
+          if (data.success) {
+            adminDetailsMap[order._id] = data.data;
+          }
+        } else {
+          console.error('❌ Failed to fetch admin details for order', order._id, ':', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching admin details for order:', order._id, error);
+      }
+    }
+    
+    console.log('📋 Final admin details map:', adminDetailsMap);
+    setAdminDetails(adminDetailsMap);
+  };
+
+  const refreshAdminDetailsForOrder = async (orderId) => {
+    try {
+      setRefreshingAdmin(prev => ({ ...prev, [orderId]: true }));
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`/api/buyer/order-admin?orderId=${orderId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setAdminDetails(prev => ({
+            ...prev,
+            [orderId]: data.data
+          }));
+          setAdminRefreshMessage(`Admin details refreshed for order ${orderId.slice(-8)}`);
+          setTimeout(() => setAdminRefreshMessage(''), 3000);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing admin details for order:', orderId, error);
+    } finally {
+      setRefreshingAdmin(prev => ({ ...prev, [orderId]: false }));
     }
   };
 
@@ -119,13 +191,13 @@ const OrderHistory = () => {
     
     const searchLower = searchQuery.toLowerCase();
     const productTitle = order.product?.title?.toLowerCase() || '';
-    const sellerName = order.seller?.name?.toLowerCase() || '';
-    const sellerEmail = order.seller?.email?.toLowerCase() || '';
+    const adminName = adminDetails[order._id]?.admin?.name?.toLowerCase() || '';
+    const adminEmail = adminDetails[order._id]?.admin?.email?.toLowerCase() || '';
     const statusMessage = order.statusMessage?.toLowerCase() || '';
     
     return productTitle.includes(searchLower) ||
-           sellerName.includes(searchLower) ||
-           sellerEmail.includes(searchLower) ||
+           adminName.includes(searchLower) ||
+           adminEmail.includes(searchLower) ||
            statusMessage.includes(searchLower);
   });
 
@@ -150,6 +222,20 @@ const OrderHistory = () => {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Periodic refresh of admin details every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (orders.length > 0) {
+        const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+        if (token) {
+          fetchAdminDetailsForOrders(orders, token);
+        }
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [orders]);
 
   const adminContact = {
     email: 'iamshubham1719@gmail.com',
@@ -185,6 +271,25 @@ const OrderHistory = () => {
             <RefreshCw size={18} className={refreshing ? styles.spinning : ''} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
+          <button 
+            className={`${styles.refreshAdminButton} ${styles.headerRefreshAdmin}`}
+            onClick={async () => {
+              if (orders.length > 0) {
+                const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+                if (token) {
+                  setRefreshing(true);
+                  await fetchAdminDetailsForOrders(orders, token);
+                  setRefreshing(false);
+                  setAdminRefreshMessage(`Admin details refreshed for ${orders.length} orders`);
+                  setTimeout(() => setAdminRefreshMessage(''), 3000);
+                }
+              }
+            }}
+            disabled={refreshing}
+            title="Refresh admin details for all orders"
+          >
+            <Shield size={18} />
+          </button>
         </div>
       </div>
 
@@ -193,7 +298,7 @@ const OrderHistory = () => {
           <Search size={20} />
           <input
             type="text"
-            placeholder="Search by product, seller, or status..."
+            placeholder="Search by product, admin, or status..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -219,6 +324,13 @@ const OrderHistory = () => {
         <div className={styles.errorBanner}>
           <AlertCircle size={20} />
           <span>{error}</span>
+        </div>
+      )}
+
+      {adminRefreshMessage && (
+        <div className={styles.adminRefreshMessage}>
+          <Info size={16} />
+          <span>{adminRefreshMessage}</span>
         </div>
       )}
 
@@ -254,6 +366,8 @@ const OrderHistory = () => {
           filteredOrders.map((order) => {
             const statusInfo = getStatusInfo(order.status);
             const StatusIcon = statusInfo.icon;
+            const orderAdminDetails = adminDetails[order._id];
+            
             return (
             <div key={order._id} className={`${styles.orderCard} ${styles[statusInfo.color]}`}>
               <div className={styles.orderHeader}>
@@ -266,9 +380,20 @@ const OrderHistory = () => {
                     <span><Calendar size={14} />{formatDate(order.createdAt)}</span>
                   </div>
                 </div>
-                <div className={`${styles.statusBadge} ${styles[statusInfo.color]}`}>
-                  <StatusIcon size={16} />
-                  {order.statusMessage}
+                <div className={styles.orderHeaderRight}>
+                  <div className={`${styles.statusBadge} ${styles[statusInfo.color]}`}>
+                    <StatusIcon size={16} />
+                    {order.statusMessage}
+                  </div>
+                  <button
+                    className={styles.refreshAdminButton}
+                    onClick={() => refreshAdminDetailsForOrder(order._id)}
+                    title="Refresh admin details"
+                    disabled={refreshingAdmin[order._id]}
+                  >
+                    <RefreshCw size={14} />
+                    {refreshingAdmin[order._id] && <span className={styles.spinningDot}></span>}
+                  </button>
                 </div>
               </div>
 
@@ -309,19 +434,53 @@ const OrderHistory = () => {
                     <span className={`${styles.value} ${styles.amount}`}>₹{order.amount}</span>
                   </div>
                   <div className={styles.detailRow}>
-                     <span className={styles.label}><User size={16}/>Seller</span>
-                     <span className={`${styles.value} ${styles.sellerName}`}>{order.seller.name}</span>
+                     <span className={styles.label}><Shield size={16}/>Assigned Admin</span>
+                     {orderAdminDetails?.hasAssignedAdmin && orderAdminDetails.admin ? (
+                       <span className={`${styles.value} ${styles.adminName}`}>
+                         {orderAdminDetails.admin.name}
+                       </span>
+                     ) : (
+                       <span className={`${styles.value} ${styles.noAdmin}`}>
+                         Not assigned yet
+                       </span>
+                     )}
                   </div>
+                  {refreshingAdmin[order._id] && (
+                    <div className={styles.adminRefreshing}>
+                      <RefreshCw size={12} className={styles.spinning} />
+                      <span>Refreshing admin details...</span>
+                    </div>
+                  )}
                    <div className={styles.detailRow}>
                       <span className={styles.label}><Phone size={16}/>Contact</span>
                       <div className={styles.contactInfo}>
-                        <a href={`mailto:${order.seller.email}`} className={styles.contactLink}>
-                          <Mail size={14} />
-                        </a>
-                        {order.seller.phone && (
-                          <a href={`tel:${order.seller.phone}`} className={styles.contactLink}>
-                            <Phone size={14} />
-                          </a>
+                        {orderAdminDetails?.hasAssignedAdmin && orderAdminDetails.admin ? (
+                          <div className={styles.contactDetails}>
+                            <div className={styles.contactItem}>
+                              <Mail size={14} />
+                              <a 
+                                href={`mailto:${orderAdminDetails.admin.email}`} 
+                                className={styles.contactText}
+                                title="Click to send email"
+                              >
+                                {orderAdminDetails.admin.email}
+                              </a>
+                            </div>
+                            {orderAdminDetails.admin.phone && (
+                              <div className={styles.contactItem}>
+                                <Phone size={14} />
+                                <a 
+                                  href={`tel:${orderAdminDetails.admin.phone}`} 
+                                  className={styles.contactText}
+                                  title="Click to call"
+                                >
+                                  {orderAdminDetails.admin.phone}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className={styles.noContact}>Contact admin support</span>
                         )}
                       </div>
                   </div>
@@ -337,7 +496,7 @@ const OrderHistory = () => {
                 {order.status === 'will_be_delivered_soon' && (
                   <div className={`${styles.orderActions} ${styles.info}`}>
                     <Info size={18} />
-                    <span>Your order will be delivered soon. The admin will contact you for coordination.</span>
+                    <span>Your order will be delivered soon. The assigned admin will contact you for coordination.</span>
                   </div>
                 )}
                 {order.status === 'delivered' && (

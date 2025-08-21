@@ -1289,16 +1289,25 @@ const BuyerDashboard = () => {
                             )
                           )}
                         </div>
-                        {product.originalPrice > product.price && (
-                          <>
-                            <div className="originalPrice">
-                              ₹{product.originalPrice}
-                            </div>
-                            <div className="savings">
-                              Save ₹{(product.originalPrice - product.price).toFixed(2)}
-                            </div>
-                          </>
-                        )}
+                        {(() => {
+                          const buyerPrice = (product.finalPrice !== undefined
+                            ? product.finalPrice
+                            : (product.price || 0) + ((product.price || 0) * ((product.commission ?? 0) / 100))
+                          );
+                          if (product.originalPrice > buyerPrice) {
+                            return (
+                              <>
+                                <div className="originalPrice">
+                                  ₹{product.originalPrice}
+                                </div>
+                                <div className="savings">
+                                  Save ₹{(product.originalPrice - buyerPrice).toFixed(2)}
+                                </div>
+                              </>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       <div className="productActions">

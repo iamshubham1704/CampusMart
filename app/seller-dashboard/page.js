@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Home, MessageSquare, Heart, Star, User, Bell, Settings,
-  LogOut, Package, Eye, Plus, MapPin, Activity,
+  LogOut, Package, Eye, Plus, MapPin,
   Loader2, AlertCircle, Menu, X, DollarSign
 } from 'lucide-react';
 import styles from './SellerDashboard.module.css';
@@ -18,7 +18,7 @@ const SellerDashboard = () => {
   const [error, setError] = useState(null);
   const [sellerData, setSellerData] = useState(null);
   const [myListings, setMyListings] = useState([]);
-  const [recentActivity, setRecentActivity] = useState([]);
+  
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
@@ -166,8 +166,8 @@ const SellerDashboard = () => {
 
       console.log('Making API calls with valid token...');
 
-      // Temporarily disable stats and activity APIs for debugging
-      const useRealAPIs = false; // Set to true when backend is ready
+      // Use real APIs by default; no dummy fallbacks
+      const useRealAPIs = true;
 
       let apiCalls;
       if (useRealAPIs) {
@@ -179,10 +179,6 @@ const SellerDashboard = () => {
           dashboardAPI.getSellerStats().catch(err => {
             console.error('Stats API error:', err);
             return { success: false, stats: null, message: err.message || 'Failed to fetch stats' };
-          }),
-          dashboardAPI.getRecentActivity().catch(err => {
-            console.error('Activity API error:', err);
-            return { success: false, activities: [], message: err.message || 'Failed to fetch activity' };
           }),
           dashboardAPI.getPendingPaymentRequestsCount().catch(err => {
             console.error('Pending payments count API error:', err);
@@ -212,10 +208,9 @@ const SellerDashboard = () => {
       }
 
       const responses = await Promise.all(apiCalls);
-      const [listingsResponse, statsResponse, activityResponse, pendingPaymentsResponse, readyToRequestResponse] = useRealAPIs ? responses : [
+      const [listingsResponse, statsResponse, pendingPaymentsResponse, readyToRequestResponse] = useRealAPIs ? responses : [
         responses[0], 
         { success: false, stats: null, message: 'Stats API disabled for debugging' },
-        { success: false, activities: [], message: 'Activity API disabled for debugging' },
         responses[1],
         responses[2]
       ];
@@ -320,33 +315,7 @@ const SellerDashboard = () => {
 
       setSellerData(completeSellerData);
 
-      // Handle activity response
-      if (activityResponse.success) {
-        setRecentActivity(activityResponse.activities || []);
-        console.log('Activity fetched successfully');
-      } else {
-        console.warn('Error fetching activity:', activityResponse.message);
-        
-        // If it's a token error, redirect to login
-        if (activityResponse.message && activityResponse.message.toLowerCase().includes('token')) {
-          redirectToLogin('seller');
-          return;
-        }
-
-        // Enhanced fallback activity with payment activities
-        const fallbackActivity = listingsResponse.success && listingsResponse.listings && listingsResponse.listings.length > 0
-          ? [
-            { type: 'payment', title: 'Payment received', subtitle: '₹890 for MacBook Pro 2019', time: '2d ago' },
-            { type: 'listing', title: 'Listing created', subtitle: listingsResponse.listings[0]?.title || 'New product', time: '3d ago' },
-            { type: 'payment', title: 'Payment pending', subtitle: '₹1,200 for iPhone 12', time: '5d ago' }
-          ]
-          : [
-            { type: 'info', title: 'Welcome!', subtitle: 'Start by creating your first listing', time: 'Now' },
-            { type: 'payment', title: 'Setup payments', subtitle: 'Connect your bank account to receive payments', time: 'Now' }
-          ];
-
-        setRecentActivity(fallbackActivity);
-      }
+      // Recent Activity removed from dashboard
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -798,12 +767,6 @@ const SellerDashboard = () => {
           {/* Enhanced Stats Cards with Payments */}
           <div className={styles.statsGrid}>
             <StatCard
-              icon={MessageSquare}
-              value={sellerData?.activeChats || 0}
-              label="Pending Messages"
-              color="#3b82f6"
-            />
-            <StatCard
               icon={Package}
               value={myListings.length}
               label="Active Listings"
@@ -898,32 +861,7 @@ const SellerDashboard = () => {
                 </button>
               </div>
 
-              {/* Recent Activity */}
-              <div className={styles.sidebarCard}>
-                <h3 className={styles.cardTitle}>
-                  <Activity style={{ marginRight: '8px' }} size={20} />
-                  Recent Activity
-                </h3>
-
-                <div className={styles.activityList}>
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className={styles.activityItem}>
-                      <div className={`${styles.activityDot} ${activity.type === 'payment' ? styles.activityDotPayment : ''}`}></div>
-                      <div className={styles.activityContent}>
-                        <p className={styles.activityTitle}>
-                          {activity.title}
-                        </p>
-                        <p className={styles.activitySubtitle}>
-                          {activity.subtitle}
-                        </p>
-                        <p className={styles.activityTime}>
-                          {activity.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Recent Activity removed */}
             </div>
           </div>
         </main>

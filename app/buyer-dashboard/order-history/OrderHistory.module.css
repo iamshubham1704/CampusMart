@@ -186,6 +186,22 @@
 .refreshButton:disabled { opacity: 0.6; cursor: not-allowed; }
 .refreshButton .spinning { animation: spin 1s linear infinite; }
 
+.headerRefreshAdmin {
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.5rem;
+}
+
+.headerRefreshAdmin:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
 /* --- FILTERS & SEARCH --- */
 .filtersSection {
   margin-bottom: 2.5rem;
@@ -311,6 +327,56 @@
 .orderId { font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
 .orderDate { font-size: 0.875rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem; }
 
+.orderHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.refreshAdminButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  position: relative;
+}
+
+.refreshAdminButton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.refreshAdminButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinningDot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
 .statusBadge {
   display: flex;
   align-items: center;
@@ -398,8 +464,65 @@
 .detailRow .label { font-size: 0.9rem; color: var(--text-secondary); font-weight: 500; }
 .detailRow .value { font-size: 0.9rem; color: var(--text-primary); font-weight: 600; text-align: right; }
 .detailRow .amount { color: #166534; font-size: 1.125rem; font-weight: 700; }
-.sellerName { color: var(--color-primary-dark); }
-.contactInfo { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+
+/* Admin styles */
+.adminName { 
+  color: #7c3aed; 
+  font-weight: 700;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.noAdmin { 
+  color: var(--text-light); 
+  font-style: italic;
+  background-color: #f9fafb;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.contactInfo { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.5rem; 
+  align-items: flex-end; 
+}
+
+.contactDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  min-width: 200px;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--bg-main);
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+
+.contactText {
+  color: var(--text-primary);
+  font-weight: 500;
+  word-break: break-all;
+  text-align: right;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.contactText:hover {
+  color: var(--color-primary);
+}
+
 .contactLink {
   display: flex;
   align-items: center;
@@ -410,6 +533,12 @@
   transition: color 0.2s;
 }
 .contactLink:hover { color: var(--color-primary); }
+
+.noContact {
+  color: var(--text-light);
+  font-style: italic;
+  font-size: 0.85rem;
+}
 
 .orderActions { margin-top: 1.5rem; }
 .adminContacts { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: 0.75rem; }
@@ -462,6 +591,49 @@
   font-size: 1rem;
   color: var(--text-secondary);
   font-weight: 600;
+}
+
+.adminRefreshing {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  font-style: italic;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--color-primary-light);
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-primary);
+}
+
+.adminRefreshing .spinning {
+  animation: spin 1s linear infinite;
+}
+
+.adminRefreshMessage {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- RESPONSIVE DESIGN --- */
