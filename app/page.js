@@ -23,7 +23,10 @@ import {
   User,
   LogIn,
   Bell,
-  Heart
+  Heart,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
 } from 'lucide-react';
 
 const CampusMart = () => {
@@ -34,11 +37,62 @@ const CampusMart = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  const testimonialImages = [
+    {
+      id: 1,
+      imageUrl: "test1.jpg"
+    },
+    {
+      id: 2,
+      imageUrl: "test2.jpg"
+    },
+    {
+      id: 3,
+      imageUrl: "test3.jpg"
+    },
+    {
+      id: 4,
+      imageUrl: "test4.jpg"
+    },
+    {
+      id: 5,
+      imageUrl: "test5.jpg"
+    },
+    {
+      id: 6,
+      imageUrl: "test6.jpg"
+    }
+  ];
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % Math.ceil(testimonialImages.length / 3));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) =>
+      prev === 0 ? Math.ceil(testimonialImages.length / 3) - 1 : prev - 1
+    );
+  };
+
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [currentSlide, isAutoPlaying]);
+
+  const totalSlides = Math.ceil(testimonialImages.length / 3);
 
   // Handle component mounting
   useEffect(() => {
     setMounted(true);
-    
+
     // Get initial window size
     const handleResize = () => {
       setWindowSize({
@@ -46,10 +100,10 @@ const CampusMart = () => {
         height: window.innerHeight,
       });
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
-    
+
     // Theme initialization - avoid localStorage on server
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') === 'dark';
@@ -62,13 +116,13 @@ const CampusMart = () => {
   // Enhanced mouse movement handler with parallax calculation - only on desktop
   useEffect(() => {
     if (windowSize.width <= 768) return; // Skip on mobile/tablet
-    
+
     const handleMouseMove = (e) => {
       const x = (e.clientX / window.innerWidth) * 100;
       const y = (e.clientY / window.innerHeight) * 100;
-      
+
       setMousePosition({ x, y });
-      
+
       // Calculate parallax offset for background elements
       const parallaxX = (e.clientX - window.innerWidth / 2) * 0.02; // Reduced intensity
       const parallaxY = (e.clientY - window.innerHeight / 2) * 0.02;
@@ -83,7 +137,7 @@ const CampusMart = () => {
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('scroll', handleScroll);
-    
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
@@ -146,7 +200,7 @@ const CampusMart = () => {
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -196,34 +250,34 @@ const CampusMart = () => {
             {!isMobile && !isTablet && (
               <div className="nav-center">
                 <ul className="nav-menu">
-  <li className="nav-item">
-    <Link href="/" className="nav-link active">
-      <Home size={18} />
-      <span>Home</span>
-    </Link>
-  </li>
-  <li className="nav-item">
-    <Link href="/policy" className="nav-link">
-      <ShoppingBag size={18} />
-      <span>Policy</span>
-    </Link>
-  </li>
-  <li className="nav-item">
-    <Link href="/about" className="nav-link">
-      <Info size={18} />
-      <span>About</span>
-    </Link>
-  </li>
-</ul>
+                  <li className="nav-item">
+                    <Link href="/" className="nav-link active">
+                      <Home size={18} />
+                      <span>Home</span>
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link href="/policy" className="nav-link">
+                      <ShoppingBag size={18} />
+                      <span>Policy</span>
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link href="/about" className="nav-link">
+                      <Info size={18} />
+                      <span>About</span>
+                    </Link>
+                  </li>
+                </ul>
               </div>
             )}
 
             {/* Right Actions */}
             <div className="nav-actions">
               {/* Theme Toggle */}
-              <button 
-                className="theme-toggle" 
-                onClick={toggleTheme} 
+              <button
+                className="theme-toggle"
+                onClick={toggleTheme}
                 title={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}
                 aria-label={`Switch to ${isDarkTheme ? 'light' : 'dark'} mode`}
               >
@@ -240,8 +294,8 @@ const CampusMart = () => {
                 </button>
               )} */}
 
-              <button 
-                className="mobile-menu-btn" 
+              <button
+                className="mobile-menu-btn"
                 onClick={toggleMobileMenu}
                 aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
               >
@@ -263,13 +317,13 @@ const CampusMart = () => {
                   />
                 </div>
               </div>
-              
+
               <ul className="mobile-nav-menu">
-  <li><Link href="/" className="mobile-nav-link active"><Home size={20} /><span>Home</span></Link></li>
-  <li><Link href="/policy" className="mobile-nav-link"><ShoppingBag size={20} /><span>Policy</span></Link></li>
-  <li><Link href="/about" className="mobile-nav-link"><Info size={20} /><span>About</span></Link></li>
-  <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
-</ul>
+                <li><Link href="/" className="mobile-nav-link active"><Home size={20} /><span>Home</span></Link></li>
+                <li><Link href="/policy" className="mobile-nav-link"><ShoppingBag size={20} /><span>Policy</span></Link></li>
+                <li><Link href="/about" className="mobile-nav-link"><Info size={20} /><span>About</span></Link></li>
+                <li><a href="#" className="mobile-nav-link"><Users size={20} /><span>Community</span></a></li>
+              </ul>
               <div className="mobile-actions">
                 {/* <button className="mobile-notification-btn">
                   <Bell size={20} />
@@ -310,7 +364,7 @@ const CampusMart = () => {
               Your Campus
               <span className="gradient-text"> Marketplace</span>
             </h1>
-            
+
             <div className="hero-buttons">
               <div className="role-card buyer-card" onClick={() => handleRoleSelect('buyer')}>
                 <div className="card-icon">
@@ -322,7 +376,7 @@ const CampusMart = () => {
                 </div>
                 <ArrowRight className="card-arrow" size={20} />
               </div>
-              
+
               <div className="role-card seller-card" onClick={() => handleRoleSelect('seller')}>
                 <div className="card-icon">
                   <Store size={isMobile ? 24 : 28} />
@@ -334,7 +388,7 @@ const CampusMart = () => {
                 <ArrowRight className="card-arrow" size={20} />
               </div>
             </div>
-            
+
             <div className="hero-features">
               <div className="feature-badge">
                 <Shield size={16} />
@@ -358,9 +412,9 @@ const CampusMart = () => {
         <div className="container">
           <div className="section-header">
             <h2 className="section-title">How CampusMart Works</h2>
-            
+
           </div>
-          
+
           <div className="roadmap-container">
             <div className="roadmap-path">
               <div className="roadmap-step">
@@ -373,7 +427,7 @@ const CampusMart = () => {
                   <p>Sign up with your email and register as buyer or seller and start buying or selling.</p>
                 </div>
               </div>
-              
+
               <div className="roadmap-step">
                 <div className="step-number">2</div>
                 <div className="step-icon">
@@ -384,7 +438,7 @@ const CampusMart = () => {
                   <p>Search for items you need or list your own products with photos and descriptions.</p>
                 </div>
               </div>
-              
+
               <div className="roadmap-step">
                 <div className="step-number">3</div>
                 <div className="step-icon">
@@ -395,7 +449,7 @@ const CampusMart = () => {
                   <p>Message sellers after payment and arrange safe meetups on campus.</p>
                 </div>
               </div>
-              
+
               <div className="roadmap-step">
                 <div className="step-number">4</div>
                 <div className="step-icon">
@@ -407,7 +461,7 @@ const CampusMart = () => {
                 </div>
               </div>
             </div>
-            
+
             <button className="roadmap-cta" onClick={() => handleRoleSelect('buyer')}>
               Get Started Today
             </button>
@@ -415,7 +469,7 @@ const CampusMart = () => {
         </div>
       </section>
 
-      
+
       {/* Trust Section */}
       <section className="trust-section">
         <div className="container">
@@ -425,7 +479,7 @@ const CampusMart = () => {
               Join the largest student marketplace community
             </p>
           </div>
-          
+
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-icon">👥</div>
@@ -452,107 +506,128 @@ const CampusMart = () => {
               <span>By users</span>
             </div>
           </div>
-
-          <div className="testimonials-section">
-            <h3>What Students Say</h3>
-            <div className="testimonials-grid">
-              <div className="testimonial-card">
-                <div className="stars">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} fill="currentColor" />
-                  ))}
-                </div>
-                <p>"Sold my old engineering drawing kit in just 2 days! Didn't have to put up random posters on hostel notice boards anymore. The buyer was from my own campus so delivery was super easy."</p>
-                <div className="testimonial-author">
-                  <div className="author-avatar">HR</div>
-                  <div className="author-info">
-                    <div className="author-name">Harsh Rana</div>
-                    <div className="author-school">MAIT</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="testimonial-card">
-                <div className="stars">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} fill="currentColor" />
-                  ))}
-                </div>
-                <p>"Managed to get my lab coat and a couple of reference books all in one go from seniors. Everything was in great condition and way cheaper than the campus shop."</p>
-                <div className="testimonial-author">
-                  <div className="author-avatar">SM</div>
-                  <div className="author-info">
-                    <div className="author-name">Suteekshn Manchanda</div>
-                    <div className="author-school">MAIT</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="testimonial-card">
-                <div className="stars">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} fill="currentColor" />
-                  ))}
-                </div>
-                <p>"Posted my old textbooks here before summer break and made enough money to cover my mess bill for the month. Best part - I didn't even have to step outside campus."</p>
-                <div className="testimonial-author">
-                  <div className="author-avatar">AS</div>
-                  <div className="author-info">
-                    <div className="author-name">Abhay Singh</div>
-                    <div className="author-school">MAIT</div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="cta-section">
-            <h3>Ready to Start Trading?</h3>
-            <p>Join your campus community today and discover a smarter way to buy and sell.</p>
-            <div className="cta-buttons">
-              <button className="btn btn-buyer" onClick={() => handleRoleSelect('buyer')}>
-                <ShoppingBag size={20} />
-                Start Buying
+          <div className="testimonials-container">
+            <div className="testimonials-header">
+              <MessageCircle className="header-icon" size={40} />
+              <h3>Real Student Conversations</h3>
+              <p className="testimonials-subtitle">Authentic WhatsApp chats showing genuine student experiences on CampusMart</p>
+            </div>
+
+            <div
+              className="testimonials-slideshow"
+              onMouseEnter={() => setIsAutoPlaying(false)}
+              onMouseLeave={() => setIsAutoPlaying(true)}
+            >
+              <button
+                className="nav-button prev-button"
+                onClick={prevSlide}
+                aria-label="Previous testimonials"
+              >
+                <ChevronLeft size={24} />
               </button>
-              <button className="btn btn-seller" onClick={() => handleRoleSelect('seller')}>
-                <Store size={20} />
-                Start Selling
+
+              <div className="testimonials-track">
+                <div
+                  className="testimonials-slides"
+                  style={{
+                    transform: `translateX(-${currentSlide * 100}%)`,
+                    transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                >
+                  {Array.from({ length: totalSlides }).map((_, slideIndex) => (
+                    <div key={slideIndex} className="testimonials-slide">
+                      <div className="testimonials-grid">
+                        {testimonialImages.slice(slideIndex * 3, slideIndex * 3 + 3).map((testimonial) => (
+                          <div key={testimonial.id} className="testimonial-card">
+                            <div className="image-container">
+                        <img 
+                          src={testimonial.imageUrl} 
+                          alt={testimonial.title}
+                          className="testimonial-screenshot"
+                        />
+                            </div>
+                            <div className="testimonial-overlay">
+                              <div className="testimonial-type">{testimonial.type}</div>
+                              <h4>{testimonial.title}</h4>
+                              <p>{testimonial.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                className="nav-button next-button"
+                onClick={nextSlide}
+                aria-label="Next testimonials"
+              >
+                <ChevronRight size={24} />
               </button>
             </div>
-          </div>
 
-          <div className="trust-features">
-            <div className="trust-feature">
-              <div className="trust-icon">
-                <Shield size={24} />
-              </div>
-              <div className="trust-content">
-                <h4>University Verified</h4>
-                <p>Verifying college users at the time of registrations.</p>
+            <div className="slideshow-indicators">
+              {Array.from({ length: totalSlides }).map((_, index) => (
+                <button
+                  key={index}
+                  className={`indicator ${index === currentSlide ? 'active' : ''}`}
+                  onClick={() => setCurrentSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            <div className="cta-section">
+              <h3>Ready to Start Trading?</h3>
+              <p>Join your campus community today and discover a smarter way to buy and sell.</p>
+              <div className="cta-buttons">
+                <button className="btn btn-buyer" onClick={() => handleRoleSelect('buyer')}>
+                  <ShoppingBag size={20} />
+                  Start Buying
+                </button>
+                <button className="btn btn-seller" onClick={() => handleRoleSelect('seller')}>
+                  <Store size={20} />
+                  Start Selling
+                </button>
               </div>
             </div>
-            
-            <div className="trust-feature">
-              <div className="trust-icon">
-                <Users size={24} />
+
+            <div className="trust-features">
+              <div className="trust-feature">
+                <div className="trust-icon">
+                  <Shield size={24} />
+                </div>
+                <div className="trust-content">
+                  <h4>University Verified</h4>
+                  <p>Verifying college users at the time of registrations.</p>
+                </div>
               </div>
-              <div className="trust-content">
-                <h4>Campus Community</h4>
-                <p>Trade only with verified students from your college for maximum trust.</p>
+
+              <div className="trust-feature">
+                <div className="trust-icon">
+                  <Users size={24} />
+                </div>
+                <div className="trust-content">
+                  <h4>Campus Community</h4>
+                  <p>Trade only with verified students from your college for maximum trust.</p>
+                </div>
               </div>
-            </div>
-            
-            <div className="trust-feature">
-              <div className="trust-icon">
-                <Zap size={24} />
-              </div>
-              <div className="trust-content">
-                <h4>Instant Messaging</h4>
-                <p>Connect with buyers and sellers instantly through our secure messaging system.</p>
+
+              <div className="trust-feature">
+                <div className="trust-icon">
+                  <Zap size={24} />
+                </div>
+                <div className="trust-content">
+                  <h4>Instant Messaging</h4>
+                  <p>Connect with buyers and sellers instantly through our secure messaging system.</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
       </section>
     </>
   );

@@ -181,7 +181,7 @@ const CampusMartAbout = () => {
           <div className="container">
             <div className="timeline">
               <div className="timeline-item">
-                <div className="timeline-year">2024: The Beginning</div>
+                <div className="timeline-year">2025: The Beginning</div>
                 <div className="timeline-content">
                   <p>Founded by a team of college students and tech enthusiasts, CampusMart was born 
                   from the vision to create a trusted marketplace exclusively for the student community.</p>
@@ -189,7 +189,7 @@ const CampusMartAbout = () => {
               </div>
               
               <div className="timeline-item">
-                <div className="timeline-year">2024: First Launch</div>
+                <div className="timeline-year">2025: First Launch</div>
                 <div className="timeline-content">
                   <p>Our beta platform launched at MAIT, connecting the first batch of student buyers 
                   and sellers, creating a safer alternative to random hostel notice board postings.</p>
@@ -197,7 +197,7 @@ const CampusMartAbout = () => {
               </div>
               
               <div className="timeline-item">
-                <div className="timeline-year">2024: Campus Expansion</div>
+                <div className="timeline-year">2025: Campus Expansion</div>
                 <div className="timeline-content">
                   <p>We expanded our verification system and user base, introducing features like 
                   campus-specific listings and secure messaging to build trust within student communities.</p>
@@ -205,7 +205,7 @@ const CampusMartAbout = () => {
               </div>
               
               <div className="timeline-item">
-                <div className="timeline-year">2024: Today</div>
+                <div className="timeline-year">2025: Today</div>
                 <div className="timeline-content">
                   <p>Now serving multiple colleges with hundreds of registered students, we continue 
                   to innovate and expand our reach, helping students save money and reduce waste 
@@ -340,7 +340,7 @@ const CampusMartAbout = () => {
                   <span>KV</span>
                 </div>
                 <div className="team-info">
-                  <h3 className="team-name">Krish Vishwakarma</h3>
+                  <h3 className="team-name">Shubham Solanki</h3>
                   
                   <p className="team-description">
                     Computer Science student and entrepreneur, passionate about building technology 
@@ -355,7 +355,7 @@ const CampusMartAbout = () => {
                   <span>SS</span>
                 </div>
                 <div className="team-info">
-                  <h3 className="team-name">Shubham Solanki</h3>
+                  <h3 className="team-name">Krish Vishwakarma</h3>
                   
                   <p className="team-description">
                     Engineering student and tech enthusiast, expert in building scalable platforms 
@@ -393,7 +393,7 @@ const CampusMartAbout = () => {
             
             <div className="milestones-grid">
               <div className="milestone-card">
-                <div className="milestone-number">100+</div>
+                <div className="milestone-number">500+</div>
                 <div className="milestone-label">Students Registered</div>
               </div>
               
