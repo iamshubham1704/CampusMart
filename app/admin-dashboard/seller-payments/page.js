@@ -110,11 +110,41 @@ const PaymentDetailsModal = ({ transaction, isOpen, onClose }) => {
             <h4><FiCreditCard /> Payment Details</h4>
             <div className={styles.detailGrid}>
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Amount:</span>
-                <span className={styles.detailValue}>
-                  {transaction.amount && typeof transaction.amount === 'number' 
-                    ? `₹${transaction.amount.toLocaleString('en-IN')}` 
-                    : 'N/A'}
+                <span className={styles.detailLabel}>Original Listing Price:</span>
+                <span className={styles.detailValue} style={{ color: '#28a745', fontWeight: 'bold' }}>
+                  {(() => {
+                    const originalPrice = transaction.raw?.product?.price || transaction.amount || 0;
+                    return originalPrice && typeof originalPrice === 'number' 
+                      ? `₹${originalPrice.toLocaleString('en-IN')}` 
+                      : 'N/A';
+                  })()}
+                </span>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Buyer Amount (with commission):</span>
+                <span className={styles.detailValue} style={{ color: '#dc3545', fontWeight: 'bold' }}>
+                  {(() => {
+                    const originalPrice = transaction.raw?.product?.price || transaction.amount || 0;
+                    const commission = transaction.raw?.product?.commission || 10;
+                    
+                    if (originalPrice && typeof originalPrice === 'number') {
+                      const buyerAmount = Math.round(originalPrice * (1 + commission / 100));
+                      const commissionAmount = buyerAmount - originalPrice;
+                      
+                      return (
+                        <>
+                          ₹{buyerAmount.toLocaleString('en-IN')}
+                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+                            +{commission}% commission (₹{commissionAmount})
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '0.25rem' }}>
+                            Breakdown: ₹{originalPrice} + ₹{commissionAmount}
+                          </div>
+                        </>
+                      );
+                    }
+                    return 'N/A';
+                  })()}
                 </span>
               </div>
               <div className={styles.detailItem}>
@@ -335,11 +365,15 @@ export default function SellerPaymentsPage() {
   };
 
   const handleExport = () => {
-    const headers = "Transaction ID,Seller,Email,Phone,Date,Amount,Status,UPI ID,Account Holder,Bank";
+    const headers = "Transaction ID,Seller,Email,Phone,Date,Original Listing Price,Buyer Amount,Commission %,Commission Amount,Status,UPI ID,Account Holder,Bank";
     const rows = transactions.map(tx => {
       const email = tx.seller && typeof tx.seller === 'object' && tx.seller.email ? tx.seller.email : 'N/A';
       const phone = tx.seller && typeof tx.seller === 'object' && tx.seller.phone ? tx.seller.phone : 'N/A';
-      return `${tx.id},${tx.sellerName},${email},${phone},${tx.date},${tx.amount},${tx.status},${tx.sellerUpiId},${tx.accountHolderName},${tx.bankName}`;
+      const commission = tx.raw?.product?.commission || 10;
+      const originalPrice = tx.raw?.product?.price || tx.amount || 0;
+      const buyerAmount = Math.round((originalPrice * (1 + commission / 100)));
+      const commissionAmount = buyerAmount - originalPrice;
+      return `${tx.id},${tx.sellerName},${email},${phone},${tx.date},${originalPrice},${buyerAmount},${commission}%,${commissionAmount},${tx.status},${tx.sellerUpiId},${tx.accountHolderName},${tx.bankName}`;
     }).join('\n');
     const csvContent = `data:text/csv;charset=utf-8,${headers}\n${rows}`;
     const encodedUri = encodeURI(csvContent);
@@ -357,6 +391,22 @@ export default function SellerPaymentsPage() {
     { id: 'completed', icon: <FiCheckCircle size={20} />, title: 'Completed', colorClass: styles.completedColor, count: stats.completed?.count || 0, amount: `₹${(stats.completed?.amount || 0).toLocaleString('en-IN')}` },
     { id: 'failed', icon: <FiAlertCircle size={20} />, title: 'Failed', colorClass: styles.failedColor, count: stats.failed?.count || 0, amount: "Needs attention" },
   ];
+
+  // Calculate total amounts for both seller and buyer
+  const totalSellerAmount = transactions.reduce((sum, tx) => {
+    // Seller amount should be the original listing price
+    const originalPrice = tx.raw?.product?.price || tx.amount || 0;
+    return sum + (typeof originalPrice === 'number' ? originalPrice : 0);
+  }, 0);
+  
+  const totalBuyerAmount = transactions.reduce((sum, tx) => {
+    const commission = tx.raw?.product?.commission || 10;
+    const originalPrice = tx.raw?.product?.price || tx.amount || 0;
+    // Buyer pays: original price + commission
+    return sum + Math.round((originalPrice * (1 + commission / 100)));
+  }, 0);
+  
+  const totalCommission = totalBuyerAmount - totalSellerAmount;
 
   const getStatusClass = (status) => {
     if (!status || typeof status !== 'string') return '';
@@ -390,11 +440,89 @@ export default function SellerPaymentsPage() {
         </div>
       )}
 
+      {/* Summary Section */}
+      <div style={{ 
+        backgroundColor: 'white', 
+        padding: '1.5rem', 
+        borderRadius: '8px', 
+        marginBottom: '2rem',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        border: '1px solid #e9ecef'
+      }}>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#333', fontSize: '1.1rem' }}>Payment Summary</h3>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '1rem' 
+        }}>
+                      <div style={{ 
+              padding: '1rem', 
+              backgroundColor: '#f8f9fa', 
+              borderRadius: '6px', 
+              border: '1px solid #e9ecef',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Original Listing Value</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745' }}>
+                ₹{totalSellerAmount.toLocaleString('en-IN')}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666' }}>What sellers originally listed for</div>
+            </div>
+          <div style={{ 
+            padding: '1rem', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '6px', 
+            border: '1px solid #e9ecef',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Buyer Amount</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc3545' }}>
+              ₹{totalBuyerAmount.toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666' }}>What buyers pay</div>
+          </div>
+          <div style={{ 
+            padding: '1rem', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '6px', 
+            border: '1px solid #e9ecef',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Commission</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#007bff' }}>
+              ₹{totalCommission.toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666' }}>Platform earnings</div>
+          </div>
+        </div>
+      </div>
+
       {loading ? <SkeletonLoader /> : <div className={styles.statsGrid}>{cardData.map((card) => (<StatCard key={card.id} {...card} />))}</div>}
 
-      {!loading && (
-        <div className={styles.transactionSection}>
-          <input type="text" placeholder="Search by Seller, ID, Status, UPI ID, Email, or Phone..." className={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              {!loading && (
+          <div className={styles.transactionSection}>
+            {/* Pricing Information */}
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '1rem', 
+              borderRadius: '6px', 
+              marginBottom: '1rem',
+              border: '1px solid #e9ecef',
+              fontSize: '0.9rem'
+            }}>
+              <div style={{ fontWeight: 'bold', color: '#495057', marginBottom: '0.5rem' }}>ℹ️ Pricing Structure</div>
+              <div style={{ color: '#6c757d', fontSize: '0.8rem' }}>
+                <strong>Original Listing Price:</strong> What the seller originally listed their product for | 
+                <strong>Buyer Amount:</strong> What buyers actually pay (original price + commission) | 
+                <strong>Commission:</strong> Platform fee calculated as a percentage of original listing price
+              </div>
+              <div style={{ color: '#6c757d', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                <strong>Formula:</strong> Buyer Amount = Original Listing Price × (1 + Commission%) | 
+                <strong>Example:</strong> ₹250 × (1 + 10%) = ₹250 + ₹25 = ₹275
+              </div>
+            </div>
+            
+            <input type="text" placeholder="Search by Seller, ID, Status, UPI ID, Email, or Phone..." className={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
@@ -402,7 +530,8 @@ export default function SellerPaymentsPage() {
                   <th>Seller</th>
                   <th>Contact Info</th>
                   <th>Request Date</th>
-                  <th>Amount</th>
+                  <th>Original Listing Price</th>
+                  <th>Buyer Amount (with commission)</th>
                   <th>UPI ID</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -437,9 +566,47 @@ export default function SellerPaymentsPage() {
                     </td>
                     <td>{tx.date || 'N/A'}</td>
                     <td>
-                      {tx.amount && typeof tx.amount === 'number' 
-                        ? '₹' + tx.amount.toLocaleString('en-IN') 
-                        : 'N/A'}
+                      {(() => {
+                        const originalPrice = tx.raw?.product?.price || tx.amount || 0;
+                        return originalPrice && typeof originalPrice === 'number' 
+                          ? (
+                            <div>
+                              <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+                                ₹{originalPrice.toLocaleString('en-IN')}
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                Original listing price
+                              </div>
+                            </div>
+                          )
+                          : 'N/A';
+                      })()}
+                    </td>
+                    <td>
+                      {(() => {
+                        const originalPrice = tx.raw?.product?.price || tx.amount || 0;
+                        const commission = tx.raw?.product?.commission || 10;
+                        
+                        if (originalPrice && typeof originalPrice === 'number') {
+                          const buyerAmount = Math.round(originalPrice * (1 + commission / 100));
+                          const commissionAmount = buyerAmount - originalPrice;
+                          
+                          return (
+                            <div>
+                              <div style={{ fontWeight: 'bold', color: '#dc3545' }}>
+                                ₹{buyerAmount.toLocaleString('en-IN')}
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                +{commission}% commission (₹{commissionAmount})
+                              </div>
+                              <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '0.25rem' }}>
+                                Breakdown: ₹{originalPrice} + ₹{commissionAmount}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return 'N/A';
+                      })()}
                     </td>
                     <td>
                       <div className={styles.upiIdCell}>
