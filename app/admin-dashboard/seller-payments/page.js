@@ -236,6 +236,7 @@ export default function SellerPaymentsPage() {
   const [error, setError] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -243,7 +244,7 @@ export default function SellerPaymentsPage() {
         setLoading(true);
         setError('');
         const token = localStorage.getItem('adminToken') || localStorage.getItem('admin-auth-token');
-        const res = await fetch('/api/admin/seller-transactions?status=all', {
+        const res = await fetch(`/api/admin/seller-transactions?status=${statusFilter}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -280,7 +281,7 @@ export default function SellerPaymentsPage() {
       }
     };
     fetchTransactions();
-  }, []);
+  }, [statusFilter]);
 
   const stats = useMemo(() => {
     return transactions.reduce((acc, tx) => {
@@ -293,8 +294,12 @@ export default function SellerPaymentsPage() {
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    if (!searchQuery) return transactions;
-    return transactions.filter(t => {
+    let list = transactions;
+    if (statusFilter && statusFilter !== 'all') {
+      list = list.filter(t => (t.status || '').toLowerCase() === statusFilter.toLowerCase());
+    }
+    if (!searchQuery) return list;
+    return list.filter(t => {
       const searchLower = searchQuery.toLowerCase();
       const sellerName = t.sellerName || '';
       const id = t.id || '';
@@ -310,7 +315,7 @@ export default function SellerPaymentsPage() {
              email.toLowerCase().includes(searchLower) ||
              phone.toLowerCase().includes(searchLower);
     });
-  }, [searchQuery, transactions]);
+  }, [searchQuery, transactions, statusFilter]);
 
   const handleUpdateRequest = async (id, newStatus, options = {}) => {
     try {
@@ -501,28 +506,22 @@ export default function SellerPaymentsPage() {
 
               {!loading && (
           <div className={styles.transactionSection}>
-            {/* Pricing Information */}
-            <div style={{ 
-              backgroundColor: '#f8f9fa', 
-              padding: '1rem', 
-              borderRadius: '6px', 
-              marginBottom: '1rem',
-              border: '1px solid #e9ecef',
-              fontSize: '0.9rem'
-            }}>
-              <div style={{ fontWeight: 'bold', color: '#495057', marginBottom: '0.5rem' }}>ℹ️ Pricing Structure</div>
-              <div style={{ color: '#6c757d', fontSize: '0.8rem' }}>
-                <strong>Original Listing Price:</strong> What the seller originally listed their product for | 
-                <strong>Buyer Amount:</strong> What buyers actually pay (original price + commission) | 
-                <strong>Commission:</strong> Platform fee calculated as a percentage of original listing price
-              </div>
-              <div style={{ color: '#6c757d', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                <strong>Formula:</strong> Buyer Amount = Original Listing Price × (1 + Commission%) | 
-                <strong>Example:</strong> ₹250 × (1 + 10%) = ₹250 + ₹25 = ₹275
-              </div>
+            {/* Filters */}
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{ padding: '0.5rem', border: '1px solid #ced4da', borderRadius: 6 }}
+              >
+                <option value="all">All payments</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+              <input type="text" placeholder="Search by Seller, ID, Status, UPI ID, Email, or Phone..." className={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <button onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} className={styles.secondaryButton} style={{ padding: '0.5rem 0.75rem' }}>Reset</button>
             </div>
-            
-            <input type="text" placeholder="Search by Seller, ID, Status, UPI ID, Email, or Phone..." className={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>

@@ -95,10 +95,43 @@ export async function GET(request) {
             as: 'listing'
           }
         },
+        // Pull listing snapshot fields for fallback calculations
         {
           $addFields: {
             listingPrice: { $arrayElemAt: ['$listing.price', 0] },
             listingCommission: { $arrayElemAt: ['$listing.commission', 0] }
+          }
+        },
+        // Ensure commissionAmount and buyerPrice are always present
+        {
+          $addFields: {
+            commissionAmount: {
+              $ifNull: [
+                '$commissionAmount',
+                {
+                  $multiply: [
+                    { $ifNull: ['$listingPrice', 0] },
+                    { $divide: [ { $ifNull: ['$commissionPercent', { $ifNull: ['$listingCommission', 10] } ] }, 100 ] }
+                  ]
+                }
+              ]
+            },
+            buyerPrice: {
+              $ifNull: [
+                '$buyerPrice',
+                {
+                  $add: [
+                    { $ifNull: ['$listingPrice', 0] },
+                    {
+                      $multiply: [
+                        { $ifNull: ['$listingPrice', 0] },
+                        { $divide: [ { $ifNull: ['$commissionPercent', { $ifNull: ['$listingCommission', 10] } ] }, 100 ] }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
