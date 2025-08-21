@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
+import { ObjectId } from 'mongodb';
 
 export async function GET(request) {
   try {
@@ -129,6 +130,48 @@ export async function GET(request) {
       });
     });
 
+    // Include recent payment request events
+    const sellerIdCandidates = [sellerId];
+    if (typeof sellerId === 'string' && ObjectId.isValid(sellerId)) {
+      try { sellerIdCandidates.push(new ObjectId(sellerId)); } catch (_) {}
+    }
+
+    try {
+      const recentTransactions = await db.collection('seller_transactions')
+        .find({
+          sellerId: { $in: sellerIdCandidates },
+          $or: [
+            { createdAt: { $gte: weekAgo } },
+            { updatedAt: { $gte: weekAgo } },
+          ]
+        })
+        .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
+        .limit(5)
+        .project({ amount: 1, status: 1, createdAt: 1, updatedAt: 1 })
+        .toArray();
+
+      for (const tx of recentTransactions) {
+        const when = getBestDate(tx);
+        const titleByStatus = tx.status === 'completed'
+          ? 'Payment completed'
+          : tx.status === 'processing'
+          ? 'Payment processing'
+          : tx.status === 'rejected'
+          ? 'Payment rejected'
+          : 'Payment request submitted';
+
+        activities.push({
+          type: 'payment',
+          title: titleByStatus,
+          subtitle: tx.amount ? `₹${Number(tx.amount).toLocaleString()}` : '',
+          time: getTimeAgo(when),
+          createdAt: when
+        });
+      }
+    } catch (_) {
+      // Silently ignore if collection not present
+    }
+
     // Sort all activities by creation time and limit to 10 most recent
     const sortedActivities = activities
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -170,4 +213,14 @@ function getTimeAgo(date) {
     const days = Math.floor(diffInSeconds / 86400);
     return `${days}d ago`;
   }
+}
+
+// Prefer updatedAt, then createdAt, else infer from ObjectId
+function getBestDate(doc) {
+  if (doc.updatedAt) return doc.updatedAt;
+  if (doc.createdAt) return doc.createdAt;
+  if (doc._id && typeof doc._id.getTimestamp === 'function') {
+    return doc._id.getTimestamp();
+  }
+  return new Date();
 }
