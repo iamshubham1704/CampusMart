@@ -562,6 +562,24 @@ export default function AdminDashboard() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
+            onClick={() => navigateWithErrorHandler('/admin-dashboard/profile')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#0d6efd',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#0b5ed7'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#0d6efd'}
+          >
+            Profile
+          </button>
+          <button
             onClick={() => navigateWithErrorHandler('/admin-dashboard/management')}
             style={{
               padding: '0.5rem 1rem',
