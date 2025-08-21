@@ -499,7 +499,7 @@ const SellerPaymentRequests = () => {
                   <p className="total-amount">
                     {formatCurrency(verifiedOrders
                       .filter(order => !order.hasPaymentRequest && !order.paymentRequested)
-                      .reduce((sum, order) => sum + order.amount, 0)
+                      .reduce((sum, order) => sum + (order.product?.price || order.amount || 0), 0)
                     )}
                   </p>
                 </div>
@@ -593,7 +593,7 @@ const SellerPaymentRequests = () => {
                     
                     <div className="item-right">
                       <div className="item-amount-card">
-                        <p className="item-amount">{formatCurrency(order.amount)}</p>
+                        <p className="item-amount">{formatCurrency(order.product?.price || order.amount)}</p>
                         <p className="item-order-id">Order: #{order._id.substring(order._id.length - 8)}</p>
                         
                         <div className="item-actions">
@@ -849,7 +849,7 @@ const SellerPaymentRequests = () => {
               <div className="order-amount-section">
                 <div className="order-amount-row">
                   <span className="order-amount-label">Amount to receive</span>
-                  <span className="order-amount-value">{formatCurrency(selectedOrder.amount)}</span>
+                  <span className="order-amount-value">{formatCurrency(selectedOrder.product?.price || selectedOrder.amount)}</span>
                 </div>
               </div>
             </div>
