@@ -167,6 +167,19 @@ export default function AdminManagementPage() {
   // Calculate pagination based on server-side total
   const totalListingsPages = Math.ceil(listingsTotal / listingsPerPage);
 
+  // Calculate total commission earnings from listings
+  const totalCommissionEarnings = filteredListings.reduce((sum, listing) => {
+    const commission = listing.commission || 10;
+    const commissionAmount = Math.round((listing.price * commission) / 100);
+    return sum + commissionAmount;
+  }, 0);
+
+  const totalListingsValue = filteredListings.reduce((sum, listing) => sum + (listing.price || 0), 0);
+  const totalBuyerValue = filteredListings.reduce((sum, listing) => {
+    const commission = listing.commission || 10;
+    return sum + Math.round((listing.price * (1 + commission / 100)));
+  }, 0);
+
   const handleListingsPageChange = (pageNumber) => {
     setListingsCurrentPage(pageNumber);
   };
@@ -665,6 +678,83 @@ export default function AdminManagementPage() {
             </div>
           </div>
 
+          {/* Pricing Information */}
+          <div style={{ 
+            backgroundColor: '#e8f5e8', 
+            padding: '1rem', 
+            borderRadius: '6px', 
+            marginBottom: '1rem',
+            border: '1px solid #c3e6cb',
+            fontSize: '0.9rem'
+          }}>
+            <div style={{ fontWeight: 'bold', color: '#155724', marginBottom: '0.5rem' }}>ℹ️ Pricing Structure</div>
+            <div style={{ color: '#155724', fontSize: '0.8rem' }}>
+              <strong>Seller Price:</strong> What the seller originally listed their product for | 
+              <strong>Buyer Price:</strong> What buyers actually see and pay (seller price + commission) | 
+              <strong>Commission:</strong> Platform fee calculated as a percentage of seller price
+            </div>
+            <div style={{ color: '#155724', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+              <strong>Formula:</strong> Buyer Price = Seller Price × (1 + Commission%) | 
+              <strong>Example:</strong> ₹250 × (1 + 10%) = ₹250 + ₹25 = ₹275
+            </div>
+          </div>
+
+          {/* Summary Section */}
+          <div style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: '1.5rem', 
+            borderRadius: '8px', 
+            marginBottom: '1.5rem',
+            border: '1px solid #e9ecef'
+          }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#333', fontSize: '1.1rem' }}>Listings Summary</h3>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+              gap: '1rem' 
+            }}>
+              <div style={{ 
+                padding: '1rem', 
+                backgroundColor: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #e9ecef',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Seller Value</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745' }}>
+                  ₹{totalListingsValue.toLocaleString('en-IN')}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#666' }}>What sellers originally listed for</div>
+              </div>
+              <div style={{ 
+                padding: '1rem', 
+                backgroundColor: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #e9ecef',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Buyer Value</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc3545' }}>
+                  ₹{totalBuyerValue.toLocaleString('en-IN')}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#666' }}>What buyers actually pay</div>
+              </div>
+              <div style={{ 
+                padding: '1rem', 
+                backgroundColor: 'white', 
+                borderRadius: '6px', 
+                border: '1px solid #e9ecef',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Commission</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#007bff' }}>
+                  ₹{totalCommissionEarnings.toLocaleString('en-IN')}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#666' }}>Platform earnings</div>
+              </div>
+            </div>
+          </div>
+
           {/* Search Bar */}
           <div style={{
             display: 'flex',
@@ -739,7 +829,8 @@ export default function AdminManagementPage() {
                 <tr style={{ backgroundColor: '#f8f9fa' }}>
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Title</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Seller</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Price</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Seller Price</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Buyer Price</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Category</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Status</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Views</th>
@@ -767,7 +858,18 @@ export default function AdminManagementPage() {
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: '0.75rem' }}>₹{listing.price}</td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div style={{ fontWeight: 'bold', color: '#28a745' }}>₹{listing.price}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#666' }}>Listed by seller</div>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div style={{ fontWeight: 'bold', color: '#dc3545' }}>
+                        ₹{Math.round((listing.price * (1 + (listing.commission || 10) / 100)))}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                        +{(listing.commission || 10)}% commission
+                      </div>
+                    </td>
                     <td style={{ padding: '0.75rem' }}>{listing.category}</td>
                     <td style={{ padding: '0.75rem' }}>
                       <span style={{

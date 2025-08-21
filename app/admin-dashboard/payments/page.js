@@ -369,6 +369,77 @@ export default function AdminPaymentsPage() {
         </div>
       )}
 
+      {/* Summary Section */}
+      <div style={{ 
+        backgroundColor: 'white', 
+        padding: '1.5rem', 
+        borderRadius: '8px', 
+        marginBottom: '2rem',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        border: '1px solid #e9ecef'
+      }}>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#333', fontSize: '1.1rem' }}>Payment Summary</h3>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '1rem' 
+        }}>
+          <div style={{ 
+            padding: '1rem', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '6px', 
+            border: '1px solid #e9ecef',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Original Listing Value</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745' }}>
+              ₹{paymentScreenshots.reduce((sum, payment) => {
+                const originalPrice = payment.product?.price || 0;
+                return sum + (typeof originalPrice === 'number' ? originalPrice : 0);
+              }, 0).toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666' }}>What sellers originally listed for</div>
+          </div>
+          <div style={{ 
+            padding: '1rem', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '6px', 
+            border: '1px solid #e9ecef',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Buyer Amount</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc3545' }}>
+              ₹{paymentScreenshots.reduce((sum, payment) => {
+                const commission = payment.product?.commission || 10;
+                const originalPrice = payment.product?.price || 0;
+                return sum + Math.round((originalPrice * (1 + commission / 100)));
+              }, 0).toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666' }}>What buyers pay</div>
+          </div>
+          <div style={{ 
+            padding: '1rem', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '6px', 
+            border: '1px solid #e9ecef',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Total Commission</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#007bff' }}>
+              ₹{(paymentScreenshots.reduce((sum, payment) => {
+                const commission = payment.product?.commission || 10;
+                const originalPrice = payment.product?.price || 0;
+                return sum + Math.round((originalPrice * (1 + commission / 100)));
+              }, 0) - paymentScreenshots.reduce((sum, payment) => {
+                const originalPrice = payment.product?.price || 0;
+                return sum + (typeof originalPrice === 'number' ? originalPrice : 0);
+              }, 0)).toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666' }}>Platform earnings</div>
+          </div>
+        </div>
+      </div>
+
       {/* Filter Controls */}
       <div style={{
         backgroundColor: 'white',
@@ -423,6 +494,27 @@ export default function AdminPaymentsPage() {
         </button>
       </div>
 
+      {/* Pricing Information */}
+      <div style={{ 
+        backgroundColor: '#f8f9fa', 
+        padding: '1rem', 
+        borderRadius: '6px', 
+        marginBottom: '1rem',
+        border: '1px solid #e9ecef',
+        fontSize: '0.9rem'
+      }}>
+        <div style={{ fontWeight: 'bold', color: '#495057', marginBottom: '0.5rem' }}>ℹ️ Pricing Structure</div>
+        <div style={{ color: '#6c757d', fontSize: '0.8rem' }}>
+          <strong>Original Listing Price:</strong> What the seller originally listed their product for | 
+          <strong>Buyer Amount:</strong> What buyers actually pay (original price + commission) | 
+          <strong>Commission:</strong> Platform fee calculated as a percentage of original listing price
+        </div>
+        <div style={{ color: '#6c757d', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+          <strong>Formula:</strong> Buyer Amount = Original Listing Price × (1 + Commission%) | 
+          <strong>Example:</strong> ₹250 × (1 + 10%) = ₹250 + ₹25 = ₹275
+        </div>
+      </div>
+
       {/* Payments Table */}
       <div style={{
         backgroundColor: 'white',
@@ -440,6 +532,8 @@ export default function AdminPaymentsPage() {
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Payment ID</th>
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Buyer Details</th>
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Product</th>
+                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Original Listing Price</th>
+                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Buyer Amount (with commission)</th>
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Amount</th>
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Status</th>
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Date</th>
@@ -486,6 +580,47 @@ export default function AdminPaymentsPage() {
                           </div>
                         )}
                       </div>
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      {(() => {
+                        const originalPrice = payment.product?.price || 0;
+                        return originalPrice > 0 ? (
+                          <div>
+                            <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+                              {formatAmount(originalPrice)}
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                              Original listing price
+                            </div>
+                          </div>
+                        ) : 'N/A';
+                      })()}
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      {(() => {
+                        const originalPrice = payment.product?.price || 0;
+                        const commission = payment.product?.commission || 10;
+                        
+                        if (originalPrice > 0) {
+                          const buyerAmount = Math.round(originalPrice * (1 + commission / 100));
+                          const commissionAmount = buyerAmount - originalPrice;
+                          
+                          return (
+                            <div>
+                              <div style={{ fontWeight: 'bold', color: '#dc3545' }}>
+                                {formatAmount(buyerAmount)}
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                +{commission}% commission (₹{commissionAmount})
+                              </div>
+                              <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '0.25rem' }}>
+                                Breakdown: {formatAmount(originalPrice)} + ₹{commissionAmount}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return 'N/A';
+                      })()}
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <strong style={{ color: '#28a745', fontSize: '1.1rem' }}>

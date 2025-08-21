@@ -83,12 +83,33 @@ export async function GET(request) {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Fetch order statuses with pagination
+    // Fetch order statuses with pagination and include listing details
     const orderStatuses = await db.collection('order_status')
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'listings',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'listing'
+          }
+        },
+        {
+          $addFields: {
+            listingPrice: { $arrayElemAt: ['$listing.price', 0] },
+            listingCommission: { $arrayElemAt: ['$listing.commission', 0] }
+          }
+        },
+        {
+          $project: {
+            listing: 0 // Remove the full listing object to keep response clean
+          }
+        },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit }
+      ])
       .toArray();
 
     // Get total count
@@ -220,13 +241,19 @@ async function syncVerifiedPayments(db) {
           ),
           db.collection('listings').findOne(
             { _id: toObjectId(payment.productId) || payment.productId },
-            { projection: { title: 1, price: 1 } }
+            { projection: { title: 1, price: 1, commission: 1 } }
           )
         ]);
 
         if (!buyer || !seller || !product) {
           continue;
         }
+
+        // Calculate pricing breakdown
+        const listingPrice = product.price || 0;
+        const commissionPercent = product.commission || 10; // Default 10% if not set
+        const commissionAmount = (listingPrice * commissionPercent) / 100;
+        const buyerPrice = listingPrice + commissionAmount;
 
         // Create order status record
         const orderStatus = {
@@ -243,7 +270,13 @@ async function syncVerifiedPayments(db) {
           sellerPhone: seller.phone,
           sellerEmail: seller.email,
           productTitle: product.title,
-          orderAmount: payment.amount || product.price,
+          orderAmount: payment.amount || buyerPrice, // Use payment amount or calculated buyer price
+          
+          // Add pricing breakdown
+          listingPrice: listingPrice,
+          commissionPercent: commissionPercent,
+          commissionAmount: commissionAmount,
+          buyerPrice: buyerPrice,
           
           currentStep: 2,
           steps: {
