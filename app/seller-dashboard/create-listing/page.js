@@ -344,6 +344,19 @@ const CreateListing = () => {
       {error && (
         <div className={styles.errorMessage}>
           <strong>⚠️ Error:</strong> {error}
+          {error.includes('Authentication error') && (
+            <div style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginTop: '1rem',
+              fontSize: '0.9rem',
+              lineHeight: '1.4'
+            }}>
+              <strong>💡 Try this:</strong> Clear History, Advanced, All time of your browser and then log in and create. If problem persists, report below to admin and be in contact.
+            </div>
+          )}
         </div>
       )}
 
