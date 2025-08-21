@@ -243,12 +243,15 @@ export async function PUT(request, { params }) {
       }
 
       if (stepNum === 6) {
-        // Step 6: Create seller payment record
+        // Step 6: Complete seller payment only if a seller request exists
         try {
-          // Try to read commission from listing; fallback to global settings; fallback to 10
+          // Determine commission percent
           let commissionPercent = 10;
           try {
-            const listing = await db.collection('listings').findOne({ _id: (typeof currentOrderStatus.productId === 'string' ? new ObjectId(currentOrderStatus.productId) : currentOrderStatus.productId) }, { projection: { commission: 1 } });
+            const listing = await db.collection('listings').findOne(
+              { _id: (typeof currentOrderStatus.productId === 'string' ? new ObjectId(currentOrderStatus.productId) : currentOrderStatus.productId) },
+              { projection: { commission: 1 } }
+            );
             if (listing && typeof listing.commission === 'number') {
               commissionPercent = listing.commission;
             } else {
@@ -262,22 +265,37 @@ export async function PUT(request, { params }) {
           const adminFee = (currentOrderStatus.orderAmount * commissionPercent) / 100;
           const sellerAmount = currentOrderStatus.orderAmount - adminFee;
 
-          await db.collection('seller_transactions').insertOne({
-            _id: new ObjectId(),
-            sellerId: currentOrderStatus.sellerId,
-            orderId: currentOrderStatus.orderId,
-            productId: currentOrderStatus.productId,
-            amount: sellerAmount,
-            commission: adminFee,
-            commissionPercent,
-            status: 'completed',
-            paymentMethod: 'admin_release',
-            transactionDetails: details,
-            createdAt: new Date(),
-            processedBy: new ObjectId(admin.adminId || admin.userId)
+          // Try to find an existing seller payment request for this order
+          const existingTx = await db.collection('seller_transactions').findOne({
+            orderId: (typeof currentOrderStatus.orderId === 'string' ? new ObjectId(currentOrderStatus.orderId) : currentOrderStatus.orderId),
+            sellerId: (typeof currentOrderStatus.sellerId === 'string' ? new ObjectId(currentOrderStatus.sellerId) : currentOrderStatus.sellerId)
           });
+
+          if (existingTx) {
+            // Complete the existing request
+            await db.collection('seller_transactions').updateOne(
+              { _id: (typeof existingTx._id === 'string' ? new ObjectId(existingTx._id) : existingTx._id) },
+              {
+                $set: {
+                  status: 'completed',
+                  commission: typeof existingTx.commission === 'number' ? existingTx.commission : adminFee,
+                  commissionPercent: typeof existingTx.commissionPercent === 'number' ? existingTx.commissionPercent : commissionPercent,
+                  // keep the originally requested amount; if missing, set to sellerAmount
+                  amount: typeof existingTx.amount === 'number' ? existingTx.amount : sellerAmount,
+                  paymentMethod: 'admin_release',
+                  transactionDetails: details,
+                  updatedAt: new Date(),
+                  completedAt: new Date(),
+                  processedBy: new ObjectId(admin.adminId || admin.userId)
+                }
+              }
+            );
+          } else {
+            // No seller request exists; do NOT create a new transaction (prevents N/A UPI rows)
+            console.log('ℹ️ Step 6: No seller payment request found; skipping auto-creation.');
+          }
         } catch (paymentError) {
-          console.error('Error creating seller payment record:', paymentError);
+          console.error('Error finalizing seller payment:', paymentError);
         }
       }
     }
