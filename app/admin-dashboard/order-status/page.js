@@ -607,6 +607,35 @@ export default function OrderStatusManagement() {
             </div>
             <div style={{ color: '#6c757d', fontSize: '0.9rem' }}>Unassigned</div>
           </div>
+          
+          {/* Revenue and Commission Stats */}
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💰</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745', marginBottom: '0.5rem' }}>
+              {formatCurrency(orders.reduce((sum, order) => sum + (order.buyerPrice || order.orderAmount || 0), 0))}
+            </div>
+            <div style={{ color: '#6c757d', fontSize: '0.9rem' }}>Total Revenue</div>
+          </div>
+          
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💸</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc3545', marginBottom: '0.5rem' }}>
+              {formatCurrency(orders.reduce((sum, order) => sum + (order.commissionAmount || 0), 0))}
+            </div>
+            <div style={{ color: '#6c757d', fontSize: '0.9rem' }}>Total Commission</div>
+          </div>
         </div>
       )}
 
@@ -747,7 +776,7 @@ export default function OrderStatusManagement() {
             <thead>
               <tr style={{ backgroundColor: '#f8f9fa' }}>
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: '600' }}>
-                  Order Details
+                  Order Details & Pricing
                 </th>
                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: '600' }}>
                   Buyer Info
@@ -784,9 +813,50 @@ export default function OrderStatusManagement() {
                           {order.productTitle}
                         </strong>
                       </div>
-                      <div style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0.25rem' }}>
-                        Amount: <strong>{formatCurrency(order.orderAmount)}</strong>
+                      
+                      {/* Pricing Breakdown */}
+                      <div style={{ 
+                        backgroundColor: '#f8f9fa', 
+                        padding: '0.75rem', 
+                        borderRadius: '6px', 
+                        marginBottom: '0.5rem',
+                        border: '1px solid #e9ecef'
+                      }}>
+                        <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '500', color: '#495057' }}>
+                          💰 Pricing Breakdown
+                        </div>
+                        
+                        {/* Listing Price */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginBottom: '0.25rem',
+                          fontSize: '0.8rem'
+                        }}>
+                          <span style={{ color: '#6c757d' }}>Listing Price:</span>
+                          <span style={{ fontWeight: '500', color: '#28a745' }}>
+                            {formatCurrency(order.listingPrice || 0)}
+                          </span>
+                        </div>
+                        
+                        {/* Total Buyer Price */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          paddingTop: '0.25rem',
+                          borderTop: '1px solid #dee2e6',
+                          fontSize: '0.85rem',
+                          fontWeight: '600'
+                        }}>
+                          <span style={{ color: '#495057' }}>Total Buyer Price:</span>
+                          <span style={{ color: '#007bff', fontSize: '0.9rem' }}>
+                            {formatCurrency(order.buyerPrice || order.orderAmount || 0)}
+                          </span>
+                        </div>
                       </div>
+                      
                       <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>
                         Created: {formatDate(order.createdAt)}
                       </div>
@@ -1110,9 +1180,71 @@ export default function OrderStatusManagement() {
                 <h3 style={{ margin: '0 0 1rem 0', color: '#333' }}>📦 Order Information</h3>
                 <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
                   <p><strong>Product:</strong> {selectedOrder.productTitle}</p>
-                  <p><strong>Amount:</strong> {formatCurrency(selectedOrder.orderAmount)}</p>
                   <p><strong>Order ID:</strong> {selectedOrder.orderId}</p>
                   <p><strong>Created:</strong> {formatDate(selectedOrder.createdAt)}</p>
+                </div>
+                
+                {/* Detailed Pricing Breakdown */}
+                <div style={{ 
+                  backgroundColor: '#f8f9fa', 
+                  padding: '1rem', 
+                  borderRadius: '8px', 
+                  marginTop: '1rem',
+                  border: '1px solid #e9ecef'
+                }}>
+                  <h4 style={{ margin: '0 0 0.75rem 0', color: '#495057', fontSize: '1rem' }}>
+                    💰 Detailed Pricing
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '0.5rem',
+                      backgroundColor: 'white',
+                      borderRadius: '4px',
+                      border: '1px solid #dee2e6'
+                    }}>
+                      <span style={{ color: '#6c757d' }}>Listing Price:</span>
+                      <span style={{ fontWeight: '600', color: '#28a745' }}>
+                        {formatCurrency(selectedOrder.listingPrice || 0)}
+                      </span>
+                    </div>
+                    
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '0.5rem',
+                      backgroundColor: 'white',
+                      borderRadius: '4px',
+                      border: '1px solid #dee2e6'
+                    }}>
+                      <span style={{ color: '#6c757d' }}>
+                        Commission:
+                      </span>
+                      <span style={{ fontWeight: '600', color: '#dc3545' }}>
+                        {formatCurrency(selectedOrder.commissionAmount || 0)}
+                      </span>
+                    </div>
+                    
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '0.75rem',
+                      backgroundColor: '#e7f3ff',
+                      borderRadius: '4px',
+                      border: '2px solid #007bff',
+                      fontWeight: '600'
+                    }}>
+                      <span style={{ color: '#004085' }}>Total Buyer Price:</span>
+                      <span style={{ color: '#007bff', fontSize: '1.1rem' }}>
+                        {formatCurrency(selectedOrder.buyerPrice || selectedOrder.orderAmount || 0)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div>
