@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './OrderHistory.module.css'; // Correct import for CSS Modules
 import {
@@ -24,7 +24,8 @@ import {
 import Link from 'next/link';
 import BuyerPickupSchedule from '@/components/BuyerPickupSchedule';
 
-const OrderHistory = () => {
+// Component that uses useSearchParams
+const OrderHistoryContent = () => {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -553,6 +554,25 @@ const OrderHistory = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Loading fallback component
+const OrderHistoryFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="text-center">
+      <RefreshCw size={48} className="animate-spin mx-auto mb-4" />
+      <p>Loading order history...</p>
+    </div>
+  </div>
+);
+
+// Main component wrapped in Suspense
+const OrderHistory = () => {
+  return (
+    <Suspense fallback={<OrderHistoryFallback />}>
+      <OrderHistoryContent />
+    </Suspense>
   );
 };
 
