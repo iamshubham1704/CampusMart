@@ -764,6 +764,15 @@ const SellerDashboard = () => {
             <p className={styles.welcomeSubtitle}>Ready to find great deals today?</p>
           </div>
 
+          {/* Pricing Notice */}
+          <div className={styles.pricingNotice}>
+            <div className={styles.pricingNoticeIcon}>ℹ️</div>
+            <div className={styles.pricingNoticeText}>
+              <strong>Important:</strong> Product prices cannot be changed once a listing is created. 
+              If you need to adjust pricing, please create a new listing instead of editing the existing one.
+            </div>
+          </div>
+
           {/* Enhanced Stats Cards with Payments */}
           <div className={styles.statsGrid}>
             <StatCard

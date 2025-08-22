@@ -187,7 +187,7 @@ const Products = () => {
           <button
             className={styles.actionButton}
             onClick={() => handleEditListing(listing)}
-            title="Edit listing"
+            title="Edit listing (Note: Prices cannot be changed)"
           >
             <Edit3 size={16} />
           </button>
@@ -276,6 +276,7 @@ const Products = () => {
             <button
               className={styles.editButton}
               onClick={() => handleEditListing(listing)}
+              title="Edit listing (Note: Prices cannot be changed)"
             >
               <Edit3 size={14} />
               Edit
@@ -369,6 +370,15 @@ const Products = () => {
               <div className={styles.statLabel}>Total Value</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Pricing Notice */}
+      <div className={styles.pricingNotice}>
+        <div className={styles.pricingNoticeIcon}>ℹ️</div>
+        <div className={styles.pricingNoticeText}>
+          <strong>Important:</strong> Product prices cannot be changed once a listing is created. 
+          If you need to adjust pricing, please create a new listing instead of editing the existing one.
         </div>
       </div>
 

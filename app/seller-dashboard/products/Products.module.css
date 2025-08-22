@@ -101,6 +101,36 @@
   box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
+/* Pricing Notice */
+.pricingNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  border: 1px solid #f59e0b;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+}
+
+.pricingNoticeIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pricingNoticeText {
+  flex: 1;
+}
+
+.pricingNoticeText strong {
+  color: #78350f;
+}
+
 /* Stats Container */
 .statsContainer {
   display: grid;

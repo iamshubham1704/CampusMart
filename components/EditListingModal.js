@@ -54,7 +54,17 @@ const EditListingModal = ({ listing, isOpen, onClose, onUpdate, onDelete }) => {
     setError('');
 
     try {
-      const result = await listingsAPI.updateListing(listing.id, formData);
+      // Create update data without price fields to prevent price changes
+      const updateData = {
+        title: formData.title,
+        description: formData.description,
+        condition: formData.condition,
+        location: formData.location,
+        status: formData.status
+        // Note: price and originalPrice are intentionally excluded
+      };
+
+      const result = await listingsAPI.updateListing(listing.id, updateData);
       
       if (result.success) {
         onUpdate(); // Refresh the listings
@@ -106,6 +116,15 @@ const EditListingModal = ({ listing, isOpen, onClose, onUpdate, onDelete }) => {
           </button>
         </div>
 
+        {/* Price Change Notice */}
+        <div className={styles.priceNotice}>
+          <div className={styles.priceNoticeIcon}>ℹ️</div>
+          <div className={styles.priceNoticeText}>
+            <strong>Note:</strong> Product prices cannot be changed once a listing is created. 
+            If you need to adjust pricing, please create a new listing.
+          </div>
+        </div>
+
         {error && (
           <div className={styles.errorMessage}>
             {error}
@@ -148,10 +167,15 @@ const EditListingModal = ({ listing, isOpen, onClose, onUpdate, onDelete }) => {
                 name="price"
                 value={formData.price}
                 onChange={handleInputChange}
-                className={styles.input}
+                className={`${styles.input} ${styles.disabledInput}`}
                 placeholder="0"
                 min="0"
+                disabled
+                title="Price cannot be changed once the product is listed"
               />
+              <small className={styles.helperText}>
+                Price cannot be changed after listing is created
+              </small>
             </div>
             
             <div className={styles.inputGroup}>
@@ -161,10 +185,15 @@ const EditListingModal = ({ listing, isOpen, onClose, onUpdate, onDelete }) => {
                 name="originalPrice"
                 value={formData.originalPrice}
                 onChange={handleInputChange}
-                className={styles.input}
+                className={`${styles.input} ${styles.disabledInput}`}
                 placeholder="Optional"
                 min="0"
+                disabled
+                title="Original price cannot be changed once the product is listed"
               />
+              <small className={styles.helperText}>
+                Original price cannot be changed after listing is created
+              </small>
             </div>
           </div>
 

@@ -600,13 +600,42 @@
 
 .welcomeSubtitle {
   color: #94a3b8;
+  font-size: 18px;
   margin: 0;
-  font-size: clamp(16px, 3vw, 18px);
-  font-weight: 500;
-  line-height: 1.6;
+  font-weight: 400;
 }
 
-/* Stats Cards */
+/* Pricing Notice */
+.pricingNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  border: 1px solid #f59e0b;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+}
+
+.pricingNoticeIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pricingNoticeText {
+  flex: 1;
+}
+
+.pricingNoticeText strong {
+  color: #78350f;
+}
+
+/* Stats Grid */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
