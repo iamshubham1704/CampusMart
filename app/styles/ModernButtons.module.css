@@ -1,0 +1,392 @@
+/* Modern Button Design System */
+/* This file provides a comprehensive set of modern button styles */
+
+/* Base Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  min-height: 48px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Button Variants */
+.btnPrimary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btnPrimary:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+
+.btnSecondary {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+  box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+}
+
+.btnSecondary:hover {
+  background: linear-gradient(135deg, #4b5563, #374151);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+}
+
+.btnSuccess {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.btnSuccess:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.btnDanger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btnDanger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+.btnWarning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.btnWarning:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+}
+
+.btnInfo {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: white;
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+}
+
+.btnInfo:hover {
+  background: linear-gradient(135deg, #0891b2, #0e7490);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+}
+
+/* Outline Button Variants */
+.btnOutline {
+  background: transparent;
+  border: 2px solid;
+  color: #3b82f6;
+}
+
+.btnOutline.btnPrimary {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.btnOutline.btnPrimary:hover {
+  background: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btnOutline.btnSuccess {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.btnOutline.btnSuccess:hover {
+  background: #10b981;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btnOutline.btnDanger {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btnOutline.btnDanger:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Button Sizes */
+.btnSmall {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.8rem;
+  min-height: 40px;
+}
+
+.btnLarge {
+  padding: 1.25rem 2rem;
+  font-size: 1rem;
+  min-height: 56px;
+}
+
+.btnXLarge {
+  padding: 1.5rem 2.5rem;
+  font-size: 1.125rem;
+  min-height: 64px;
+}
+
+/* Button States */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Loading State */
+.btnLoading {
+  position: relative;
+  color: transparent;
+}
+
+.btnLoading::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Icon Button */
+.btnIcon {
+  padding: 0.75rem;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.btnIcon.btnSmall {
+  padding: 0.5rem;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.btnIcon.btnLarge {
+  padding: 1rem;
+  min-width: 56px;
+  min-height: 56px;
+}
+
+/* Button Group */
+.btnGroup {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btnGroupVertical {
+  flex-direction: column;
+}
+
+.btnGroupVertical .btn {
+  width: 100%;
+}
+
+/* Special Effects */
+.btnGlow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.btnGlow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+}
+
+.btnNeon {
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.btnNeon:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+}
+
+/* Floating Action Button */
+.btnFloating {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  padding: 0;
+  min-height: 60px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.btnFloating:hover {
+  transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .btn {
+    padding: 0.875rem 1.25rem;
+    min-height: 44px;
+    font-size: 0.8rem;
+  }
+  
+  .btnGroup {
+    flex-direction: column;
+  }
+  
+  .btnGroup .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: 0.75rem 1rem;
+    min-height: 40px;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+  }
+  
+  .btnFloating {
+    bottom: 1rem;
+    right: 1rem;
+    width: 50px;
+    height: 50px;
+    min-height: 50px;
+  }
+}
+
+/* Animations */
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.btnPulse {
+  animation: pulse 2s infinite;
+}
+
+/* Hover Effects */
+.btnRipple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btnRipple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btnRipple:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Glass Morphism Effect */
+.btnGlass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.btnGlass:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Additional Special Effects */
+.glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.glow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+}
+
+.neon {
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.neon:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Enhanced hover effects for showcase */
+.btnShowcase {
+  position: relative;
+  overflow: hidden;
+}
+
+.btnShowcase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btnShowcase:hover::before {
+  left: 100%;
+}
