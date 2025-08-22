@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   Filter,
@@ -36,7 +37,8 @@ import {
   Package,
   ChevronDown,
   Pen,
-  MessageCircle
+  MessageCircle,
+  Share2
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
@@ -44,7 +46,7 @@ import ProductViewModal from './quick-view/page';
 import { useWishlist } from '../../components/contexts/WishlistContext';
 import WishlistModal from './wishlist/page';
 import Link from 'next/link';
-import { getStoredToken, isAuthenticated, redirectToLogin } from '../../lib/auth';
+import { getStoredToken, isAuthenticated, redirectToLogin, clearAllTokens } from '../../lib/auth';
 import './BuyerDashboard.css';
 
 const useBuyer = () => {
@@ -449,6 +451,8 @@ function ConditionFilter({ selectedConditions, onConditionChange }) {
 }
 
 const BuyerDashboard = () => {
+  const router = useRouter();
+  
   // Mouse tracking state
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const dashboardRef = useRef(null);
@@ -555,6 +559,18 @@ const BuyerDashboard = () => {
   const filteredLocations = availableLocations.filter(location =>
     location.toLowerCase().includes(locationSearchQuery.toLowerCase())
   );
+
+  // Authentication check effect
+  useEffect(() => {
+    // Check if user is authenticated on component mount
+    const token = getStoredToken('buyer');
+    if (!token || !isAuthenticated('buyer')) {
+      // Clear any invalid tokens and redirect to login
+      clearAllTokens();
+      router.push('/buyer-login');
+      return;
+    }
+  }, []);
 
   // Mouse tracking effect
   useEffect(() => {
@@ -742,6 +758,27 @@ const BuyerDashboard = () => {
     const success = await addToCart(productIdToAdd, 1);
     if (success) {
       console.log('Item added to cart successfully');
+    }
+  };
+
+  const handleShareProduct = async (product) => {
+    try {
+      const shareUrl = `${window.location.origin}/shared-listing/${product.id || product._id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      
+      // Show success message (you can implement a toast notification here)
+      alert('Shareable link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      // Fallback for older browsers
+      const shareUrl = `${window.location.origin}/shared-listing/${product.id || product._id}`;
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Shareable link copied to clipboard!');
     }
   };
 
@@ -975,7 +1012,21 @@ const BuyerDashboard = () => {
               {totalItems > 0 && <span className="badge">{totalItems}</span>}
             </button>
 
-            <button className="actionButton" onClick={() => setIsProfileOpen(true)}>
+            <button 
+              className="actionButton" 
+              onClick={() => {
+                // Always check authentication - redirect to login if not authenticated
+                const token = getStoredToken('buyer');
+                if (buyer && token && isAuthenticated('buyer')) {
+                  setIsProfileOpen(true);
+                } else {
+                  // Clear any invalid tokens and redirect to login
+                  clearAllTokens();
+                  router.push('/buyer-login');
+                }
+              }}
+              title={buyer ? "View Profile" : "Login to access profile"}
+            >
               {buyer && (
                 <img
                   src={buyer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(buyer.name)}&size=40&background=3b82f6&color=ffffff`}
@@ -1339,6 +1390,17 @@ const BuyerDashboard = () => {
                           }}
                         >
                           Buy Now
+                        </button>
+                        <button
+                          className="shareButton"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareProduct(product);
+                          }}
+                          title="Share this product"
+                        >
+                          <Share2 size={16} />
+                          Share
                         </button>
                       </div>
                     </div>

@@ -818,7 +818,7 @@
 
 .productActions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 0.75rem;
   margin-top: 1rem;
 }
@@ -856,6 +856,15 @@
 
 .contactSellerButton:hover {
   background: rgba(59, 130, 246, 0.1);
+}
+
+.shareButton {
+  background: #10b981;
+  color: white;
+}
+
+.shareButton:hover {
+  background: #059669;
 }
 
 /* Dark/Light Mode Styles */

@@ -1388,6 +1388,7 @@
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .buy-now-btn {
@@ -1449,6 +1450,31 @@
   color: white;
   border-color: #059669;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.share-btn {
+  flex: 1;
+  min-width: 120px;
+  background: linear-gradient(145deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.share-btn:hover {
+  background: linear-gradient(145deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 .spinner {

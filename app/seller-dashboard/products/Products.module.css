@@ -446,22 +446,47 @@
 }
 
 .editButton {
-  background-color: #f1f5f9;
-  color: #475569;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
   transition: all 0.2s;
 }
 
 .editButton:hover {
-  background-color: #3b82f6;
-  color: white;
+  background: #2563eb;
+}
+
+.shareButton {
+  background: #10b981;
+}
+
+.shareButton:hover {
+  background: #059669;
+}
+
+.actionButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton:hover {
+  background: white;
+  transform: scale(1.1);
 }
 
 /* List Cards */
