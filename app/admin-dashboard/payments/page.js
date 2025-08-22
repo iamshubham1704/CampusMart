@@ -88,6 +88,16 @@ export default function AdminPaymentsPage() {
     try {
       const token = localStorage.getItem('adminToken');
       
+      console.log('🔄 Starting payment verification:', { 
+        screenshotId, 
+        action, 
+        rejectionReason,
+        idType: typeof screenshotId,
+        idLength: screenshotId.length,
+        isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(screenshotId),
+        isObjectId: /^[0-9a-f]{24}$/i.test(screenshotId)
+      });
+      
       const response = await fetch('/api/admin/payment-screenshots/verify', {
         method: 'POST',
         headers: {
@@ -102,6 +112,7 @@ export default function AdminPaymentsPage() {
       });
 
       const data = await response.json();
+      console.log('📡 Verification response:', data);
 
       if (response.ok && data.success) {
         // Update the payment screenshot in local state
@@ -115,16 +126,130 @@ export default function AdminPaymentsPage() {
         setShowModal(false);
         setSelectedPayment(null);
         
-        alert(`Payment ${action} successfully!`);
+        alert(`✅ Payment ${action} successfully!\n\nPayment ID: ${screenshotId}\nStatus: ${action}\nVerified by: ${data.data.verifiedBy}\nTime: ${new Date(data.data.verifiedAt).toLocaleString()}`);
         
         // Refresh the list
         fetchPaymentScreenshots();
       } else {
-        alert(data.error || 'Failed to update payment status');
+        const errorMessage = data.error || 'Failed to update payment status';
+        console.error('❌ Verification failed:', errorMessage);
+        alert(`❌ Payment verification failed!\n\nError: ${errorMessage}\n\nPlease check:\n• Payment ID: ${screenshotId}\n• Current status\n• Database connection\n\nCheck browser console for more details.`);
       }
     } catch (error) {
-      console.error('Error updating payment status:', error);
-      alert('Network error. Please try again.');
+      console.error('❌ Network error during verification:', error);
+      const errorMessage = error.message || 'Network error occurred';
+      alert(`❌ Payment verification failed!\n\nNetwork error: ${errorMessage}\n\nPlease check:\n• Internet connection\n• Server status\n• Try again in a few moments`);
+    }
+  };
+
+  const debugPaymentDatabase = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      console.log('🔍 Getting comprehensive payment database debug information...');
+
+      // Use the new comprehensive debug endpoint
+      const response = await fetch('/api/admin/debug', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      console.log('📊 Comprehensive debug data:', data);
+
+      if (response.ok && data.success) {
+        const debugInfo = data.data;
+        
+        let debugMessage = '🔍 COMPREHENSIVE DATABASE DEBUG\n';
+        debugMessage += '='.repeat(50) + '\n\n';
+        
+        // Collections summary
+        debugMessage += '📊 COLLECTIONS SUMMARY:\n';
+        debugMessage += `• Payment Screenshots: ${debugInfo.collections.payment_screenshots.total}\n`;
+        debugMessage += `• Orders: ${debugInfo.collections.orders.total}\n`;
+        debugMessage += `• Order Statuses: ${debugInfo.collections.order_status.total}\n`;
+        debugMessage += `• Buyers: ${debugInfo.collections.buyers.total}\n`;
+        debugMessage += `• Sellers: ${debugInfo.collections.sellers.total}\n`;
+        debugMessage += `• Listings: ${debugInfo.collections.listings.total}\n\n`;
+        
+        // Payment screenshots analysis
+        const paymentAnalysis = debugInfo.analysis.paymentScreenshots;
+        debugMessage += '📸 PAYMENT SCREENSHOTS:\n';
+        Object.entries(paymentAnalysis.byStatus).forEach(([status, count]) => {
+          debugMessage += `• ${status.replace('_', ' ').toUpperCase()}: ${count}\n`;
+        });
+        
+        // Add ID format information
+        if (paymentAnalysis.idFormats) {
+          debugMessage += `\n🔍 ID FORMATS:\n`;
+          debugMessage += `• ObjectId (24 chars): ${paymentAnalysis.idFormats.objectId}\n`;
+          debugMessage += `• UUID (36 chars): ${paymentAnalysis.idFormats.uuid}\n`;
+          debugMessage += `• Other: ${paymentAnalysis.idFormats.other}\n`;
+        }
+        
+        debugMessage += '\n';
+        
+        // Orders analysis
+        const orderAnalysis = debugInfo.analysis.orders;
+        debugMessage += '📦 ORDERS:\n';
+        debugMessage += `• Total: ${orderAnalysis.total}\n`;
+        debugMessage += `• With Payment Screenshot: ${orderAnalysis.withPaymentScreenshot}\n`;
+        debugMessage += `• Without Payment Screenshot: ${orderAnalysis.withoutPaymentScreenshot}\n`;
+        if (orderAnalysis.byStatus) {
+          Object.entries(orderAnalysis.byStatus).forEach(([status, count]) => {
+            debugMessage += `• ${status}: ${count}\n`;
+          });
+        }
+        debugMessage += '\n';
+        
+        // Order statuses analysis
+        const orderStatusAnalysis = debugInfo.analysis.orderStatuses;
+        debugMessage += '📋 ORDER STATUSES:\n';
+        debugMessage += `• Total: ${orderStatusAnalysis.total}\n`;
+        if (orderStatusAnalysis.byStatus) {
+          Object.entries(orderStatusAnalysis.byStatus).forEach(([status, count]) => {
+            debugMessage += `• ${status}: ${count}\n`;
+          });
+        }
+        debugMessage += '\n';
+        
+        // Issues found
+        if (debugInfo.issues && debugInfo.issues.length > 0) {
+          debugMessage += '⚠️ ISSUES FOUND:\n';
+          debugInfo.issues.forEach((issue, index) => {
+            debugMessage += `${index + 1}. ${issue.type.toUpperCase()}: ${issue.message}\n`;
+            debugMessage += `   ${issue.details}\n\n`;
+          });
+        }
+        
+        // Recommendations
+        if (debugInfo.recommendations && debugInfo.recommendations.length > 0) {
+          debugMessage += '💡 RECOMMENDATIONS:\n';
+          debugInfo.recommendations.forEach((rec, index) => {
+            debugMessage += `${index + 1}. ${rec.priority.toUpperCase()}: ${rec.action}\n`;
+            debugMessage += `   ${rec.details}\n\n`;
+          });
+        }
+        
+        // Critical check for sync issue
+        const verifiedPayments = paymentAnalysis.byStatus.verified || 0;
+        const totalOrderStatuses = orderStatusAnalysis.total;
+        
+        if (verifiedPayments > 0 && totalOrderStatuses === 0) {
+          debugMessage += '🚨 CRITICAL ISSUE DETECTED!\n';
+          debugMessage += 'The sync process is not working!\n';
+          debugMessage += `Found ${verifiedPayments} verified payments but 0 order statuses.\n`;
+          debugMessage += 'This explains why "Sync Verified Payments" isn\'t working.\n\n';
+          debugMessage += 'SOLUTION: Fix the payment verification system first.\n';
+        }
+
+        alert(debugMessage);
+      } else {
+        alert(`❌ Debug failed: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Debug error:', error);
+      alert(`❌ Debug error: ${error.message}`);
     }
   };
 
@@ -491,6 +616,22 @@ export default function AdminPaymentsPage() {
           }}
         >
           🔄 Refresh
+        </button>
+        
+        {/* Debug Button */}
+        <button
+          onClick={debugPaymentDatabase}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#6f42c1',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+          title="Debug payment database state"
+        >
+          🔍 Debug DB
         </button>
       </div>
 

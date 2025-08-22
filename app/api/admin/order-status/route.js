@@ -207,6 +207,20 @@ export async function POST(request) {
     const client = await clientPromise;
     const db = client.db('campusmart');
 
+    // Check if this is a debug request
+    const { searchParams } = new URL(request.url);
+    const debug = searchParams.get('debug') === 'true';
+
+    if (debug) {
+      // Debug endpoint to check database state
+      const debugInfo = await getDebugInfo(db);
+      return Response.json({
+        success: true,
+        message: 'Debug information retrieved',
+        data: debugInfo
+      }, { status: 200 });
+    }
+
     const result = await syncVerifiedPayments(db);
 
     return Response.json({
@@ -219,7 +233,8 @@ export async function POST(request) {
     console.error('Error syncing verified payments:', error);
     return Response.json({
       success: false,
-      error: 'Internal server error'
+      error: 'Internal server error',
+      details: error.message
     }, { status: 500 });
   }
 }
@@ -227,10 +242,19 @@ export async function POST(request) {
 // Function to sync verified payments to order_status collection
 async function syncVerifiedPayments(db) {
   try {
+    console.log('Starting syncVerifiedPayments...');
+    
     // Get all verified payments
     const verifiedPayments = await db.collection('payment_screenshots')
       .find({ status: 'verified' })
       .toArray();
+    
+    console.log(`Found ${verifiedPayments.length} verified payments`);
+
+    if (verifiedPayments.length === 0) {
+      console.log('No verified payments found to sync');
+      return { created: 0, existing: 0, message: 'No verified payments found' };
+    }
 
     // Get existing order statuses
     const existingOrderStatuses = await db.collection('order_status')
@@ -238,8 +262,11 @@ async function syncVerifiedPayments(db) {
       .toArray();
 
     const existingOrderIds = new Set(existingOrderStatuses.map(os => os.orderId?.toString()));
+    console.log(`Found ${existingOrderStatuses.length} existing order statuses`);
     
     let created = 0;
+    let skipped = 0;
+    let errors = 0;
 
     // Helper to convert string ids to ObjectId when possible
     const toObjectId = (id) => {
@@ -253,12 +280,22 @@ async function syncVerifiedPayments(db) {
 
     for (const payment of verifiedPayments) {
       try {
+        console.log(`Processing payment: ${payment._id}`);
+        
         // Find corresponding order
         const order = await db.collection('orders').findOne({
           paymentScreenshotId: payment._id
         });
 
-        if (!order || existingOrderIds.has(order._id.toString())) {
+        if (!order) {
+          console.log(`No order found for payment ${payment._id}, skipping...`);
+          skipped++;
+          continue;
+        }
+
+        if (existingOrderIds.has(order._id.toString())) {
+          console.log(`Order ${order._id} already has status, skipping...`);
+          skipped++;
           continue;
         }
 
@@ -279,6 +316,12 @@ async function syncVerifiedPayments(db) {
         ]);
 
         if (!buyer || !seller || !product) {
+          console.log(`Missing related data for payment ${payment._id}:`, {
+            buyer: !!buyer,
+            seller: !!seller,
+            product: !!product
+          });
+          errors++;
           continue;
         }
 
@@ -335,16 +378,66 @@ async function syncVerifiedPayments(db) {
 
         await db.collection('order_status').insertOne(orderStatus);
         created++;
+        console.log(`Successfully created order status for payment ${payment._id}`);
 
       } catch (itemError) {
         console.error('Error creating order status for payment:', payment._id, itemError);
+        errors++;
       }
     }
 
-    return { created, existing: existingOrderStatuses.length };
+    console.log(`Sync completed: ${created} created, ${skipped} skipped, ${errors} errors`);
+    return { 
+      created, 
+      existing: existingOrderStatuses.length,
+      skipped,
+      errors,
+      totalProcessed: verifiedPayments.length
+    };
 
   } catch (error) {
     console.error('Error in syncVerifiedPayments:', error);
     throw error;
+  }
+}
+
+// Debug function to check database state
+async function getDebugInfo(db) {
+  try {
+    const [verifiedPayments, orders, orderStatuses, buyers, sellers, listings] = await Promise.all([
+      db.collection('payment_screenshots').find({ status: 'verified' }).toArray(),
+      db.collection('orders').find({}).toArray(),
+      db.collection('order_status').find({}).toArray(),
+      db.collection('buyers').find({}).toArray(),
+      db.collection('sellers').find({}).toArray(),
+      db.collection('listings').find({}).toArray()
+    ]);
+
+    return {
+      collections: {
+        payment_screenshots: {
+          total: await db.collection('payment_screenshots').countDocuments(),
+          verified: verifiedPayments.length,
+          verifiedIds: verifiedPayments.map(p => p._id.toString())
+        },
+        orders: {
+          total: orders.length,
+          withPaymentScreenshot: orders.filter(o => o.paymentScreenshotId).length
+        },
+        order_status: {
+          total: orderStatuses.length,
+          orderIds: orderStatuses.map(os => os.orderId?.toString())
+        },
+        buyers: { total: buyers.length },
+        sellers: { total: sellers.length },
+        listings: { total: listings.length }
+      },
+      sampleVerifiedPayment: verifiedPayments[0] || null,
+      sampleOrder: orders[0] || null,
+      sampleOrderStatus: orderStatuses[0] || null
+    };
+  } catch (error) {
+    console.error('Error getting debug info:', error);
+    return { error: error.message };
   }
 }

@@ -9,6 +9,7 @@ import {
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
+import SellerDeliveryIntegration from '../../components/SellerDeliveryIntegration';
 import { getStoredToken, isAuthenticated, redirectToLogin } from '../../lib/auth';
 // import NotificationBadge from '../../components/NotificationBadge';
 
@@ -480,6 +481,12 @@ const SellerDashboard = () => {
           }`}>
           {listing.condition}
         </div>
+        {/* Show sold badge if product is sold */}
+        {listing.status === 'sold' && (
+          <div className={styles.soldBadge}>
+            SOLD
+          </div>
+        )}
       </div>
 
       <div className={styles.listingContent}>
@@ -493,17 +500,27 @@ const SellerDashboard = () => {
           <MapPin size={14} style={{ marginRight: '4px' }} />
           {listing.location}
         </div>
+        
+        {/* Show delivery scheduling for sold products */}
+        {listing.status === 'sold' && (
+          <div className={styles.deliverySection}>
+            <SellerDeliveryIntegration productId={listing.id} />
+          </div>
+        )}
+        
         <div className={styles.listingFooter}>
           <div className={styles.listingViews}>
             <Eye size={14} style={{ marginRight: '4px' }} />
             {listing.views} views
           </div>
-          <button
-            className={styles.messageButton}
-            onClick={() => handleEditListing(listing)}
-          >
-            Edit
-          </button>
+          {listing.status !== 'sold' && (
+            <button
+              className={styles.messageButton}
+              onClick={() => handleEditListing(listing)}
+            >
+              Edit
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -595,6 +612,26 @@ const SellerDashboard = () => {
                   </>
                 )}
               </button>
+
+              {/* Delivery Scheduling Button */}
+              {myListings.filter(listing => listing.status === 'sold').length > 0 && (
+                <button 
+                  className={styles.deliveryButton}
+                  onClick={() => {
+                    const soldProductsSection = document.querySelector(`.${styles.soldProductsSection}`);
+                    if (soldProductsSection) {
+                      soldProductsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  title="Schedule Delivery for Sold Products"
+                >
+                  <Package size={16} />
+                  <span>Delivery</span>
+                  <span className={styles.deliveryNotificationBadge}>
+                    {myListings.filter(listing => listing.status === 'sold').length}
+                  </span>
+                </button>
+              )}
 
               <div className={styles.profileSection}>
                 <div
@@ -787,6 +824,13 @@ const SellerDashboard = () => {
               change={`${sellerData?.rating || 0} avg rating`}
               color="#eab308"
             />
+            <StatCard
+              icon={Package}
+              value={myListings.filter(listing => listing.status === 'sold').length}
+              label="Sold Products"
+              change="Need delivery"
+              color="#ef4444"
+            />
           </div>
 
           <div className={styles.contentGrid}>
@@ -821,6 +865,45 @@ const SellerDashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* Sold Products - Delivery Scheduling */}
+            {myListings.filter(listing => listing.status === 'sold').length > 0 && (
+              <div className={styles.soldProductsSection}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>
+                    <Package className={styles.sectionIcon} />
+                    Sold Products - Schedule Delivery
+                  </h2>
+                  <span className={styles.soldCount}>
+                    {myListings.filter(listing => listing.status === 'sold').length} sold
+                  </span>
+                </div>
+                
+                <div className={styles.soldProductsGrid}>
+                  {myListings
+                    .filter(listing => listing.status === 'sold')
+                    .map(listing => (
+                      <div key={listing.id} className={styles.soldProductCard}>
+                        <div className={styles.soldProductImage}>
+                          <img src={listing.image} alt={listing.title} />
+                          <div className={styles.soldBadge}>SOLD</div>
+                        </div>
+                        <div className={styles.soldProductInfo}>
+                          <h3>{listing.title}</h3>
+                          <p className={styles.soldProductPrice}>₹{listing.price.toLocaleString()}</p>
+                          <p className={styles.soldProductLocation}>
+                            <MapPin size={14} style={{ marginRight: '4px' }} />
+                            {listing.location}
+                          </p>
+                        </div>
+                        <div className={styles.deliveryIntegration}>
+                          <SellerDeliveryIntegration productId={listing.id} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
 
             {/* Sidebar Content */}
             <div className={styles.sidebarContent}>
