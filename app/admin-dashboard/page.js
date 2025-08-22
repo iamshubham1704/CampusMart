@@ -78,15 +78,16 @@ export default function AdminDashboard() {
   }, [filter]);
 
   // Filter and paginate users
-  const filteredUsers = users.filter(user => {
-    const matchesFilter = filter === "all" || user.userType === filter;
+  const filteredUsers = users && users.length > 0 ? users.filter(user => {
+    if (!user) return false;
+    const matchesFilter = filter === "all" || user.role === filter; // Changed from userType to role
     const lowerSearch = searchTerm.toLowerCase();
     const phoneString = (user.phone || "").toString();
-    const matchesSearch = user.name.toLowerCase().includes(lowerSearch) ||
-                         user.email.toLowerCase().includes(lowerSearch) ||
+    const matchesSearch = (user.name && user.name.toLowerCase().includes(lowerSearch)) ||
+                         (user.email && user.email.toLowerCase().includes(lowerSearch)) ||
                          phoneString.includes(lowerSearch);
     return matchesFilter && matchesSearch;
-  });
+  }) : [];
 
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
@@ -167,7 +168,7 @@ export default function AdminDashboard() {
 
       // Always fetch ALL users first, then filter locally
       const [usersResponse, statsResponse] = await Promise.all([
-        fetch('/api/admin/users?all=true', {
+        fetch('/api/admin/users', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -184,7 +185,9 @@ export default function AdminDashboard() {
 
       if (usersResponse.ok) {
         console.log('Users API Response:', usersData);
-        setUsers(usersData.data.users);
+        // Handle both possible response structures
+        const usersArray = usersData.data?.users || usersData.data || [];
+        setUsers(usersArray);
         // Reset to first page when new data arrives
         setCurrentPage(1);
       } else {

@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongo';
-import { verifyAdminToken, verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
 // GET - Fetch pickups with filters
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const decoded = verifyAdminToken(request);
-    if (!decoded) {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded || !decoded.role || !['admin', 'buyer'].includes(decoded.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -57,6 +62,11 @@ export async function GET(request) {
       } catch (error) {
         return NextResponse.json({ error: 'Invalid delivery ID' }, { status: 400 });
       }
+    }
+
+    // Scope buyers to their own pickups; admins see all
+    if (decoded.role === 'buyer') {
+      filter.buyerId = new ObjectId(decoded.userId);
     }
 
     // Note: Admin users can see all pickups, no additional filtering needed
@@ -193,13 +203,32 @@ export async function POST(request) {
       productId: productObjectId
     });
 
+    console.log('🔍 Delivery lookup result:', delivery ? 'Found' : 'Not found');
+    if (delivery) {
+      console.log('🔍 Delivery details:', {
+        deliveryId: delivery._id.toString(),
+        productId: delivery.productId.toString(),
+        sellerId: delivery.sellerId?.toString(),
+        adminId: delivery.adminId?.toString(),
+        status: delivery.status,
+        orderId: delivery.orderId || 'No orderId field'
+      });
+    }
+
     if (!delivery) {
       return NextResponse.json({ 
         error: 'Delivery not found for this product' 
       }, { status: 404 });
     }
 
-    // Validate admin schedule exists and has available slots
+    // CRITICAL: Check if delivery is completed (pickup can only be scheduled after delivery)
+    if (delivery.status !== 'completed') {
+      return NextResponse.json({ 
+        error: 'Pickup can only be scheduled after delivery is completed' 
+      }, { status: 400 });
+    }
+
+    // CRITICAL: First, find the admin schedule to get the correct admin ID
     let scheduleObjectId;
     try {
       scheduleObjectId = new ObjectId(adminScheduleId);
@@ -207,6 +236,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid admin schedule ID' }, { status: 400 });
     }
 
+    // Find the admin schedule first to get the correct admin ID
     const adminSchedule = await db.collection('admin_schedules').findOne({
       _id: scheduleObjectId,
       type: 'pickup',
@@ -218,6 +248,73 @@ export async function POST(request) {
         error: 'Admin schedule not found or inactive' 
       }, { status: 404 });
     }
+
+    // Check if the SPECIFIC ORDER (that this delivery belongs to) is assigned to the admin who owns this schedule
+    const scheduleAdminIdStr = adminSchedule.adminId.toString();
+    
+    console.log('🔍 Checking if the specific order is assigned to admin:', scheduleAdminIdStr);
+    
+    // Since delivery doesn't have orderId, we need to find the order through the product
+    // Find the order_status that contains this product and is assigned to the schedule's admin
+    console.log('🔍 Looking for order_status with:', {
+      productId: productObjectId.toString(),
+      buyerId: decoded.userId,
+      scheduleAdminId: scheduleAdminIdStr
+    });
+    
+    const orderStatus = await db.collection('order_status').findOne({
+      productId: productObjectId,
+      buyerId: new ObjectId(decoded.userId), // Ensure this is the buyer's order
+      $or: [
+        { assignedAdminId: scheduleAdminIdStr },
+        { assignedAdminId: new ObjectId(scheduleAdminIdStr) }
+      ]
+    });
+
+    console.log('🔍 Order status lookup result:', orderStatus ? 'Found' : 'Not found');
+
+    if (!orderStatus) {
+      console.log('🔍 Order not found or not assigned to admin:', scheduleAdminIdStr);
+      
+      // Let's check what orders this buyer has
+      const buyerOrders = await db.collection('order_status').find({
+        buyerId: new ObjectId(decoded.userId)
+      }).toArray();
+      
+      console.log('🔍 Buyer orders found:', buyerOrders.length);
+      console.log('🔍 Buyer order admin IDs:', buyerOrders.map(os => os.assignedAdminId));
+      
+      return NextResponse.json({ 
+        error: `This product's order is not assigned to admin ${scheduleAdminIdStr}. Only orders assigned to this admin can book their schedules.` 
+      }, { status: 403 });
+    }
+
+    // Get the assigned admin ID from the found order
+    const assignedAdminId = orderStatus.assignedAdminId;
+    
+    console.log('🔍 Found matching order:', {
+      orderId: orderStatus.orderId,
+      assignedAdminId: assignedAdminId.toString(),
+      scheduleAdminId: scheduleAdminIdStr,
+      match: assignedAdminId.toString() === scheduleAdminIdStr
+    });
+
+    // Validate admin schedule exists, has available slots, and belongs to the assigned admin
+    // scheduleObjectId is already declared above, no need to redeclare
+
+    // Validate that the schedule belongs to the assigned admin (double-check)
+    if (adminSchedule.adminId.toString() !== assignedAdminId.toString()) {
+      return NextResponse.json({ 
+        error: 'Schedule does not belong to your assigned admin' 
+      }, { status: 403 });
+    }
+
+    console.log('🔍 Schedule validation successful:', {
+      scheduleId: scheduleObjectId.toString(),
+      scheduleAdminId: adminSchedule.adminId.toString(),
+      assignedAdminId: assignedAdminId.toString(),
+      match: adminSchedule.adminId.toString() === assignedAdminId.toString()
+    });
 
     // Check current slot usage dynamically
     const currentBookings = await db.collection('pickups').countDocuments({
@@ -242,12 +339,22 @@ export async function POST(request) {
       }, { status: 409 });
     }
 
+    // Check if pickup date is after delivery date
+    const deliveryDate = new Date(delivery.updatedAt || delivery.createdAt);
+    const pickupDate = new Date(adminSchedule.date);
+    
+    if (pickupDate <= deliveryDate) {
+      return NextResponse.json({ 
+        error: 'Pickup date must be after delivery completion date' 
+      }, { status: 400 });
+    }
+
     // Create pickup booking
     const newPickup = {
       productId: productObjectId,
       buyerId: new ObjectId(decoded.userId),
       sellerId: delivery.sellerId,
-      adminId: adminSchedule.adminId,
+      adminId: new ObjectId(assignedAdminId), // Use assigned admin ID
       adminScheduleId: scheduleObjectId,
       deliveryId: deliveryObjectId,
       preferredTime: preferredTime || adminSchedule.startTime,
@@ -260,13 +367,18 @@ export async function POST(request) {
     const result = await db.collection('pickups').insertOne(newPickup);
     newPickup._id = result.insertedId;
 
-    // Note: We don't need to update currentSlots here because it's calculated dynamically
-    // when fetching schedules. The slot count is based on the actual number of pickups
-    // in the pickups collection, not a stored count.
+    console.log('✅ Pickup booked successfully:', {
+      productId: productObjectId.toString(),
+      buyerId: decoded.userId,
+      adminId: assignedAdminId.toString(),
+      scheduleId: scheduleObjectId.toString(),
+      deliveryId: deliveryObjectId.toString()
+    });
 
     return NextResponse.json({ 
       success: true, 
-      data: newPickup 
+      data: newPickup,
+      message: 'Pickup booked successfully with your assigned admin' 
     }, { status: 201 });
   } catch (error) {
     console.error('POST /api/admin/pickups error:', error);

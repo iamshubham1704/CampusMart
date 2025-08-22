@@ -11,7 +11,8 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    // Next.js 15: await params before accessing properties
+    const { id } = await params;
     const { status } = await request.json();
 
     // Validate status

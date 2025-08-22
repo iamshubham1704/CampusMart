@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongo';
-import { verifyAdminToken, verifyToken } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
 // GET - Fetch deliveries with filters
@@ -11,7 +11,12 @@ export async function GET(request) {
     // Allow both admins and sellers to access this endpoint:
     // - Admins: can see all deliveries (optionally filter via query params)
     // - Sellers: scoped to their own deliveries only
-    const decoded = verifyToken(request);
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
     if (!decoded || !decoded.role || !['admin', 'seller'].includes(decoded.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -131,6 +136,14 @@ export async function POST(request) {
     const body = await request.json();
     const { productId, adminScheduleId, preferredTime, notes } = body;
 
+    console.log('🔍 Delivery booking request:', {
+      productId,
+      adminScheduleId,
+      preferredTime,
+      notes
+    });
+
+    // Validate required fields
     if (!productId || !adminScheduleId) {
       return NextResponse.json({ 
         error: 'Product ID and admin schedule ID are required' 
@@ -159,7 +172,7 @@ export async function POST(request) {
       }, { status: 404 });
     }
 
-    // Validate admin schedule exists and has available slots
+    // CRITICAL: First, find the admin schedule to get the correct admin ID
     let scheduleObjectId;
     try {
       scheduleObjectId = new ObjectId(adminScheduleId);
@@ -167,10 +180,18 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid admin schedule ID' }, { status: 400 });
     }
 
+    // Find the admin schedule first to get the correct admin ID
     const adminSchedule = await db.collection('admin_schedules').findOne({
       _id: scheduleObjectId,
       type: 'delivery',
       status: 'active'
+    });
+
+    console.log('🔍 Admin schedule found:', {
+      scheduleId: scheduleObjectId.toString(),
+      scheduleAdminId: adminSchedule?.adminId?.toString(),
+      scheduleType: adminSchedule?.type,
+      scheduleStatus: adminSchedule?.status
     });
 
     if (!adminSchedule) {
@@ -178,6 +199,56 @@ export async function POST(request) {
         error: 'Admin schedule not found or inactive' 
       }, { status: 404 });
     }
+
+    // Check if the SPECIFIC ORDER (that this product belongs to) is assigned to the admin who owns this schedule
+    const scheduleAdminIdStr = adminSchedule.adminId.toString();
+    
+    console.log('🔍 Checking if the specific order is assigned to admin:', scheduleAdminIdStr);
+    
+    // Get the order ID from the product (we need to find the order that contains this product)
+    // Since we have productId, we need to find the order_status that contains this product
+    const orderStatus = await db.collection('order_status').findOne({
+      productId: productObjectId,
+      $or: [
+        { assignedAdminId: scheduleAdminIdStr },
+        { assignedAdminId: new ObjectId(scheduleAdminIdStr) }
+      ]
+    });
+
+    console.log('🔍 Order status lookup result:', orderStatus ? 'Found' : 'Not found');
+
+    if (!orderStatus) {
+      console.log('🔍 Order not found or not assigned to admin:', scheduleAdminIdStr);
+      
+      return NextResponse.json({ 
+        error: `This product's order is not assigned to admin ${scheduleAdminIdStr}. Only orders assigned to this admin can book their schedules.` 
+      }, { status: 403 });
+    }
+
+    // Get the assigned admin ID from the found order
+    const assignedAdminId = orderStatus.assignedAdminId;
+    
+    console.log('🔍 Found matching order:', {
+      orderId: orderStatus.orderId,
+      productId: productObjectId.toString(),
+      assignedAdminId: assignedAdminId.toString(),
+      scheduleAdminId: scheduleAdminIdStr,
+      match: assignedAdminId.toString() === scheduleAdminIdStr
+    });
+
+    // Validate that the schedule belongs to the assigned admin (double-check)
+    if (adminSchedule.adminId.toString() !== assignedAdminId.toString()) {
+      return NextResponse.json({ 
+        error: 'Schedule does not belong to your assigned admin' 
+      }, { status: 403 });
+    }
+
+    console.log('🔍 Schedule validation successful:', {
+      scheduleId: scheduleObjectId.toString(),
+      scheduleAdminId: adminSchedule.adminId.toString(),
+      assignedAdminId: assignedAdminId.toString(),
+      match: adminSchedule.adminId.toString() === assignedAdminId.toString()
+    });
 
     // Check current slot usage dynamically
     const currentBookings = await db.collection('deliveries').countDocuments({
@@ -206,7 +277,7 @@ export async function POST(request) {
     const newDelivery = {
       productId: productObjectId,
       sellerId: new ObjectId(decoded.userId),
-      adminId: adminSchedule.adminId,
+      adminId: new ObjectId(assignedAdminId), // Use assigned admin ID
       adminScheduleId: scheduleObjectId,
       preferredTime: preferredTime || adminSchedule.startTime,
       notes: notes || '',
@@ -218,13 +289,17 @@ export async function POST(request) {
     const result = await db.collection('deliveries').insertOne(newDelivery);
     newDelivery._id = result.insertedId;
 
-    // Note: We don't need to update currentSlots here because it's calculated dynamically
-    // when fetching schedules. The slot count is based on the actual number of deliveries
-    // in the deliveries collection, not a stored count.
+    console.log('✅ Delivery booked successfully:', {
+      productId: productObjectId.toString(),
+      sellerId: decoded.userId,
+      adminId: assignedAdminId.toString(),
+      scheduleId: scheduleObjectId.toString()
+    });
 
     return NextResponse.json({ 
       success: true, 
-      data: newDelivery 
+      data: newDelivery,
+      message: 'Delivery booked successfully with your assigned admin' 
     }, { status: 201 });
   } catch (error) {
     console.error('POST /api/admin/deliveries error:', error);

@@ -22,7 +22,7 @@ export default function SellerDeliveryBooking({ productId, onBookingComplete }) 
       const token = localStorage.getItem('sellerToken');
       console.log('🔍 Fetching delivery schedules with token:', token ? 'Present' : 'Missing');
       
-      const response = await fetch('/api/admin/schedule?type=delivery&status=active', {
+      const response = await fetch('/api/seller/schedules?type=delivery&status=active', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();

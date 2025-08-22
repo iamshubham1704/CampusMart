@@ -374,7 +374,7 @@ const SellerDashboard = () => {
     fetchData();
   }, [router]);
 
-  // Periodically refresh pending payment requests count
+  // Fetch pending payment requests count once on mount
   useEffect(() => {
     let isMounted = true;
 
@@ -389,13 +389,11 @@ const SellerDashboard = () => {
       }
     };
 
-    // initial fetch and interval
+    // Fetch once on mount
     refreshPendingPayments();
-    const intervalId = setInterval(refreshPendingPayments, 30000);
 
     return () => {
       isMounted = false;
-      clearInterval(intervalId);
     };
   }, []);
 

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import AdminTeamManager from './AdminTeamManager';
 
 // Delivery Bookings Manager Component
 function DeliveryBookingsManager() {
@@ -261,6 +262,8 @@ export default function AdminScheduleManager({ adminId }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedType, setSelectedType] = useState('delivery');
+  const [currentAdminId, setCurrentAdminId] = useState(null);
+  // Only schedules tab needed - no team assignment in this architecture
   const [formData, setFormData] = useState({
     date: '',
     startTime: '',
@@ -321,24 +324,63 @@ export default function AdminScheduleManager({ adminId }) {
   ];
 
   useEffect(() => {
-    fetchSchedules();
+    // Get current admin ID from token
+    const getCurrentAdminId = () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (token) {
+          // Decode JWT token to get admin ID
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          console.log('🔍 JWT token payload:', payload);
+          console.log('🔍 Available fields:', Object.keys(payload));
+          console.log('🔍 adminId field:', payload.adminId);
+          console.log('🔍 userId field:', payload.userId);
+          return payload.adminId || payload.userId;
+        }
+      } catch (error) {
+        console.error('Error decoding admin token:', error);
+      }
+      return null;
+    };
+
+    const adminIdFromToken = getCurrentAdminId();
+    console.log('🔍 Admin ID extracted from token:', adminIdFromToken);
+    setCurrentAdminId(adminIdFromToken);
+    
+    if (adminIdFromToken) {
+      console.log('✅ Admin ID found, fetching schedules...');
+      fetchSchedules(adminIdFromToken);
+    } else {
+      console.log('❌ No admin ID found in token');
+    }
   }, []);
 
-  const fetchSchedules = async () => {
+  const fetchSchedules = async (adminIdToUse) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
+      
+      console.log('🔍 Fetching schedules for admin:', adminIdToUse);
+      console.log('🔑 Admin token present:', token ? 'Yes' : 'No');
+      
+      // Don't pass adminId as query param - API gets it from JWT token
       const response = await fetch('/api/admin/schedule', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       
+      console.log('📡 Schedule API response:', data);
+      console.log('📊 Response status:', response.status);
+      
       if (response.ok) {
+        console.log('✅ Schedules fetched successfully:', data.data.length);
         setSchedules(data.data);
       } else {
+        console.error('❌ Schedule API error:', data.error);
         setError(data.error || 'Failed to fetch schedules');
       }
     } catch (error) {
+      console.error('💥 Fetch schedules error:', error);
       setError('Failed to fetch schedules');
     } finally {
       setLoading(false);
@@ -348,6 +390,11 @@ export default function AdminScheduleManager({ adminId }) {
   const handleCreateSchedule = async (e) => {
     e.preventDefault();
     
+    if (!currentAdminId) {
+      setError('Admin ID not found. Please log in again.');
+      return;
+    }
+    
     try {
       setLoading(true);
       setError('');
@@ -355,6 +402,7 @@ export default function AdminScheduleManager({ adminId }) {
       const token = localStorage.getItem('adminToken');
       console.log('🔧 Creating schedule with data:', formData);
       console.log('🔑 Admin token present:', token ? 'Yes' : 'No');
+      console.log('👤 Current admin ID:', currentAdminId);
       
       const response = await fetch('/api/admin/schedule', {
         method: 'POST',
@@ -362,7 +410,10 @@ export default function AdminScheduleManager({ adminId }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          adminId: currentAdminId // Explicitly include admin ID
+        })
       });
       
       const data = await response.json();
@@ -380,7 +431,7 @@ export default function AdminScheduleManager({ adminId }) {
           maxSlots: 10
         });
         setShowCreateForm(false);
-        fetchSchedules();
+        fetchSchedules(currentAdminId);
       } else {
         setError(data.error || 'Failed to create schedule');
       }
@@ -407,7 +458,7 @@ export default function AdminScheduleManager({ adminId }) {
       
       if (response.ok) {
         setSuccess('Schedule deleted successfully!');
-        fetchSchedules();
+        fetchSchedules(currentAdminId);
       } else {
         setError(data.error || 'Failed to delete schedule');
       }
@@ -464,26 +515,44 @@ export default function AdminScheduleManager({ adminId }) {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold">Schedule Management</h2>
-            <p className="text-blue-100 mt-2">Manage delivery and pickup schedules for your campus</p>
+            <h2 className="text-3xl font-bold">Admin Dashboard</h2>
+            <p className="text-blue-100 mt-2">
+              Manage schedules and team assignments for your assigned area
+              {currentAdminId && (
+                <span className="block text-sm mt-1">Admin ID: {currentAdminId}</span>
+              )}
+            </p>
           </div>
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
-          >
-            {showCreateForm ? 'Cancel' : '+ Create Schedule'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 font-semibold"
+            >
+              {showCreateForm ? '❌ Cancel' : '➕ Create Schedule'}
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Admin ID Warning */}
+      {!currentAdminId && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-6 py-4 rounded-xl flex items-center gap-3">
+          <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          Warning: Admin ID not detected. Please log in again to manage schedules and teams.
+        </div>
+      )}
+
       {/* Create Schedule Form */}
-      {showCreateForm && (
+      {showCreateForm && currentAdminId && (
         <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
           <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             Create New Schedule
+            <span className="text-sm font-normal text-gray-500">(Admin: {currentAdminId})</span>
           </h3>
           <form onSubmit={handleCreateSchedule} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -615,289 +684,304 @@ export default function AdminScheduleManager({ adminId }) {
         </div>
       )}
 
-      {/* Error and Success Messages */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3">
-          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3">
-          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {success}
-        </div>
-      )}
+          {/* Error and Success Messages */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3">
+              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {error}
+            </div>
+          )}
+          
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {success}
+            </div>
+          )}
 
-      {/* Calendar View */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            10-Day Calendar View
-          </h3>
-          <p className="text-gray-600 mt-2">
-            Showing 3 days past, today, and 6 upcoming days
-          </p>
-        </div>
-        
-        <div className="p-6">
-          <div className="grid grid-cols-5 gap-6">
-            {calendarDates.map((dayData, index) => (
-              <div
-                key={index}
-                className={`border-2 rounded-xl p-4 min-h-[280px] transition-all duration-200 hover:shadow-lg ${
-                  dayData.isToday 
-                    ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg' 
-                    : dayData.isPast 
-                    ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100' 
-                    : 'border-green-300 bg-gradient-to-br from-green-50 to-green-100'
-                }`}
-              >
-                {/* Date Header */}
-                <div className="text-center mb-4 pb-3 border-b border-gray-200">
-                  <div className={`text-sm font-semibold ${
-                    dayData.isToday ? 'text-blue-600' : 'text-gray-500'
-                  }`}>
-                    {dayData.date.toLocaleDateString('en-US', { weekday: 'short' })}
-                  </div>
-                  <div className={`text-3xl font-bold ${
-                    dayData.isToday ? 'text-blue-600' : 'text-gray-900'
-                  }`}>
-                    {dayData.date.getDate()}
-                  </div>
-                  <div className="text-sm text-gray-500 capitalize font-medium">
-                    {dayData.date.toLocaleDateString('en-US', { month: 'short' })}
-                  </div>
-                </div>
-
-                {/* Delivery Schedule Section */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wide">Delivery Schedule</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {getSchedulesByType(dayData.date, 'delivery').map((schedule) => (
-                      <div
-                        key={schedule._id}
-                        className="bg-white p-2 rounded-lg border border-blue-200 text-xs shadow-sm"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                            Delivery
-                          </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
-                            {schedule.status}
-                          </span>
-                        </div>
-                        <div className="text-gray-700 font-medium text-xs">
-                          {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
-                        </div>
-                        <div className="text-gray-600 text-xs">
-                          {schedule.location}
-                        </div>
-                        <div className="text-gray-500 text-xs mt-1">
-                          {schedule.currentSlots}/{schedule.maxSlots} slots
-                        </div>
-                        <button
-                          onClick={() => handleDeleteSchedule(schedule._id)}
-                          className="text-red-600 hover:text-red-800 text-xs mt-1 hover:bg-red-50 px-1 py-0.5 rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                    {getSchedulesByType(dayData.date, 'delivery').length === 0 && (
-                      <div className="text-gray-400 text-xs text-center py-2 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                        No delivery schedule
-                      </div>
+          {/* Calendar View */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    10-Day Calendar View
+                    {currentAdminId && (
+                      <span className="text-sm font-normal text-gray-500">(Your Schedules Only)</span>
                     )}
-                  </div>
+                  </h3>
+                  <p className="text-gray-600 mt-2">
+                    Showing 3 days past, today, and 6 upcoming days for your assigned area
+                  </p>
                 </div>
-
-                {/* Pickup Schedule Section */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wide">Pickup Schedule</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {getSchedulesByType(dayData.date, 'pickup').map((schedule) => (
-                      <div
-                        key={schedule._id}
-                        className="bg-white p-2 rounded-lg border border-purple-200 text-xs shadow-sm"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                            Pickup
-                          </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
-                            {schedule.status}
-                          </span>
-                        </div>
-                        <div className="text-gray-700 font-medium text-xs">
-                          {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
-                        </div>
-                        <div className="text-gray-600 text-xs">
-                          {schedule.location}
-                        </div>
-                        <div className="text-gray-500 text-xs mt-1">
-                          {schedule.currentSlots}/{schedule.maxSlots} slots
-                        </div>
-                        <button
-                          onClick={() => handleDeleteSchedule(schedule._id)}
-                          className="text-red-600 hover:text-red-800 text-xs mt-1 hover:bg-red-50 px-1 py-0.5 rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                    {getSchedulesByType(dayData.date, 'pickup').length === 0 && (
-                      <div className="text-gray-400 text-xs text-center py-2 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                        No pickup schedule
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Add Schedule Button for future dates */}
-                {dayData.isFuture && (
+                {currentAdminId && (
                   <button
-                    onClick={() => {
-                      setFormData({...formData, date: dayData.date.toISOString().split('T')[0]});
-                      setShowCreateForm(true);
-                    }}
-                    className="w-full mt-2 text-xs text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg px-3 py-2 hover:bg-blue-50 transition-all duration-200 font-medium"
+                    onClick={() => setShowCreateForm(!showCreateForm)}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
                   >
-                    + Add Schedule
+                    {showCreateForm ? 'Cancel' : '+ Create Schedule'}
                   </button>
                 )}
               </div>
-            ))}
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-5 gap-6">
+                {calendarDates.map((dayData, index) => (
+                  <div
+                    key={index}
+                    className={`border-2 rounded-xl p-4 min-h-[280px] transition-all duration-200 hover:shadow-lg ${
+                      dayData.isToday 
+                        ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg' 
+                        : dayData.isPast 
+                        ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100' 
+                        : 'border-green-300 bg-gradient-to-br from-green-50 to-green-100'
+                    }`}
+                  >
+                    {/* Date Header */}
+                    <div className="text-center mb-4 pb-3 border-b border-gray-200">
+                      <div className={`text-sm font-semibold ${
+                        dayData.isToday ? 'text-blue-600' : 'text-gray-500'
+                      }`}>
+                        {dayData.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </div>
+                      <div className={`text-3xl font-bold ${
+                        dayData.isToday ? 'text-blue-600' : 'text-gray-900'
+                      }`}>
+                        {dayData.date.getDate()}
+                      </div>
+                      <div className="text-sm text-gray-500 capitalize font-medium">
+                        {dayData.date.toLocaleDateString('en-US', { month: 'short' })}
+                      </div>
+                    </div>
+
+                    {/* Delivery Schedule Section */}
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wide">Delivery Schedule</h4>
+                      </div>
+                      <div className="space-y-2">
+                        {getSchedulesByType(dayData.date, 'delivery').map((schedule) => (
+                          <div
+                            key={schedule._id}
+                            className="bg-white p-2 rounded-lg border border-blue-200 text-xs shadow-sm"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                Delivery
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
+                                {schedule.status}
+                              </span>
+                            </div>
+                            <div className="text-gray-700 font-medium text-xs">
+                              {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                            </div>
+                            <div className="text-gray-600 text-xs">
+                              {schedule.location}
+                            </div>
+                            <div className="text-gray-500 text-xs mt-1">
+                              {schedule.currentSlots}/{schedule.maxSlots} slots
+                            </div>
+                            <button
+                              onClick={() => handleDeleteSchedule(schedule._id)}
+                              className="text-red-600 hover:text-red-800 text-xs mt-1 hover:bg-red-50 px-1 py-0.5 rounded transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ))}
+                        {getSchedulesByType(dayData.date, 'delivery').length === 0 && (
+                          <div className="text-gray-400 text-xs text-center py-2 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                            No delivery schedule
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Pickup Schedule Section */}
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wide">Pickup Schedule</h4>
+                      </div>
+                      <div className="space-y-2">
+                        {getSchedulesByType(dayData.date, 'pickup').map((schedule) => (
+                          <div
+                            key={schedule._id}
+                            className="bg-white p-2 rounded-lg border border-purple-200 text-xs shadow-sm"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                                Pickup
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
+                                {schedule.status}
+                              </span>
+                            </div>
+                            <div className="text-gray-700 font-medium text-xs">
+                              {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                            </div>
+                            <div className="text-gray-600 text-xs">
+                              {schedule.location}
+                            </div>
+                            <div className="text-gray-500 text-xs mt-1">
+                              {schedule.currentSlots}/{schedule.maxSlots} slots
+                            </div>
+                            <button
+                              onClick={() => handleDeleteSchedule(schedule._id)}
+                              className="text-red-600 hover:text-red-800 text-xs mt-1 hover:bg-red-50 px-1 py-0.5 rounded transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ))}
+                        {getSchedulesByType(dayData.date, 'pickup').length === 0 && (
+                          <div className="text-gray-400 text-xs text-center py-2 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                            No pickup schedule
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Add Schedule Button for future dates */}
+                    {dayData.isFuture && (
+                      <button
+                        onClick={() => {
+                          setFormData({...formData, date: dayData.date.toISOString().split('T')[0]});
+                          setShowCreateForm(true);
+                        }}
+                        className="w-full mt-2 text-xs text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg px-3 py-2 hover:bg-blue-50 transition-all duration-200 font-medium"
+                      >
+                        + Add Schedule
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule List */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
+              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                All Schedules
+              </h3>
+            </div>
+            
+            <div className="p-6">
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <div className="text-gray-500 mt-4 text-lg">Loading schedules...</div>
+                </div>
+              ) : schedules.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div className="text-gray-500 mt-4 text-lg">No schedules found. Create your first schedule above.</div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {schedules.map((schedule) => (
+                    <div
+                      key={schedule._id}
+                      className="flex items-center justify-between p-6 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-md"
+                    >
+                      <div className="flex items-center space-x-6">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-gray-900">
+                            {new Date(schedule.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-3">
+                          <span className={`px-3 py-2 rounded-full text-sm font-medium ${getTypeColor(schedule.type)} flex items-center gap-2`}>
+                            {getTypeIcon(schedule.type)}
+                            {schedule.type.charAt(0).toUpperCase() + schedule.type.slice(1)}
+                          </span>
+                          <span className={`px-3 py-2 rounded-full text-sm font-medium ${getStatusColor(schedule.status)}`}>
+                            {schedule.status}
+                          </span>
+                        </div>
+                        
+                        <div className="text-sm">
+                          <div className="font-semibold text-gray-900 text-lg">
+                            {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                          </div>
+                          <div className="text-gray-600 mt-1">{schedule.location}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-6">
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">
+                            {schedule.currentSlots}/{schedule.maxSlots} slots
+                          </div>
+                          <div className="text-gray-500">
+                            {Math.round((schedule.currentSlots / schedule.maxSlots) * 100)}% full
+                          </div>
+                        </div>
+                        
+                        <button
+                          onClick={() => handleDeleteSchedule(schedule._id)}
+                          className="text-red-600 hover:text-red-800 p-3 hover:bg-red-50 rounded-lg transition-all duration-200"
+                          title="Delete schedule"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Delivery Bookings Management Section */}
+          <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Delivery Bookings Management
+            </h3>
+            
+            <DeliveryBookingsManager />
+          </div>
+
+          {/* Pickup Bookings Management Section */}
+          <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Pickup Bookings Management
+            </h3>
+            
+            <PickupBookingsManager />
           </div>
         </div>
-      </div>
-
-      {/* Schedule List */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            All Schedules
-          </h3>
-        </div>
-        
-        <div className="p-6">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <div className="text-gray-500 mt-4 text-lg">Loading schedules...</div>
-            </div>
-          ) : schedules.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <div className="text-gray-500 mt-4 text-lg">No schedules found. Create your first schedule above.</div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {schedules.map((schedule) => (
-                <div
-                  key={schedule._id}
-                  className="flex items-center justify-between p-6 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-md"
-                >
-                  <div className="flex items-center space-x-6">
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-gray-900">
-                        {new Date(schedule.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(schedule.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-3 py-2 rounded-full text-sm font-medium ${getTypeColor(schedule.type)} flex items-center gap-2`}>
-                        {getTypeIcon(schedule.type)}
-                        {schedule.type.charAt(0).toUpperCase() + schedule.type.slice(1)}
-                      </span>
-                      <span className={`px-3 py-2 rounded-full text-sm font-medium ${getStatusColor(schedule.status)}`}>
-                        {schedule.status}
-                      </span>
-                    </div>
-                    
-                    <div className="text-sm">
-                      <div className="font-semibold text-gray-900 text-lg">
-                        {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
-                      </div>
-                      <div className="text-gray-600 mt-1">{schedule.location}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-6">
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-gray-900">
-                        {schedule.currentSlots}/{schedule.maxSlots} slots
-                      </div>
-                      <div className="text-gray-500">
-                        {Math.round((schedule.currentSlots / schedule.maxSlots) * 100)}% full
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={() => handleDeleteSchedule(schedule._id)}
-                      className="text-red-600 hover:text-red-800 p-3 hover:bg-red-50 rounded-lg transition-all duration-200"
-                      title="Delete schedule"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Delivery Bookings Management Section */}
-      <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
-        <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Delivery Bookings Management
-        </h3>
-        
-        <DeliveryBookingsManager />
-      </div>
-
-      {/* Pickup Bookings Management Section */}
-      <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
-        <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-          <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          Pickup Bookings Management
-        </h3>
-        
-        <PickupBookingsManager />
-      </div>
-    </div>
-  );
-}
+      );
+    }
 
 // Pickup Bookings Manager Component
 function PickupBookingsManager() {
