@@ -1,10 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Package, Calendar, Clock, MapPin, User, CheckCircle, AlertCircle } from 'lucide-react';
 import BuyerPickupBooking from '@/components/BuyerPickupBooking';
 
-const PickupBookingPage = () => {
+// Component that uses useSearchParams
+const PickupBookingContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [orderDetails, setOrderDetails] = useState(null);
@@ -234,6 +235,25 @@ const productId = searchParams.get('productId');
         </div>
       </div>
     </div>
+  );
+};
+
+// Loading fallback component
+const PickupBookingFallback = () => (
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p className="mt-4 text-gray-600">Loading pickup booking...</p>
+    </div>
+  </div>
+);
+
+// Main component wrapped in Suspense
+const PickupBookingPage = () => {
+  return (
+    <Suspense fallback={<PickupBookingFallback />}>
+      <PickupBookingContent />
+    </Suspense>
   );
 };
 
