@@ -1309,7 +1309,14 @@ const BuyerDashboard = () => {
                           return null;
                         })()}
                       </div>
-
+                        {/* Add this new section */}
+<div className="product-card-description">
+  <p className="product-description-text">
+    {product.description && product.description.length > 100 
+      ? `${product.description.substring(0, 500)}...` 
+      : product.description || 'No description available'}
+  </p>
+</div>
                       <div className="productActions">
                         <button
                           className={`addToCartButton ${cartLoading || isInCart(product.id || product._id) ? 'disabled' : ''}`}
