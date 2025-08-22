@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from './OrderHistory.module.css'; // Correct import for CSS Modules
 import {
   Package,
@@ -21,8 +22,10 @@ import {
   Shield, // Added for Admin icon
 } from 'lucide-react';
 import Link from 'next/link';
+import BuyerPickupSchedule from '@/components/BuyerPickupSchedule';
 
 const OrderHistory = () => {
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -334,6 +337,13 @@ const OrderHistory = () => {
         </div>
       )}
 
+      {searchParams.get('pickupBooked') === 'true' && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 mb-6">
+          <CheckCircle size={20} />
+          <span>Pickup slot booked successfully! You can view your pickup schedule below.</span>
+        </div>
+      )}
+
       <div className={styles.ordersList}>
         {filteredOrders.length === 0 ? (
           <div className={styles.noOrders}>
@@ -504,6 +514,15 @@ const OrderHistory = () => {
                     <CheckCircle size={18} />
                     <span>Order successfully delivered! Thank you for shopping with us.</span>
                   </div>
+                )}
+                
+                {/* Pickup Schedule Section */}
+                {(order.status === 'will_be_delivered_soon' || order.status === 'delivered' || order.status === 'payment_verified') && (
+                  <BuyerPickupSchedule
+                    orderId={order._id}
+                    productId={order.product?._id}
+                    delivery={order.delivery}
+                  />
                 )}
             </div>
           )})

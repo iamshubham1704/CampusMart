@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongo';
-import { verifyAdminToken } from '@/lib/auth';
+import { verifyAdminToken, verifyToken } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
 // GET - Fetch pickups with filters
@@ -131,7 +131,27 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { productId, adminScheduleId, deliveryId, preferredTime, notes } = body;
+    let { productId, adminScheduleId, deliveryId, preferredTime, notes } = body;
+
+    // Allow inferring productId from deliveryId if not provided by client
+    if (!productId && deliveryId) {
+      try {
+        const client = await clientPromise;
+        const db = client.db('campusmart');
+        let deliveryObjectIdTmp;
+        try {
+          deliveryObjectIdTmp = new ObjectId(deliveryId);
+        } catch (e) {
+          return NextResponse.json({ error: 'Invalid delivery ID' }, { status: 400 });
+        }
+        const deliveryDoc = await db.collection('deliveries').findOne({ _id: deliveryObjectIdTmp });
+        if (deliveryDoc?.productId) {
+          productId = deliveryDoc.productId.toString();
+        }
+      } catch (e) {
+        // fall through to validation below
+      }
+    }
 
     if (!productId || !adminScheduleId || !deliveryId) {
       return NextResponse.json({ 

@@ -19,8 +19,8 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
   const fetchAvailableSchedules = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('buyerToken');
-      const response = await fetch('/api/admin/schedule?type=pickup&status=active', {
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      const response = await fetch('/api/buyer/pickup-schedules', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -57,7 +57,19 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
       setLoading(true);
       setError('');
       
-      const token = localStorage.getItem('buyerToken');
+      const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+
+      // Normalize IDs to plain strings for the API
+      const normalizedProductId = typeof productId === 'object' 
+        ? (productId?.$oid || productId?.toString?.() || '')
+        : (productId || '');
+      const normalizedScheduleId = typeof selectedSchedule._id === 'object'
+        ? (selectedSchedule._id?.$oid || selectedSchedule._id?.toString?.() || '')
+        : (selectedSchedule._id || '');
+      const normalizedDeliveryId = typeof deliveryId === 'object'
+        ? (deliveryId?.$oid || deliveryId?.toString?.() || '')
+        : (deliveryId || '');
+
       const response = await fetch('/api/admin/pickups', {
         method: 'POST',
         headers: {
@@ -65,9 +77,9 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          productId,
-          adminScheduleId: selectedSchedule._id,
-          deliveryId,
+          productId: normalizedProductId,
+          adminScheduleId: normalizedScheduleId,
+          deliveryId: normalizedDeliveryId,
           preferredTime: formData.preferredTime,
           notes: formData.notes
         })

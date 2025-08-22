@@ -883,6 +883,293 @@ export default function AdminScheduleManager({ adminId }) {
         
         <DeliveryBookingsManager />
       </div>
+
+      {/* Pickup Bookings Management Section */}
+      <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
+        <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+          <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Pickup Bookings Management
+        </h3>
+        
+        <PickupBookingsManager />
+      </div>
+    </div>
+  );
+}
+
+// Pickup Bookings Manager Component
+function PickupBookingsManager() {
+  const [pickups, setPickups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedPickup, setSelectedPickup] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+
+  useEffect(() => {
+    fetchPickups();
+  }, [statusFilter]);
+
+  const fetchPickups = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const url = statusFilter === 'all' 
+        ? '/api/admin/pickups' 
+        : `/api/admin/pickups?status=${statusFilter}`;
+      
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPickups(data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pickups:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePickupStatus = async (pickupId, newStatus) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`/api/admin/pickups/${pickupId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (response.ok) {
+        // Refresh pickups
+        fetchPickups();
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  const handleViewPickup = (pickup) => {
+    setSelectedPickup(pickup);
+    setShowViewModal(true);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="flex items-center gap-4">
+        <label className="text-sm font-medium text-gray-700">Filter by Status:</label>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      {/* Pickups List */}
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <div className="text-gray-500 mt-2">Loading pickups...</div>
+        </div>
+      ) : pickups.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No pickups found for the selected status.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pickups.map((pickup) => (
+            <div
+              key={pickup._id}
+              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-4 mb-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pickup.status)}`}>
+                      {pickup.status}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {new Date(pickup.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">Product:</span>
+                      <div className="text-gray-900">{pickup.product?.title || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Buyer:</span>
+                      <div className="text-gray-900">{pickup.buyer?.name || pickup.buyer?.email || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Preferred Time:</span>
+                      <div className="text-gray-900">{pickup.preferredTime || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Schedule:</span>
+                      <div className="text-gray-900">
+                        {pickup.adminSchedule?.date ? new Date(pickup.adminSchedule.date).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 ml-4">
+                  <button
+                    onClick={() => handleViewPickup(pickup)}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    View Details
+                  </button>
+                  
+                  {pickup.status === 'pending' && (
+                    <button
+                      onClick={() => updatePickupStatus(pickup._id, 'confirmed')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Confirm
+                    </button>
+                  )}
+                  
+                  {pickup.status === 'confirmed' && (
+                    <button
+                      onClick={() => updatePickupStatus(pickup._id, 'in_progress')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Start Pickup
+                    </button>
+                  )}
+                  
+                  {pickup.status === 'in_progress' && (
+                    <button
+                      onClick={() => updatePickupStatus(pickup._id, 'completed')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Mark Complete
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {showViewModal && selectedPickup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Pickup Details
+                </h3>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="font-medium text-gray-700">Status:</span>
+                    <div className={`inline-block px-2 py-1 rounded text-sm font-medium ${getStatusColor(selectedPickup.status)}`}>
+                      {selectedPickup.status}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Created:</span>
+                    <div className="text-gray-900">
+                      {new Date(selectedPickup.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="font-medium text-gray-700">Product Details:</span>
+                  <div className="bg-gray-50 p-3 rounded mt-1">
+                    <div className="font-medium">{selectedPickup.product?.title || 'N/A'}</div>
+                    <div className="text-gray-600">₹{selectedPickup.product?.price || 'N/A'}</div>
+                    <div className="text-gray-600">{selectedPickup.product?.location || 'N/A'}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="font-medium text-gray-700">Buyer Information:</span>
+                  <div className="bg-gray-50 p-3 rounded mt-1">
+                    <div className="font-medium">{selectedPickup.buyer?.name || 'N/A'}</div>
+                    <div className="text-gray-600">{selectedPickup.buyer?.email || 'N/A'}</div>
+                    <div className="text-gray-600">{selectedPickup.buyer?.phone || 'N/A'}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="font-medium text-gray-700">Pickup Schedule:</span>
+                  <div className="bg-gray-50 p-3 rounded mt-1">
+                    <div className="font-medium">{selectedPickup.adminSchedule?.date ? new Date(selectedPickup.adminSchedule.date).toLocaleDateString() : 'N/A'}</div>
+                    <div className="text-gray-600">
+                      {selectedPickup.adminSchedule?.startTime} - {selectedPickup.adminSchedule?.endTime}
+                    </div>
+                    <div className="text-gray-600">{selectedPickup.adminSchedule?.location || 'N/A'}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="font-medium text-gray-700">Preferred Time:</span>
+                  <div className="text-gray-900">{selectedPickup.preferredTime || 'N/A'}</div>
+                </div>
+                
+                <div>
+                  <span className="font-medium text-gray-700">Buyer Notes:</span>
+                  <div className="bg-gray-50 p-3 rounded mt-1 text-gray-900">
+                    {selectedPickup.notes || 'No notes provided'}
+                  </div>
+                </div>
+                
+                {selectedPickup.adminNotes && (
+                  <div>
+                    <span className="font-medium text-gray-700">Admin Notes:</span>
+                    <div className="bg-gray-50 p-3 rounded mt-1 text-gray-900">
+                      {selectedPickup.adminNotes}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

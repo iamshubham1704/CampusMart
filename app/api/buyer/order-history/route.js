@@ -244,6 +244,18 @@ export async function GET(request) {
             // Order status might not exist yet
           }
 
+          // Get delivery information for this product
+          let delivery = null;
+          try {
+            if (product && product._id) {
+              delivery = await db.collection('deliveries').findOne({
+                productId: product._id
+              });
+            }
+          } catch (error) {
+            // Delivery might not exist yet
+          }
+
           // Determine the display status based on payment screenshot and order status
           let displayStatus = 'payment_pending_verification';
           let statusMessage = 'Payment verification pending';
@@ -314,7 +326,15 @@ export async function GET(request) {
             createdAt: order.createdAt,
             updatedAt: order.updatedAt,
             paymentScreenshot: paymentScreenshot,
-            orderStatus: orderStatus
+            orderStatus: orderStatus,
+            delivery: delivery ? {
+              _id: delivery._id,
+              status: delivery.status,
+              adminSchedule: delivery.adminSchedule,
+              preferredTime: delivery.preferredTime,
+              notes: delivery.notes,
+              adminNotes: delivery.adminNotes
+            } : null
           };
         } catch (error) {
           console.error('Error processing order details for order:', order._id, error);
