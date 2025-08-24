@@ -255,11 +255,14 @@ const SharedListing = () => {
           <div className={styles.productHeader}>
             <h1 className={styles.productTitle}>{listing.title}</h1>
             <div className={styles.productPrice}>
-              <span className={styles.currentPrice}>₹{listing.price?.toLocaleString()}</span>
-              {listing.originalPrice && listing.originalPrice > listing.price && (
-                <span className={styles.originalPrice}>
-                  ₹{listing.originalPrice?.toLocaleString()}
-                </span>
+              <span className={styles.currentPrice}>₹{listing.finalPrice?.toLocaleString()}</span>
+              {listing.originalPrice && listing.originalPrice > listing.finalPrice && (
+                <div className={styles.priceBreakdown}>
+                  <span className={styles.originalPriceLabel}>Original Price:</span>
+                  <span className={styles.originalPrice}>
+                    ₹{listing.originalPrice?.toLocaleString()}
+                  </span>
+                </div>
               )}
             </div>
           </div>
