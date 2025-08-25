@@ -29,7 +29,6 @@ export async function POST(req) {
       return Response.json({ error: 'Password must be at least 6 characters long' }, { status: 400 });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
     await client.connect();

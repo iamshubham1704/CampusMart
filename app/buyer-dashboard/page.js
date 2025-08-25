@@ -36,7 +36,10 @@ import {
   Package,
   ChevronDown,
   Pen,
-  MessageCircle
+  MessageCircle,
+  FileText,
+  ArrowLeft,
+  PenTool
 } from 'lucide-react';
 import { useCart } from '../../components/contexts/CartContext';
 import CartDrawer from '../../components/CartDrawer';
@@ -988,6 +991,193 @@ const BuyerDashboard = () => {
         </div>
       </header>
 
+      {/* Trending Assignments Section - Horizontal Layout */}
+      <div className="trending-assignments-horizontal">
+        <div className="trending-header-horizontal">
+          <h2>
+            <FileText size={24} />
+            Trending Assignments in Campus
+          </h2>
+          <Link href="/buyer-dashboard/assignments" className="view-all-link-horizontal">
+            View All Assignments
+            <ArrowLeft size={16} style={{ transform: 'rotate(180deg)' }} />
+          </Link>
+        </div>
+        <div className="trending-cards-horizontal">
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Data Structures Assignment</h4>
+              <p>Computer Science • Due in 2 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹800</span>
+                <span className="location">MAIT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Physics Lab Report</h4>
+              <p>Physics • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹500</span>
+                <span className="location">DTU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Engineering Project</h4>
+              <p>Engineering • Due in 3 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹1200</span>
+                <span className="location">NSUT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Mathematics Assignment</h4>
+              <p>Mathematics • Due in 5 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹600</span>
+                <span className="location">IP University</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Chemistry Lab Report</h4>
+              <p>Chemistry • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹450</span>
+                <span className="location">JMI</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Software Development</h4>
+              <p>Computer Science • Due in 4 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹1500</span>
+                <span className="location">GGSIPU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>History Research Paper</h4>
+              <p>History • Due in 6 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹700</span>
+                <span className="location">DU</span>
+              </div>
+            </div>
+          </div>
+          {/* Duplicate cards for infinite scroll effect */}
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Data Structures Assignment</h4>
+              <p>Computer Science • Due in 2 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹800</span>
+                <span className="location">MAIT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Physics Lab Report</h4>
+              <p>Physics • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹500</span>
+                <span className="location">DTU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Engineering Project</h4>
+              <p>Engineering • Due in 3 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹1200</span>
+                <span className="location">NSUT</span>
+              </div>
+            </div>
+          </div>
+          {/* Additional duplicate cards for seamless infinite scroll */}
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Data Structures Assignment</h4>
+              <p>Computer Science • Due in 2 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹800</span>
+                <span className="location">MAIT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Physics Lab Report</h4>
+              <p>Physics • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹500</span>
+                <span className="location">DTU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Engineering Project</h4>
+              <p>Engineering • Due in 3 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹1200</span>
+                <span className="location">NSUT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mainContent">
         {/* Sidebar */}
         <aside className={`sidebar ${isSidebarOpen ? 'sidebarOpen' : ''}`}>
@@ -1026,6 +1216,10 @@ const BuyerDashboard = () => {
                 <Link href="/buyer-dashboard" className="navItem active">
                   <Grid3X3 size={18} />
                   <span>Browse Items</span>
+                </Link>
+                <Link href="/buyer-dashboard/assignments" className="navItem">
+                  <FileText size={18} />
+                  <span>Assignments</span>
                 </Link>
                 <Link href="/buyer-dashboard/order-history" className="navItem">
                   <Package size={18} />

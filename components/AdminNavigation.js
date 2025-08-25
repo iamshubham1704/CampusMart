@@ -14,6 +14,12 @@ export default function AdminNavigation({ adminData, onLogout }) {
       description: 'Overview and statistics'
     },
     {
+      path: '/admin-dashboard/assignments',
+      label: 'Assignments',
+      icon: '📚',
+      description: 'Manage student assignments'
+    },
+    {
       path: '/admin-dashboard/management',
       label: 'Management',
       icon: '⚙️',

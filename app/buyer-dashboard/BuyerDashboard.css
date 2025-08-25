@@ -4,7 +4,8 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   position: relative;
   transition: all 0.5s ease;
-  overflow-x: hidden;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 .productsContainer{
@@ -430,6 +431,360 @@
   padding: 1rem;
   gap: 1.5rem;
   min-height: calc(100vh - 72px);
+}
+
+/* Trending Assignments Section */
+.trending-assignments {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .trending-assignments {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(51, 65, 85, 0.3);
+}
+
+.trending-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.trending-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.dark .trending-header h2 {
+  color: #e2e8f0;
+}
+
+.view-all-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.view-all-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.trending-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.trending-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.dark .trending-card {
+  background: rgba(51, 65, 85, 0.8);
+  border-color: #475569;
+}
+
+.trending-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.trending-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.trending-content {
+  flex: 1;
+}
+
+.trending-content h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 6px 0;
+}
+
+.dark .trending-content h4 {
+  color: #e2e8f0;
+}
+
+.trending-content p {
+  color: #6b7280;
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+}
+
+.dark .trending-content p {
+  color: #9ca3af;
+}
+
+.trending-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.budget {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.location {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.dark .location {
+  background: rgba(102, 126, 234, 0.2);
+  color: #93c5fd;
+}
+
+/* Horizontal Trending Assignments Section */
+.trending-assignments-horizontal {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 20px;
+  margin: 20px auto;
+  max-width: 1400px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: visible;
+  position: relative;
+  min-height: 200px;
+}
+
+.dark .trending-assignments-horizontal {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(51, 65, 85, 0.3);
+}
+
+.trending-header-horizontal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+.trending-header-horizontal h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.dark .trending-header-horizontal h2 {
+  color: #e2e8f0;
+}
+
+.view-all-link-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.view-all-link-horizontal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.trending-cards-horizontal {
+  display: flex;
+  gap: 20px;
+  overflow: visible;
+  padding: 10px;
+  position: relative;
+  animation: scrollRightToLeft 80s linear infinite;
+  width: max-content;
+  min-width: max-content;
+  will-change: transform;
+  transform: translateX(0);
+  min-height: 120px;
+}
+
+@keyframes scrollRightToLeft {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.33%);
+  }
+}
+
+.trending-cards-horizontal:hover {
+  animation-play-state: paused;
+}
+
+/* Ensure cards don't get cut off */
+.trending-card-horizontal {
+  flex-shrink: 0;
+  min-width: 280px;
+  position: relative;
+  z-index: 1;
+}
+
+.trending-cards-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.trending-cards-horizontal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.trending-cards-horizontal::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 3px;
+}
+
+.trending-cards-horizontal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+}
+
+.trending-card-horizontal {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 320px;
+  width: 320px;
+  flex-shrink: 0;
+  margin-right: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.dark .trending-card-horizontal {
+  background: rgba(51, 65, 85, 0.8);
+  border-color: #475569;
+}
+
+.trending-card-horizontal:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.trending-icon-horizontal {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
+}
+
+.trending-content-horizontal {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.trending-content-horizontal h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 6px 0;
+  white-space: normal;
+  overflow: visible;
+}
+
+.dark .trending-content-horizontal h4 {
+  color: #e2e8f0;
+}
+
+.trending-content-horizontal p {
+  color: #6b7280;
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  white-space: normal;
+  overflow: visible;
+}
+
+.dark .trending-content-horizontal p {
+  color: #9ca3af;
+}
+
+.trending-meta-horizontal {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
 }
 
 /* Sidebar - Enhanced Professional Design with FIXED MOBILE BEHAVIOR */
@@ -1314,6 +1669,72 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  /* Trending Assignments Mobile Styles */
+  .trending-assignments {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .trending-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .trending-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .trending-cards {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .trending-card {
+    padding: 15px;
+  }
+
+  /* Horizontal Trending Assignments Mobile Styles */
+  .trending-assignments-horizontal {
+    margin: 15px;
+    padding: 15px;
+  }
+
+  .trending-header-horizontal {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .trending-header-horizontal h2 {
+    font-size: 1.2rem;
+  }
+
+  .trending-cards-horizontal {
+    gap: 15px;
+    padding: 5px;
+    animation: scrollRightToLeft 60s linear infinite;
+    width: max-content;
+    overflow: visible;
+  }
+  
+  .trending-card-horizontal {
+    min-width: 280px;
+    width: 280px;
+    padding: 15px;
+    flex-shrink: 0;
+    margin-right: 15px;
+  }
+
+  .trending-content-horizontal h4 {
+    font-size: 1rem;
+  }
+
+  .trending-content-horizontal p {
+    font-size: 0.85rem;
   }
 
   .viewControls {
