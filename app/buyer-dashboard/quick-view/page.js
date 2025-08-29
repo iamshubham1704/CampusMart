@@ -96,11 +96,11 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
         headers
       });
 
-      console.log('📨 Response status:', response.status);
+      console.log('📨 Response status test:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Response error:', errorText);
+        console.error('❌ Response error check:', errorText);
 
         if (response.status === 404) {
           throw new Error('Product not found');
