@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -309,14 +310,19 @@ const loadingTextStyle = {
   color: "#6c757d",
 };
 
-// CSS-in-JS Animation
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.innerText = `@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}`;
-document.head.appendChild(styleSheet);
+useEffect(() => {
+  const styleSheet = document.createElement("style");
+  styleSheet.type = "text/css";
+  styleSheet.innerText = `@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }`;
+  document.head.appendChild(styleSheet);
+
+  return () => {
+    document.head.removeChild(styleSheet);
+  };
+}, []);
 
 const errorContainerStyle = {
   ...baseStyles,
