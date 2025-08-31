@@ -54,6 +54,20 @@ export default function AlphaDashboard() {
     fetchData();
   }, [router]);
 
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = `@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }`;
+    document.head.appendChild(styleSheet);
+
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
+
   // Loading State
   if (loading) {
     return (
@@ -309,20 +323,6 @@ const loadingTextStyle = {
   fontSize: "1.125rem",
   color: "#6c757d",
 };
-
-useEffect(() => {
-  const styleSheet = document.createElement("style");
-  styleSheet.type = "text/css";
-  styleSheet.innerText = `@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }`;
-  document.head.appendChild(styleSheet);
-
-  return () => {
-    document.head.removeChild(styleSheet);
-  };
-}, []);
 
 const errorContainerStyle = {
   ...baseStyles,
