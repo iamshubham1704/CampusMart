@@ -1,4 +1,4 @@
-// app/api/admin/register/route.js
+// // app/api/admin/register/route.js
 import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
 
@@ -42,7 +42,7 @@ export async function POST(req) {
     const existingAdmin = await adminsCollection.findOne({ 
       email: email.toLowerCase().trim() 
     });
-    
+
     if (existingAdmin) {
       return Response.json({ 
         error: 'Admin already exists with this email' 
@@ -63,6 +63,7 @@ export async function POST(req) {
     // Insert admin into database
     const result = await adminsCollection.insertOne(adminData);
 
+
     return Response.json({ 
       message: 'Admin registered successfully', 
       adminId: result.insertedId,
@@ -76,13 +77,13 @@ export async function POST(req) {
 
   } catch (err) {
     console.error('Admin registration error:', err);
-    
+
     if (err.code === 11000) {
       return Response.json({ 
         error: 'Admin already exists with this email' 
       }, { status: 409 });
     }
-    
+
     return Response.json({ 
       error: 'Internal server error. Please try again later.' 
     }, { status: 500 });
