@@ -15,12 +15,25 @@ export async function GET(request) {
     const db = client.db('campusmart');
     const { searchParams } = new URL(request.url);
     
-    const adminId = searchParams.get('adminId');
+    const requestedAdminId = searchParams.get('adminId');
     const type = searchParams.get('type'); // delivery or pickup
     const status = searchParams.get('status');
     const date = searchParams.get('date');
 
-    let query = { adminId: new ObjectId(decoded.userId) }; // Admin can only see their own schedules
+    // Always use the logged-in admin's ID for security
+    const loggedInAdminId = decoded.adminId || decoded.userId;
+
+    console.log('🔍 Admin schedule request:', {
+      loggedInAdminId,
+      requestedAdminId,
+      type,
+      status,
+      date
+    });
+
+    let query = { adminId: new ObjectId(loggedInAdminId) };
+    
+    console.log('🔍 Query will filter by adminId:', loggedInAdminId);
     
     if (type) {
       query.type = type;
@@ -42,6 +55,16 @@ export async function GET(request) {
       .find(query)
       .sort({ date: 1, startTime: 1 })
       .toArray();
+
+    console.log('🔍 Found schedules for admin:', schedules.length);
+    console.log('🔍 Schedule details:', schedules.map(s => ({
+      id: s._id.toString(),
+      adminId: s.adminId.toString(),
+      date: s.date,
+      type: s.type,
+      status: s.status,
+      location: s.location
+    })));
 
     return NextResponse.json({ 
       success: true, 
@@ -90,8 +113,9 @@ export async function POST(request) {
     }
 
     // Check if admin already has a schedule for this date, time, and type
+    const loggedInAdminId = decoded.adminId || decoded.userId;
     const existingSchedule = await db.collection('admin_schedules').findOne({
-      adminId: new ObjectId(decoded.userId),
+      adminId: new ObjectId(loggedInAdminId),
       date: new Date(date),
       type: type,
       $or: [
@@ -110,7 +134,7 @@ export async function POST(request) {
 
     // Create the schedule
     const newSchedule = {
-      adminId: new ObjectId(decoded.userId),
+      adminId: new ObjectId(loggedInAdminId),
       date: new Date(date),
       startTime,
       endTime,
@@ -129,7 +153,7 @@ export async function POST(request) {
 
     console.log('✅ Admin schedule created:', {
       scheduleId: result.insertedId.toString(),
-      adminId: decoded.userId,
+      adminId: loggedInAdminId,
       date: newSchedule.date,
       type: newSchedule.type,
       time: `${newSchedule.startTime} - ${newSchedule.endTime}`
@@ -173,9 +197,10 @@ export async function PUT(request) {
     }
 
     // Check if schedule exists and belongs to this admin
+    const loggedInAdminId = decoded.adminId || decoded.userId;
     const existingSchedule = await db.collection('admin_schedules').findOne({
       _id: scheduleObjectId,
-      adminId: new ObjectId(decoded.userId)
+      adminId: new ObjectId(loggedInAdminId)
     });
 
     if (!existingSchedule) {
@@ -250,9 +275,10 @@ export async function DELETE(request) {
     }
 
     // Check if schedule exists and belongs to this admin
+    const loggedInAdminId = decoded.adminId || decoded.userId;
     const existingSchedule = await db.collection('admin_schedules').findOne({
       _id: scheduleObjectId,
-      adminId: new ObjectId(decoded.userId)
+      adminId: new ObjectId(loggedInAdminId)
     });
 
     if (!existingSchedule) {

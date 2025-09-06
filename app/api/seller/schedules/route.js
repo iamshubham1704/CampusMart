@@ -23,12 +23,14 @@ export async function GET(request) {
     const type = searchParams.get('type') || 'delivery';
     const status = searchParams.get('status') || 'active';
     const date = searchParams.get('date');
+    const productId = searchParams.get('productId');
 
     console.log('🔍 Seller schedules request:', {
       sellerId: decoded.userId,
       type,
       status,
-      date
+      date,
+      productId
     });
 
     // First, try to get seller's assigned admin from admin_team_assignments collection
@@ -48,10 +50,27 @@ export async function GET(request) {
       // Fallback: Check order assignments (backward compatibility)
       console.log('🔍 No admin team assignment found, checking order assignments...');
       
-      const sellerOrders = await db.collection('order_status').find({
+      // Build query for seller orders with assigned admins
+      let orderQuery = {
         sellerId: new ObjectId(decoded.userId),
         assignedAdminId: { $exists: true, $ne: null }
-      }).toArray();
+      };
+
+      // If productId is provided, filter by that specific product
+      if (productId) {
+        orderQuery.productId = new ObjectId(productId);
+        console.log('🔍 Filtering orders by productId:', productId);
+      }
+
+      const sellerOrders = await db.collection('order_status').find(orderQuery).toArray();
+
+      console.log('🔍 Found seller orders with admin assignments:', sellerOrders.length);
+      console.log('🔍 Order details:', sellerOrders.map(order => ({
+        orderId: order._id.toString(),
+        sellerId: order.sellerId.toString(),
+        assignedAdminId: order.assignedAdminId?.toString(),
+        status: order.status
+      })));
 
       if (sellerOrders.length > 0) {
         // Get unique admin IDs from seller's orders
@@ -69,6 +88,8 @@ export async function GET(request) {
           assignmentMethod = 'order_assignment_recent';
           console.log('🔍 Multiple admins found, using most recent:', assignedAdminId.toString());
         }
+      } else {
+        console.log('🔍 No orders with assigned admins found for seller');
       }
     }
 
@@ -102,12 +123,26 @@ export async function GET(request) {
     }
 
     // Get schedules from assigned admins
+    console.log('🔍 Querying schedules with:', {
+      adminId: assignedAdminId.toString(),
+      type,
+      status,
+      dateFilter: scheduleQuery.date
+    });
+
     const schedules = await db.collection('admin_schedules')
       .find(scheduleQuery)
       .sort({ date: 1, startTime: 1 })
       .toArray();
 
-    console.log('🔍 Found schedules from assigned admins:', schedules.length);
+    console.log('🔍 Found schedules from assigned admin:', schedules.length);
+    console.log('🔍 Schedule details:', schedules.map(s => ({
+      id: s._id.toString(),
+      adminId: s.adminId.toString(),
+      date: s.date,
+      type: s.type,
+      status: s.status
+    })));
 
     // Enhance schedules with availability information
     const enhancedSchedules = await Promise.all(
