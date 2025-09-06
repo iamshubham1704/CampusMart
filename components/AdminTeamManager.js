@@ -122,6 +122,39 @@ export default function AdminTeamManager() {
     }
   };
 
+  const handleAutoAssign = async (userType) => {
+    if (!confirm(`Auto-assign all ${userType}s who have orders with you to your team?`)) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/auto-assign-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userType })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSuccess(data.message || `Auto-assignment completed for ${userType}s!`);
+        fetchTeamAssignments();
+        fetchAvailableUsers();
+      } else {
+        setError(data.error || `Failed to auto-assign ${userType}s`);
+      }
+    } catch (error) {
+      setError(`Failed to auto-assign ${userType}s`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800 border-green-200';
@@ -156,12 +189,28 @@ export default function AdminTeamManager() {
             <h2 className="text-3xl font-bold">Team Management</h2>
             <p className="text-green-100 mt-2">Manage your assigned sellers and buyers</p>
           </div>
-          <button
-            onClick={() => setShowAssignForm(!showAssignForm)}
-            className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
-          >
-            {showAssignForm ? 'Cancel' : '+ Assign User'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleAutoAssign('seller')}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium text-sm"
+              title="Auto-assign all sellers who have orders with you"
+            >
+              Auto-Assign Sellers
+            </button>
+            <button
+              onClick={() => handleAutoAssign('buyer')}
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-all duration-200 font-medium text-sm"
+              title="Auto-assign all buyers who have orders with you"
+            >
+              Auto-Assign Buyers
+            </button>
+            <button
+              onClick={() => setShowAssignForm(!showAssignForm)}
+              className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
+            >
+              {showAssignForm ? 'Cancel' : '+ Assign User'}
+            </button>
+          </div>
         </div>
       </div>
 

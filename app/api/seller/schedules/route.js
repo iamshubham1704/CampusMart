@@ -31,31 +31,62 @@ export async function GET(request) {
       date
     });
 
-    // Get all orders for this seller that have assigned admins
-    const sellerOrders = await db.collection('order_status').find({
-      sellerId: new ObjectId(decoded.userId),
-      assignedAdminId: { $exists: true, $ne: null }
-    }).toArray();
+    // First, try to get seller's assigned admin from admin_team_assignments collection
+    let assignedAdminId = null;
+    let assignmentMethod = 'team_assignment';
+    
+    const teamAssignment = await db.collection('admin_team_assignments').findOne({
+      userId: new ObjectId(decoded.userId),
+      userType: 'seller',
+      status: 'active'
+    });
 
-    if (sellerOrders.length === 0) {
-      console.log('🔍 No orders with assigned admins found for seller:', decoded.userId);
+    if (teamAssignment) {
+      assignedAdminId = teamAssignment.assignedAdminId;
+      console.log('🔍 Found admin team assignment for seller:', assignedAdminId.toString());
+    } else {
+      // Fallback: Check order assignments (backward compatibility)
+      console.log('🔍 No admin team assignment found, checking order assignments...');
+      
+      const sellerOrders = await db.collection('order_status').find({
+        sellerId: new ObjectId(decoded.userId),
+        assignedAdminId: { $exists: true, $ne: null }
+      }).toArray();
+
+      if (sellerOrders.length > 0) {
+        // Get unique admin IDs from seller's orders
+        const adminIds = [...new Set(sellerOrders.map(order => order.assignedAdminId.toString()))];
+        console.log('🔍 Found admin IDs from order assignments:', adminIds);
+        
+        if (adminIds.length === 1) {
+          assignedAdminId = new ObjectId(adminIds[0]);
+          assignmentMethod = 'order_assignment';
+          console.log('🔍 Using order assignment for seller:', assignedAdminId.toString());
+        } else if (adminIds.length > 1) {
+          // Multiple admins assigned - use the most recent one
+          const mostRecentOrder = sellerOrders.sort((a, b) => new Date(b.assignedAt || b.createdAt) - new Date(a.assignedAt || a.createdAt))[0];
+          assignedAdminId = mostRecentOrder.assignedAdminId;
+          assignmentMethod = 'order_assignment_recent';
+          console.log('🔍 Multiple admins found, using most recent:', assignedAdminId.toString());
+        }
+      }
+    }
+
+    if (!assignedAdminId) {
+      console.log('🔍 No admin assignment found for seller:', decoded.userId);
       return NextResponse.json({ 
         success: true, 
         data: [],
-        message: 'No orders with assigned admins found' 
+        message: 'No admin assignment found. Please contact an admin to be assigned to a team or ensure your orders have assigned admins.' 
       });
     }
-
-    // Get unique admin IDs from seller's orders
-    const adminIds = [...new Set(sellerOrders.map(order => order.assignedAdminId.toString()))];
-    console.log('🔍 Admin IDs from seller orders:', adminIds);
 
     // Build query for admin schedules with future dates only
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // Start of today
     
     let scheduleQuery = {
-      adminId: { $in: adminIds.map(id => new ObjectId(id)) },
+      adminId: assignedAdminId,
       type: type,
       status: status,
       date: { $gte: currentDate } // Only schedules from today onwards
