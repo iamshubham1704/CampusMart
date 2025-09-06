@@ -8,11 +8,13 @@ export default function AdminProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [form, setForm] = useState({ name: '', phone: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', location: '' });
   const [adminData, setAdminData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [scheduleData, setScheduleData] = useState([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [stats, setStats] = useState({ totalOrders: 0, activeSchedules: 0, completedDeliveries: 0 });
   const router = useRouter();
 
   // Check for tab parameter in URL on component mount
@@ -24,7 +26,7 @@ export default function AdminProfilePage() {
     }
   }, []);
 
-  // Generate calendar dates (3 days past, today, 6 days future)
+
   const generateCalendarDates = () => {
     const dates = [];
     const today = new Date();
@@ -75,6 +77,29 @@ export default function AdminProfilePage() {
     setScheduleData(initialSchedule);
   }, []);
 
+  // Fetch admin statistics
+  const fetchStats = async (token) => {
+    try {
+      const [ordersRes, schedulesRes, deliveriesRes] = await Promise.all([
+        fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/admin/schedule', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/admin/deliveries', { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      
+      const ordersData = await ordersRes.json();
+      const schedulesData = await schedulesRes.json();
+      const deliveriesData = await deliveriesRes.json();
+      
+      setStats({
+        totalOrders: ordersData.data?.totalOrders || 0,
+        activeSchedules: schedulesData.data?.filter(s => s.status === 'active').length || 0,
+        completedDeliveries: deliveriesData.data?.filter(d => d.status === 'completed').length || 0
+      });
+    } catch (e) {
+      console.error('Failed to fetch stats:', e);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (!token) {
@@ -90,7 +115,13 @@ export default function AdminProfilePage() {
         const data = await res.json();
         if (!res.ok || !data.success) throw new Error(data.error || 'Failed to load profile');
         setAdminData(data.data);
-        setForm({ name: data.data.name || '', phone: data.data.phone || '' });
+        setForm({ 
+          name: data.data.name || '', 
+          phone: data.data.phone || '',
+          email: data.data.email || '',
+          location: data.data.location || ''
+        });
+        await fetchStats(token);
       } catch (e) {
         setError(e.message || 'Failed to load profile');
       } finally {
@@ -102,6 +133,24 @@ export default function AdminProfilePage() {
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    // Clear error when user starts typing
+    if (error) setError('');
+  };
+
+  const validateForm = () => {
+    if (!form.name.trim()) {
+      setError('Name is required');
+      return false;
+    }
+    if (!form.phone.trim()) {
+      setError('Phone number is required');
+      return false;
+    }
+    if (form.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(form.phone.replace(/\s/g, ''))) {
+      setError('Please enter a valid phone number');
+      return false;
+    }
+    return true;
   };
 
   const handleScheduleChange = (dateIndex, field, value) => {
@@ -135,6 +184,11 @@ export default function AdminProfilePage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       setSaving(true);
       const token = localStorage.getItem('adminToken');
@@ -155,7 +209,9 @@ export default function AdminProfilePage() {
       localStorage.setItem('adminData', JSON.stringify({ 
         ...(JSON.parse(localStorage.getItem('adminData') || '{}')), 
         name: data.data.name, 
-        phone: data.data.phone 
+        phone: data.data.phone,
+        email: data.data.email,
+        location: data.data.location
       }));
       // Clear any previous error banner after successful save
       setError('');
@@ -191,8 +247,74 @@ export default function AdminProfilePage() {
       <div className="admin-profile-card">
         {/* Header */}
         <div className="admin-profile-header">
-          <h1 className="admin-profile-title">Admin Profile</h1>
-          <p className="admin-profile-subtitle">Complete account information and settings</p>
+          <div className="admin-header-content">
+            <div className="admin-avatar-section">
+              <div className="admin-avatar">
+                <img 
+                  src={adminData?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminData?.name || 'Admin')}&size=120&background=667eea&color=ffffff`}
+                  alt={adminData?.name || 'Admin'}
+                  className="admin-avatar-img"
+                />
+                <div className="admin-avatar-status"></div>
+              </div>
+              <div className="admin-header-info">
+                <h1 className="admin-profile-title">{adminData?.name || 'Admin Profile'}</h1>
+                <p className="admin-profile-subtitle">{adminData?.email || 'admin@campusmart.com'}</p>
+                <div className="admin-status-badge">
+                  <span className="status-dot"></span>
+                  Active Admin
+                </div>
+              </div>
+            </div>
+            <div className="admin-header-actions">
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="admin-theme-toggle"
+                title="Toggle dark mode"
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="admin-stats-grid">
+          <div className="admin-stat-card">
+            <div className="stat-icon orders-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.totalOrders}</div>
+              <div className="stat-label">Total Orders</div>
+            </div>
+          </div>
+          
+          <div className="admin-stat-card">
+            <div className="stat-icon schedule-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.activeSchedules}</div>
+              <div className="stat-label">Active Schedules</div>
+            </div>
+          </div>
+          
+          <div className="admin-stat-card">
+            <div className="stat-icon delivery-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.completedDeliveries}</div>
+              <div className="stat-label">Completed Deliveries</div>
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -249,29 +371,84 @@ export default function AdminProfilePage() {
                 
                 <div className="admin-form-grid">
                   <div className="admin-form-group">
-                    <label className="admin-form-label">Full Name</label>
+                    <label className="admin-form-label">
+                      <svg className="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Full Name
+                    </label>
                     <input
                       type="text"
                       name="name"
                       value={form.name}
                       onChange={handleChange}
-                      className="admin-form-input"
+                      className={`admin-form-input ${!form.name.trim() && isEditing ? 'error' : ''}`}
                       placeholder="Enter your full name"
                       disabled={!isEditing}
+                      required
                     />
                   </div>
                   
                   <div className="admin-form-group">
-                    <label className="admin-form-label">Phone Number</label>
+                    <label className="admin-form-label">
+                      <svg className="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      Phone Number
+                    </label>
                     <input
                       type="tel"
                       name="phone"
                       value={form.phone}
                       onChange={handleChange}
-                      className="admin-form-input"
+                      className={`admin-form-input ${!form.phone.trim() && isEditing ? 'error' : ''}`}
                       placeholder="Enter your phone number"
                       disabled={!isEditing}
+                      required
                     />
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label className="admin-form-label">
+                      <svg className="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      className="admin-form-input"
+                      placeholder="Enter your email address"
+                      disabled={true}
+                      title="Email cannot be changed"
+                    />
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label className="admin-form-label">
+                      <svg className="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Campus Location
+                    </label>
+                    <select
+                      name="location"
+                      value={form.location}
+                      onChange={handleChange}
+                      className="admin-form-input"
+                      disabled={!isEditing}
+                    >
+                      <option value="">Select Campus Location</option>
+                      <option value="MAIN CANTEEN">Main Canteen</option>
+                      <option value="GROUND">Ground</option>
+                      <option value="LIBRARY">Library</option>
+                      <option value="ADMIN BLOCK">Admin Block</option>
+                      <option value="OTHER">Other</option>
+                    </select>
                   </div>
                 </div>
 
@@ -315,18 +492,55 @@ export default function AdminProfilePage() {
                   </div>
                 ) : (
                   <div className="admin-info-display">
-                    <div className="admin-info-row">
-                      <span className="admin-info-label">Full Name:</span>
-                      <span className="admin-info-value">
-                        {adminData?.name || 'Not set'}
-                      </span>
-                    </div>
-                    
-                    <div className="admin-info-row">
-                      <span className="admin-info-label">Phone Number:</span>
-                      <span className="admin-info-value">
-                        {adminData?.phone || 'Not set'}
-                      </span>
+                    <div className="admin-info-grid">
+                      <div className="admin-info-card">
+                        <div className="info-card-icon">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <div className="info-card-content">
+                          <div className="info-card-label">Full Name</div>
+                          <div className="info-card-value">{adminData?.name || 'Not set'}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="admin-info-card">
+                        <div className="info-card-icon">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                        </div>
+                        <div className="info-card-content">
+                          <div className="info-card-label">Phone Number</div>
+                          <div className="info-card-value">{adminData?.phone || 'Not set'}</div>
+                        </div>
+                      </div>
+
+                      <div className="admin-info-card">
+                        <div className="info-card-icon">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="info-card-content">
+                          <div className="info-card-label">Email Address</div>
+                          <div className="info-card-value">{adminData?.email || 'Not set'}</div>
+                        </div>
+                      </div>
+
+                      <div className="admin-info-card">
+                        <div className="info-card-icon">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <div className="info-card-content">
+                          <div className="info-card-label">Campus Location</div>
+                          <div className="info-card-value">{adminData?.location || 'Not set'}</div>
+                        </div>
+                      </div>
                     </div>
                     
                     <button 
@@ -401,10 +615,95 @@ export default function AdminProfilePage() {
         .admin-profile-header {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
-          padding: 3rem 2rem;
-          text-align: center;
+          padding: 2rem;
           position: relative;
           overflow: hidden;
+        }
+
+        .admin-header-content {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+
+        .admin-avatar-section {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+        }
+
+        .admin-avatar {
+          position: relative;
+          width: 80px;
+          height: 80px;
+        }
+
+        .admin-avatar-img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .admin-avatar-status {
+          position: absolute;
+          bottom: 5px;
+          right: 5px;
+          width: 20px;
+          height: 20px;
+          background: #10b981;
+          border: 3px solid white;
+          border-radius: 50%;
+        }
+
+        .admin-header-info {
+          text-align: left;
+        }
+
+        .admin-status-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+          padding: 0.25rem 0.75rem;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 20px;
+          font-size: 0.875rem;
+          font-weight: 500;
+        }
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          background: #10b981;
+          border-radius: 50%;
+        }
+
+        .admin-header-actions {
+          display: flex;
+          gap: 1rem;
+        }
+
+        .admin-theme-toggle {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 1.25rem;
+          transition: all 0.3s ease;
+        }
+
+        .admin-theme-toggle:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: scale(1.1);
         }
 
         .admin-profile-header::before {
@@ -427,11 +726,85 @@ export default function AdminProfilePage() {
         }
 
         .admin-profile-subtitle {
-          margin: 0.75rem 0 0 0;
+          margin: 0.5rem 0 0 0;
           opacity: 0.9;
-          font-size: 1.1rem;
+          font-size: 1rem;
           position: relative;
           z-index: 1;
+        }
+
+        .admin-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1.5rem;
+          padding: 2rem;
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .admin-stat-card {
+          background: white;
+          border-radius: 12px;
+          padding: 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+          border: 1px solid #e5e7eb;
+        }
+
+        .admin-stat-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .stat-icon svg {
+          width: 24px;
+          height: 24px;
+        }
+
+        .orders-icon {
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+          color: white;
+        }
+
+        .schedule-icon {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+        }
+
+        .delivery-icon {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: white;
+        }
+
+        .stat-content {
+          flex: 1;
+        }
+
+        .stat-number {
+          font-size: 2rem;
+          font-weight: 700;
+          color: #1e293b;
+          line-height: 1;
+        }
+
+        .stat-label {
+          font-size: 0.875rem;
+          color: #64748b;
+          font-weight: 500;
+          margin-top: 0.25rem;
         }
 
         .admin-profile-tabs {
@@ -543,9 +916,18 @@ export default function AdminProfilePage() {
         }
 
         .admin-form-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
           font-weight: 600;
           color: #374151;
           font-size: 0.95rem;
+        }
+
+        .form-label-icon {
+          width: 1rem;
+          height: 1rem;
+          color: #6b7280;
         }
 
         .admin-form-input {
@@ -567,6 +949,16 @@ export default function AdminProfilePage() {
           background: #f9fafb;
           color: #6b7280;
           cursor: not-allowed;
+        }
+
+        .admin-form-input.error {
+          border-color: #ef4444;
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .admin-form-input.error:focus {
+          border-color: #ef4444;
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
         }
 
         .admin-form-actions {
@@ -658,31 +1050,66 @@ export default function AdminProfilePage() {
         }
 
         .admin-info-display {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .admin-info-grid {
           display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
           gap: 1.5rem;
         }
 
-        .admin-info-row {
-          display: grid;
-          grid-template-columns: 1fr 2fr;
-          gap: 1rem;
+        .admin-info-card {
+          background: white;
+          border-radius: 12px;
+          padding: 1.5rem;
+          display: flex;
           align-items: center;
-          padding: 1rem;
-          background: #f8fafc;
+          gap: 1rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          border: 1px solid #e5e7eb;
+          transition: all 0.3s ease;
+        }
+
+        .admin-info-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .info-card-icon {
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
           border-radius: 10px;
-          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
 
-        .admin-info-label {
-          font-weight: 600;
+        .info-card-icon svg {
+          width: 20px;
+          height: 20px;
+          color: white;
+        }
+
+        .info-card-content {
+          flex: 1;
+        }
+
+        .info-card-label {
+          font-size: 0.875rem;
           color: #6b7280;
-          font-size: 0.95rem;
+          font-weight: 500;
+          margin-bottom: 0.25rem;
         }
 
-        .admin-info-value {
-          color: #1e293b;
+        .info-card-value {
           font-size: 1.1rem;
-          font-weight: 500;
+          color: #1e293b;
+          font-weight: 600;
         }
 
         .admin-action-buttons {
@@ -787,9 +1214,28 @@ export default function AdminProfilePage() {
             width: 100%;
           }
 
-          .admin-info-row {
+          .admin-info-grid {
             grid-template-columns: 1fr;
+          }
+
+          .admin-info-card {
             text-align: center;
+          }
+
+          .admin-stats-grid {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+          }
+
+          .admin-header-content {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+          }
+
+          .admin-avatar-section {
+            flex-direction: column;
+            gap: 1rem;
           }
 
           .admin-tab {

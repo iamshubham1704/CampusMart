@@ -115,6 +115,8 @@ export async function GET(request) {
       }
     ]).toArray();
     
+    console.log(`📋 Found ${pickups.length} pickups for admin`);
+    
     return NextResponse.json({ 
       success: true, 
       data: pickups 

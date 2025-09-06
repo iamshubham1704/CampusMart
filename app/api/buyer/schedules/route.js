@@ -50,11 +50,15 @@ export async function GET(request) {
     const adminIds = [...new Set(buyerOrders.map(order => order.assignedAdminId.toString()))];
     console.log('🔍 Admin IDs from buyer orders:', adminIds);
 
-    // Build query for admin schedules
+    // Build query for admin schedules with future dates only
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Start of today
+    
     let scheduleQuery = {
       adminId: { $in: adminIds.map(id => new ObjectId(id)) },
       type: type,
-      status: status
+      status: status,
+      date: { $gte: currentDate } // Only schedules from today onwards
     };
 
     if (date) {
@@ -62,6 +66,7 @@ export async function GET(request) {
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
+      // Override the date filter to use the specific date range
       scheduleQuery.date = { $gte: startOfDay, $lte: endOfDay };
     }
 

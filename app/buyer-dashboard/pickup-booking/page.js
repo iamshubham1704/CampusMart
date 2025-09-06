@@ -37,7 +37,8 @@ const productId = searchParams.get('productId');
         return;
       }
 
-      const response = await fetch(`/api/buyer/order-history?orderId=${orderId}`, {
+      // Fetch specific order details
+      const response = await fetch(`/api/buyer/orders/${orderId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -49,10 +50,11 @@ const productId = searchParams.get('productId');
         if (data.success && data.data) {
           setOrderDetails(data.data);
         } else {
-          setError('Failed to fetch order details');
+          setError(data.error || 'Failed to fetch order details');
         }
       } else {
-        setError('Failed to fetch order details');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to fetch order details');
       }
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -157,7 +159,7 @@ const productId = searchParams.get('productId');
               
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-700">Amount:</span>
-                <span className="text-green-600 font-semibold">₹{orderDetails.amount}</span>
+                <span className="text-green-600 font-semibold">₹{orderDetails.amount || 'N/A'}</span>
               </div>
             </div>
             
@@ -165,18 +167,18 @@ const productId = searchParams.get('productId');
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-700">Status:</span>
                 <span className="px-2 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  {orderDetails.statusMessage}
+                  {orderDetails.statusMessage || 'N/A'}
                 </span>
               </div>
               
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-700">Order Date:</span>
                 <span className="text-gray-900">
-                  {new Date(orderDetails.createdAt).toLocaleDateString('en-US', {
+                  {orderDetails.createdAt ? new Date(orderDetails.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric'
-                  })}
+                  }) : 'N/A'}
                 </span>
               </div>
               

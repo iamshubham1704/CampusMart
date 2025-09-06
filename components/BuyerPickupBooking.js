@@ -2,6 +2,12 @@
 import { useState, useEffect } from 'react';
 
 export default function BuyerPickupBooking({ productId, deliveryId, onBookingComplete }) {
+  console.log('🔍 BuyerPickupBooking: Received props:', {
+    productId,
+    deliveryId,
+    productIdType: typeof productId,
+    deliveryIdType: typeof deliveryId
+  });
   const [availableSchedules, setAvailableSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,22 +25,38 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
   const fetchAvailableSchedules = async () => {
     try {
       setLoading(true);
+      setError('');
+      
       const token = localStorage.getItem('buyerToken') || localStorage.getItem('token');
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      console.log('🔍 Fetching available pickup schedules...');
       const response = await fetch('/api/buyer/pickup-schedules', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+      
       const data = await response.json();
+      console.log('📋 Pickup schedules response:', data);
       
       if (response.ok) {
         // Filter schedules that have available slots
         const available = data.data.filter(schedule => 
           schedule.currentSlots < schedule.maxSlots
         );
+        console.log('📋 Available schedules after filtering:', available.length);
         setAvailableSchedules(available);
       } else {
+        console.error('❌ Failed to fetch schedules:', data);
         setError(data.error || 'Failed to fetch available schedules');
       }
     } catch (error) {
+      console.error('❌ Error fetching schedules:', error);
       setError('Failed to fetch available schedules');
     } finally {
       setLoading(false);
@@ -70,7 +92,15 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
         ? (deliveryId?.$oid || deliveryId?.toString?.() || '')
         : (deliveryId || '');
 
-      const response = await fetch('/api/admin/pickups', {
+      console.log('🔍 Booking pickup with data:', {
+        productId: normalizedProductId,
+        adminScheduleId: normalizedScheduleId,
+        deliveryId: normalizedDeliveryId,
+        preferredTime: formData.preferredTime,
+        notes: formData.notes
+      });
+
+      const response = await fetch('/api/buyer/pickups', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,8 +116,14 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
       });
       
       const data = await response.json();
+      console.log('📋 Booking response:', {
+        status: response.status,
+        ok: response.ok,
+        data: data
+      });
       
       if (response.ok) {
+        console.log('✅ Pickup booking successful!');
         setSuccess('Pickup slot booked successfully!');
         setSelectedSchedule(null);
         setFormData({ preferredTime: '', notes: '' });
@@ -97,6 +133,11 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
         // Refresh available schedules
         fetchAvailableSchedules();
       } else {
+        console.error('❌ Pickup booking failed:', {
+          status: response.status,
+          error: data.error,
+          fullResponse: data
+        });
         setError(data.error || 'Failed to book pickup slot');
       }
     } catch (error) {

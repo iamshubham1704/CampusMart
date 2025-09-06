@@ -1,16 +1,30 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, User, Package, CheckCircle, Clock as ClockIcon, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Package, CheckCircle, Clock as ClockIcon, AlertCircle, Plus } from 'lucide-react';
+import BuyerPickupBooking from './BuyerPickupBooking';
 
 export default function BuyerPickupSchedule({ orderId, productId, delivery }) {
   const [pickupSchedule, setPickupSchedule] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [showInlineBooking, setShowInlineBooking] = useState(false);
 
   useEffect(() => {
     if (orderId && delivery?._id) {
+      console.log('🔍 BuyerPickupSchedule: Starting fetch with:', {
+        orderId,
+        deliveryId: delivery._id,
+        productId
+      });
       fetchPickupSchedule();
+    } else {
+      console.log('🔍 BuyerPickupSchedule: Missing required data:', {
+        orderId,
+        deliveryId: delivery?._id,
+        productId,
+        delivery: delivery
+      });
     }
   }, [orderId, delivery]);
 
@@ -51,6 +65,14 @@ export default function BuyerPickupSchedule({ orderId, productId, delivery }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookingComplete = (pickupData) => {
+    setPickupSchedule(pickupData);
+    setShowInlineBooking(false);
+    setShowBookingForm(false);
+    // Show success message
+    window.location.href = `/buyer-dashboard/order-history?pickupBooked=true`;
   };
 
   const formatDate = (dateString) => {
@@ -207,7 +229,7 @@ export default function BuyerPickupSchedule({ orderId, productId, delivery }) {
   }
 
   if (showBookingForm) {
-    // Show pickup booking form
+    // Show pickup booking form with inline booking option
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
         <div className="flex items-center justify-between mb-3">
@@ -238,17 +260,44 @@ export default function BuyerPickupSchedule({ orderId, productId, delivery }) {
           )}
         </div>
         
-        <button
-          onClick={() => {
-            // This will open the pickup booking modal
-            // You can implement this by passing a callback to the parent component
-            window.location.href = `/buyer-dashboard/pickup-booking?orderId=${orderId}&deliveryId=${delivery._id}`;
-          }}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-        >
-          <Calendar size={16} />
-          Book Pickup Slot
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowInlineBooking(true)}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Book Pickup Slot
+          </button>
+          
+          <button
+            onClick={() => {
+              window.location.href = `/buyer-dashboard/pickup-booking?orderId=${orderId}&deliveryId=${delivery._id}`;
+            }}
+            className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center gap-2"
+          >
+            <Calendar size={16} />
+            Open Full Booking
+          </button>
+        </div>
+
+        {showInlineBooking && (
+          <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between mb-3">
+              <h5 className="text-md font-semibold text-blue-900">Quick Pickup Booking</h5>
+              <button
+                onClick={() => setShowInlineBooking(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <AlertCircle size={16} />
+              </button>
+            </div>
+            <BuyerPickupBooking
+              productId={productId?.toString() || productId}
+              deliveryId={delivery._id?.toString() || delivery._id}
+              onBookingComplete={handleBookingComplete}
+            />
+          </div>
+        )}
       </div>
     );
   }

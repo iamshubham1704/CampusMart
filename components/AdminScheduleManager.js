@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import './AdminScheduleManager.css';
-import { Calendar, Package, Download, Plus, Clock, MapPin, Users, Trash2, } from "lucide-react";
+import { Calendar, Package, Download, Plus, Clock, MapPin, Users, Trash2, RefreshCw } from "lucide-react";
 
 // Delivery Bookings Manager Component
 function DeliveryBookingsManager() {
@@ -1255,6 +1255,13 @@ function PickupBookingsManager() {
 
   useEffect(() => {
     fetchPickups();
+    
+    // Auto-refresh every 30 seconds to show latest pickup bookings
+    const interval = setInterval(() => {
+      fetchPickups();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, [statusFilter]);
 
   const fetchPickups = async () => {
@@ -1332,18 +1339,29 @@ function PickupBookingsManager() {
               <p className="text-sm text-gray-600">Refine your pickup view by status</p>
             </div>
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 font-medium text-gray-700 shadow-sm"
-          >
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <div className="flex gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 font-medium text-gray-700 shadow-sm"
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            
+            <button
+              onClick={fetchPickups}
+              disabled={loading}
+              className="px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
