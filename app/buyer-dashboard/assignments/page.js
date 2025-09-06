@@ -15,7 +15,11 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Clock
+  Clock,
+  Mail,
+  Phone,
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { getStoredToken, isAuthenticated, redirectToLogin } from '../../../lib/auth';
@@ -221,7 +225,8 @@ const AssignmentsPage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return 'text-yellow-600 bg-yellow-100';
-      case 'in_progress': return 'text-blue-600 bg-blue-100';
+      case 'confirmed': return 'text-blue-600 bg-blue-100';
+      case 'in_progress': return 'text-purple-600 bg-purple-100';
       case 'completed': return 'text-green-600 bg-green-100';
       case 'cancelled': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
@@ -231,6 +236,7 @@ const AssignmentsPage = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending': return <Clock size={16} />;
+      case 'confirmed': return <CheckCircle size={16} />;
       case 'in_progress': return <Loader2 size={16} />;
       case 'completed': return <CheckCircle size={16} />;
       case 'cancelled': return <X size={16} />;
@@ -361,6 +367,87 @@ const AssignmentsPage = () => {
                     )}
                   </div>
 
+                  {/* Assigned Admin Information - NEW SECTION */}
+                  {assignment.assignedAdmin && (
+                    <div className={styles['admin-info']}>
+                      <h4>Admin :</h4>
+                      <div className={styles['admin-card']}>
+                        <div className={styles['admin-avatar']}>
+                          <User size={32} />
+                        </div>
+                        <div className={styles['admin-details']}>
+                          <div className={styles['admin-name']}>
+                            <strong>{assignment.assignedAdmin.name}</strong>
+                            {assignment.assignedAdmin.department && (
+                              <div className={styles['admin-department']}>
+                                <span>{assignment.assignedAdmin.department}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className={styles['admin-contact-info']}>
+                            <span>Email: {assignment.assignedAdmin.email}</span>
+                            {assignment.assignedAdmin.phone && (
+                              <span>Phone: {assignment.assignedAdmin.phone}</span>
+                            )}
+                            {assignment.assignedAdmin.experience && (
+                              <span>Experience: {assignment.assignedAdmin.experience}</span>
+                            )}
+                          </div>
+                          <div className={styles['admin-contact-buttons']}>
+                            <button 
+                              className={styles['contact-button']}
+                              onClick={() => window.open(`mailto:${assignment.assignedAdmin.email}?subject=Assignment Inquiry: ${assignment.title}`, '_blank')}
+                            >
+                              <Mail size={16} />
+                              Send Email
+                            </button>
+                            {assignment.assignedAdmin.phone && (
+                              <button 
+                                className={styles['contact-button']}
+                                onClick={() => window.open(`tel:${assignment.assignedAdmin.phone}`, '_blank')}
+                              >
+                                <Phone size={16} />
+                                Call Admin
+                              </button>
+                            )}
+                            {assignment.assignedAdmin.phone && (
+                              <button 
+                                className={styles['contact-button']}
+                                onClick={() => window.open(`https://wa.me/${assignment.assignedAdmin.phone?.replace(/\D/g, '')}?text=Hi, I need help with my assignment: ${assignment.title}`, '_blank')}
+                              >
+                                <MessageSquare size={16} />
+                                WhatsApp
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delivery Information */}
+                  {assignment.tentativeDeliveryDate && (
+                    <div className={styles['delivery-info']}>
+                      <h4>📅 Delivery Information:</h4>
+                      <div className={styles['delivery-details']}>
+                        <div className={styles['delivery-item']}>
+                          <Calendar size={16} />
+                          <span>
+                            <strong>Expected Delivery:</strong> {new Date(assignment.tentativeDeliveryDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {assignment.adminNotes && (
+                          <div className={styles['admin-notes']}>
+                            <AlertCircle size={16} />
+                            <span>
+                              <strong>Expert Notes:</strong> {assignment.adminNotes}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {assignment.additionalRequirements && (
                     <div className={styles['additional-requirements']}>
                       <h4>Additional Requirements:</h4>
@@ -403,6 +490,27 @@ const AssignmentsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Success/Error Messages */}
+      {error && (
+        <div className={styles['error-toast']}>
+          <AlertCircle size={16} />
+          {error}
+          <button onClick={() => setError('')}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {success && (
+        <div className={styles['success-toast']}>
+          <CheckCircle size={16} />
+          {success}
+          <button onClick={() => setSuccess('')}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Create Assignment Modal */}
       {isCreateModalOpen && (

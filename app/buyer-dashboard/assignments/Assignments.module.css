@@ -716,3 +716,505 @@
  .pdf-link:hover {
    background: #dbeafe;
  }
+
+
+ /*ye baad mein add kiya hai*/
+/* Add these styles to your Assignments.module.css file */
+
+/* Alpha Information Section */
+.alpha-info {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 12px;
+  border-left: 4px solid #3b82f6;
+}
+
+.alpha-info h4 {
+  margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alpha-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.alpha-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.alpha-details {
+  flex: 1;
+}
+
+.alpha-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.alpha-name strong {
+  color: #1e293b;
+  font-size: 18px;
+}
+
+.alpha-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #92400e;
+}
+
+.alpha-contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.alpha-contact-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.contact-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.contact-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.contact-button:nth-child(2) {
+  background: #10b981;
+}
+
+.contact-button:nth-child(2):hover {
+  background: #059669;
+}
+
+.contact-button:nth-child(3) {
+  background: #25d366;
+}
+
+.contact-button:nth-child(3):hover {
+  background: #22c55e;
+}
+
+/* Delivery Information Section */
+.delivery-info {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border-left: 4px solid #22c55e;
+}
+
+.delivery-info h4 {
+  margin: 0 0 12px 0;
+  color: #166534;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.delivery-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.delivery-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #166534;
+  font-size: 14px;
+}
+
+.admin-notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: #fef3c7;
+  border-radius: 6px;
+  color: #92400e;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* Toast Messages */
+.error-toast, .success-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.error-toast {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.success-toast {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.error-toast button,
+.success-toast button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-info h4 {
+    font-size: 16px;
+    padding: 16px 20px 12px 20px;
+  }
+  
+  .admin-card {
+    margin: 0 16px 16px 16px;
+    padding: 20px;
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .admin-avatar {
+    width: 80px;
+    height: 80px;
+    align-self: center;
+  }
+  
+  .admin-name {
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .admin-name strong {
+    font-size: 20px;
+  }
+  
+  .admin-contact-buttons {
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .contact-button {
+    flex: 1;
+    justify-content: center;
+    min-width: 100px;
+    font-size: 13px;
+    padding: 10px 16px;
+  }
+  
+  .delivery-info h4 {
+    font-size: 16px;
+    padding: 16px 20px 12px 20px;
+  }
+  
+  .delivery-details {
+    margin: 0 16px 16px 16px;
+    padding: 20px;
+  }
+  
+  .delivery-item {
+    font-size: 14px;
+    flex-wrap: wrap;
+  }
+  
+  .admin-notes {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-info h4::before {
+    font-size: 16px;
+  }
+  
+  .admin-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .contact-button {
+    font-size: 12px;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  
+  .admin-name strong {
+    font-size: 18px;
+  }
+  
+  .admin-contact-info span {
+    font-size: 14px;
+  }
+}
+
+
+
+
+/* Admin Information Section */
+/* Admin Information Section */
+.admin-info {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.admin-info h4 {
+  margin: 0 0 16px 0;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.admin-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e1e8ed;
+}
+
+.admin-avatar {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.admin-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-name {
+  margin-bottom: 8px;
+}
+
+.admin-name strong {
+  font-size: 16px;
+  color: #2c3e50;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.admin-department {
+  display: inline-block;
+}
+
+.admin-department span {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.admin-contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.admin-contact-info span {
+  display: block;
+}
+
+.admin-contact-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.contact-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: white;
+  border: 1.5px solid #dee2e6;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.contact-button:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.contact-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.contact-button.disabled {
+  background: #f8f9fa;
+  color: #adb5bd;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.contact-button.disabled:hover {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Specific button colors */
+.contact-button:nth-child(1) {
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.contact-button:nth-child(1):hover {
+  background: #f8fff9;
+  border-color: #1e7e34;
+}
+
+.contact-button:nth-child(2) {
+  border-color: #25d366;
+  color: #25d366;
+}
+
+.contact-button:nth-child(2):hover {
+  background: #f0fff4;
+  border-color: #1aaa4f;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-card {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .admin-avatar {
+    align-self: center;
+  }
+  
+  .admin-contact-buttons {
+    justify-content: center;
+  }
+  
+  .contact-button {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-info {
+    padding: 16px;
+  }
+  
+  .admin-card {
+    padding: 12px;
+  }
+  
+  .admin-contact-buttons {
+    flex-direction: column;
+  }
+  
+  .contact-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
