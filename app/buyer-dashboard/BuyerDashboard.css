@@ -827,6 +827,14 @@
   border: 1px solid rgba(71, 85, 105, 0.3);
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+<<<<<<< Updated upstream
+=======
+  align-items: stretch;
+<<<<<<< Updated upstream
+
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 }
 
 .addToCartButton,
@@ -848,6 +856,14 @@
   letter-spacing: 0.5px;
   position: relative;
   overflow: hidden;
+<<<<<<< Updated upstream
+=======
+  flex: 1;
+<<<<<<< Updated upstream
+
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 }
 
 .addToCartButton {
