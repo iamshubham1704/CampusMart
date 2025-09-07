@@ -21,7 +21,7 @@
     "lucide-react": "^0.536.0",
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.1",
-    "next": "15.4.5",
+    "next": "^15.5.2",
     "next-auth": "^4.24.11",
     "node-cron": "^4.2.1",
     "nodemailer": "^6.10.1",

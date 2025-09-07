@@ -1005,7 +1005,7 @@ const BuyerDashboard = () => {
                 <div className="college-info">
                   <BookOpen size={18} className="college-icon" />
                   <span>{buyer.university || 'Student'}</span>
-                  {buyer.year && <span>• {buyer.year} year</span>}
+                  {buyer.year && <span>• {buyer.year} </span>}
                 </div>
                 <div className="member-duration">
                   Member since {new Date(buyer.createdAt).toLocaleDateString('en-US', { 
@@ -1321,7 +1321,7 @@ const BuyerDashboard = () => {
                           }}
                           disabled={cartLoading || isInCart(product.id || product._id)}
                         >
-                          <ShoppingCart size={16} />
+                          
                           {isInCart(product.id || product._id) ? 'In Cart' : 'Add to Cart'}
                         </button>
                         <button
