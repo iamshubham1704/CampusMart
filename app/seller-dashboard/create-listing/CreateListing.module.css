@@ -78,6 +78,36 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
+/* Pricing Notice */
+.pricingNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  border: 1px solid #f59e0b;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+}
+
+.pricingNoticeIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pricingNoticeText {
+  flex: 1;
+}
+
+.pricingNoticeText strong {
+  color: #78350f;
+}
+
 .section {
   margin-bottom: 32px;
   padding-bottom: 24px;
@@ -119,8 +149,22 @@
   display: block;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 14px;
+}
+
+.requiredNote {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.optionalNote {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: italic;
 }
 
 .input,

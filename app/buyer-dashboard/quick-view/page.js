@@ -96,11 +96,11 @@ const ProductViewModal = ({ productId, isOpen, onClose, currentUser, currentUser
         headers
       });
 
-      console.log('📨 Response status:', response.status);
+      console.log('📨 Response status test:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Response error:', errorText);
+        console.error('❌ Response error check:', errorText);
 
         if (response.status === 404) {
           throw new Error('Product not found');
@@ -296,6 +296,27 @@ We will verify your payment and confirm your order shortly. You can track your o
     setPaymentStep('options');
     setSelectedUpiOption('');
     setUploadedScreenshot(null);
+  };
+
+  const handleShareProduct = async () => {
+    try {
+      const shareUrl = `${window.location.origin}/shared-listing/${product.id || product._id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      
+      // Show success message (you can implement a toast notification here)
+      alert('Shareable link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      // Fallback for older browsers
+      const shareUrl = `${window.location.origin}/shared-listing/${product.id || product._id}`;
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Shareable link copied to clipboard!');
+    }
   };
 
   const handlePaymentOptionSelect = (option) => {
@@ -591,11 +612,15 @@ We will verify your payment and confirm your order shortly. You can track your o
                         <>🛒 {isInCart(product.id || product._id) ? 'In Cart' : 'Add to Cart'}</>
                       )}
                     </button>
-                 
-                      
-                      
-                      
-                    </div>
+                    <button
+                      onClick={handleShareProduct}
+                      className="share-btn"
+                      title="Share this product"
+                    >
+                      <Share2 size={16} />
+                      Share
+                    </button>
+                  </div>
                   
 
                   {/* Product Actions */}

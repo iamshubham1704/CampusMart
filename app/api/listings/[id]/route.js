@@ -153,6 +153,25 @@ export async function PUT(request, { params }) {
       updatedAt: new Date()
     };
 
+    // Prevent price changes - if prices are different, reject the update
+    if (body.price !== undefined && Number(body.price) !== existingListing.price) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Product prices cannot be changed once a listing is created. Please create a new listing if you need to adjust pricing.' 
+      }, { status: 400 });
+    }
+
+    if (body.originalPrice !== undefined && Number(body.originalPrice) !== existingListing.originalPrice) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Original prices cannot be changed once a listing is created. Please create a new listing if you need to adjust pricing.' 
+      }, { status: 400 });
+    }
+
+    // Remove price fields from update data to ensure they remain unchanged
+    delete updateData.price;
+    delete updateData.originalPrice;
+
     // Remove image processing fields from update data
     delete updateData.imagesToDelete;
 

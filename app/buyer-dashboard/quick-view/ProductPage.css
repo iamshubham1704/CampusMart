@@ -1386,55 +1386,122 @@
 /* Action Buttons */
 .action-buttons {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  padding: 24px;
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.9));
+  border-radius: 20px;
+  border: 1px solid rgba(71, 85, 105, 0.4);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.action-buttons::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.action-buttons:hover::before {
+  opacity: 1;
 }
 
 .buy-now-btn {
   flex: 1;
-  background: linear-gradient(145deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: white;
   border: none;
-  padding: 16px 24px;
-  border-radius: 8px;
+  padding: 18px 28px;
+  border-radius: 12px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  letter-spacing: 0.8px;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  position: relative;
+  overflow: hidden;
+  min-height: 56px;
+}
+
+.buy-now-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.buy-now-btn:hover::before {
+  left: 100%;
 }
 
 .buy-now-btn:hover {
-  background: linear-gradient(145deg, #2563eb, #1d4ed8);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.5);
+}
+
+.buy-now-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
 .add-cart-btn {
   flex: 1;
-  background: linear-gradient(145deg, #334155, #475569);
-  color: #3b82f6;
+  background: linear-gradient(135deg, #334155, #475569);
+  color: #60a5fa;
   border: 2px solid #3b82f6;
-  padding: 14px 24px;
-  border-radius: 8px;
+  padding: 16px 28px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-cart-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.add-cart-btn:hover::before {
+  opacity: 1;
 }
 
 .add-cart-btn:hover {
-  background: linear-gradient(145deg, #1e40af, #1d4ed8);
   color: white;
   border-color: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
 }
 
 .add-cart-btn:disabled {
@@ -1445,10 +1512,140 @@
 }
 
 .add-cart-btn.in-cart {
-  background: linear-gradient(145deg, #10b981, #059669);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border-color: #059669;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.add-cart-btn.in-cart:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+}
+
+.share-btn {
+  flex: 1;
+  min-width: 140px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 16px 28px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  min-height: 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.share-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.share-btn:hover::after {
+  width: 300px;
+  height: 300px;
+}
+
+.share-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+}
+
+.share-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* Focus states for accessibility */
+.buy-now-btn:focus,
+.add-cart-btn:focus,
+.share-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4), 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+/* Disabled states */
+.buy-now-btn:disabled,
+.add-cart-btn:disabled,
+.share-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Loading states */
+.buy-now-btn.loading,
+.add-cart-btn.loading,
+.share-btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.buy-now-btn.loading::after,
+.add-cart-btn.loading::after,
+.share-btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid transparent;
+  border-top: 3px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Button group responsive design */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+  }
+  
+  .buy-now-btn,
+  .add-cart-btn,
+  .share-btn {
+    min-height: 52px;
+    padding: 14px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .action-buttons {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .buy-now-btn,
+  .add-cart-btn,
+  .share-btn {
+    font-size: 14px;
+    padding: 12px 20px;
+    min-height: 48px;
+  }
 }
 
 .spinner {

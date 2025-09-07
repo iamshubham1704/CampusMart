@@ -367,6 +367,15 @@ const CreateListing = () => {
       )}
 
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
+        {/* Pricing Notice */}
+        <div className={styles.pricingNotice}>
+          <div className={styles.pricingNoticeIcon}>⚠️</div>
+          <div className={styles.pricingNoticeText}>
+            <strong>Important:</strong> Product prices cannot be changed once a listing is created. 
+            Please set your final price carefully. If you need to adjust pricing later, you'll need to create a new listing.
+          </div>
+        </div>
+
         {/* Basic Info */}
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Basic Information</h2>
@@ -399,7 +408,7 @@ const CreateListing = () => {
 
           <div className={styles.row}>
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Price (₹) *</label>
+              <label className={styles.label}>Price (₹) * <span className={styles.requiredNote}>(Cannot be changed later)</span></label>
               <input
                 type="text"
                 name="price"
@@ -410,12 +419,12 @@ const CreateListing = () => {
                 required
                 inputMode="decimal"
                 pattern="[0-9]*[.]?[0-9]{0,2}"
-                title="Please enter a valid price (e.g., 100 or 99.99)"
+                title="Please enter a valid price (e.g., 100 or 99.99). Note: This price cannot be changed once the listing is created."
               />
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Original Price (₹) [Market Price]</label>
+              <label className={styles.label}>Original Price (₹) [Market Price] <span className={styles.optionalNote}>(Optional, cannot be changed later)</span></label>
               <input
                 type="text"
                 name="originalPrice"
@@ -425,7 +434,7 @@ const CreateListing = () => {
                 className={styles.input}
                 inputMode="decimal"
                 pattern="[0-9]*[.]?[0-9]{0,2}"
-                title="Please enter a valid price (e.g., 100 or 99.99)"
+                title="Please enter a valid price (e.g., 100 or 99.99). Note: This price cannot be changed once the listing is created."
               />
             </div>
           </div>

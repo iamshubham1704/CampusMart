@@ -3,13 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Home, MessageSquare, Heart, Star, User, Bell, Settings,
-  LogOut, Package, Eye, Plus, MapPin,
-  Loader2, AlertCircle, Menu, X, DollarSign
+  LogOut,   Package, Eye, Plus, MapPin,
+  Loader2, AlertCircle, Menu, X, DollarSign, Share2
 } from 'lucide-react';
 import styles from './SellerDashboard.module.css';
 import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
-import { getStoredToken, isAuthenticated, redirectToLogin } from '../../lib/auth';
+import { getStoredToken, isAuthenticated, redirectToLogin, clearAllTokens } from '../../lib/auth';
 // import NotificationBadge from '../../components/NotificationBadge';
 
 const SellerDashboard = () => {
@@ -94,6 +94,27 @@ const SellerDashboard = () => {
     fetchData();
     setShowEditModal(false);
     setEditingListing(null);
+  };
+
+  const handleShareListing = async (listing) => {
+    try {
+      const shareUrl = `${window.location.origin}/shared-listing/${listing.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      
+      // Show success message (you can implement a toast notification here)
+      alert('Shareable link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      // Fallback for older browsers
+      const shareUrl = `${window.location.origin}/shared-listing/${listing.id}`;
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Shareable link copied to clipboard!');
+    }
   };
 
   // Generate user avatar
@@ -363,9 +384,19 @@ const SellerDashboard = () => {
   };
 
   useEffect(() => {
-    // Check for valid token before mounting
+    // More robust authentication check before mounting
+    const token = getStoredToken('seller');
+    if (!token || !isAuthenticated('seller')) {
+      // Clear any invalid tokens and redirect to login
+      clearAllTokens();
+      router.push('/seller-login');
+      return;
+    }
+    
+    // If authenticated, get user data and fetch dashboard data
     const user = getCurrentUser();
     if (!user || !user.token) {
+      clearAllTokens();
       router.push('/seller-login');
       return;
     }
@@ -411,6 +442,14 @@ const SellerDashboard = () => {
   };
 
   const toggleProfileDropdown = () => {
+    // More robust authentication check
+    const token = getStoredToken('seller');
+    if (!sellerData || !token || !isAuthenticated('seller')) {
+      // Clear any invalid tokens and redirect to login
+      clearAllTokens();
+      router.push('/seller-login');
+      return;
+    }
     setShowProfileDropdown(!showProfileDropdown);
   };
 
@@ -493,18 +532,28 @@ const SellerDashboard = () => {
           <MapPin size={14} style={{ marginRight: '4px' }} />
           {listing.location}
         </div>
-        <div className={styles.listingFooter}>
-          <div className={styles.listingViews}>
-            <Eye size={14} style={{ marginRight: '4px' }} />
-            {listing.views} views
+                  <div className={styles.listingFooter}>
+            <div className={styles.listingViews}>
+              <Eye size={14} style={{ marginRight: '4px' }} />
+              {listing.views} views
+            </div>
+            <div className={styles.listingActions}>
+              <button
+                className={styles.messageButton}
+                onClick={() => handleEditListing(listing)}
+              >
+                Edit
+              </button>
+              <button
+                className={`${styles.messageButton} ${styles.shareButton}`}
+                onClick={() => handleShareListing(listing)}
+                title="Copy shareable link"
+              >
+                <Share2 size={14} />
+                Share
+              </button>
+            </div>
           </div>
-          <button
-            className={styles.messageButton}
-            onClick={() => handleEditListing(listing)}
-          >
-            Edit
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -600,7 +649,7 @@ const SellerDashboard = () => {
                 <div
                   className={styles.userProfile}
                   onClick={toggleProfileDropdown}
-                  title="Profile Menu"
+                  title={sellerData ? "Profile Menu" : "Login to access profile"}
                 >
                   <img
                     src={generateUserAvatar(sellerData?.name, sellerData?.profileImage)}
@@ -762,6 +811,15 @@ const SellerDashboard = () => {
               Hey {sellerData?.name || 'User'} 👋
             </h1>
             <p className={styles.welcomeSubtitle}>Ready to find great deals today?</p>
+          </div>
+
+          {/* Pricing Notice */}
+          <div className={styles.pricingNotice}>
+            <div className={styles.pricingNoticeIcon}>ℹ️</div>
+            <div className={styles.pricingNoticeText}>
+              <strong>Important:</strong> Product prices cannot be changed once a listing is created. 
+              If you need to adjust pricing, please create a new listing instead of editing the existing one.
+            </div>
           </div>
 
           {/* Enhanced Stats Cards with Payments */}
