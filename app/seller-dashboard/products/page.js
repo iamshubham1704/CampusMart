@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
   Package, Edit3, Trash2, Eye, MapPin, Heart,
   Plus, Search, Filter, Grid, List, Loader2,
-  AlertCircle, Calendar, Star, TrendingUp
+  AlertCircle, Calendar, Star, TrendingUp, Share2
 } from 'lucide-react';
 import styles from './Products.module.css'; // You'll need to create this CSS file
 import { listingsAPI } from '../../utils/api';
@@ -112,6 +112,28 @@ const Products = () => {
     setEditingListing(null);
   };
 
+  // Handle sharing listing
+  const handleShareListing = async (listing) => {
+    try {
+      const shareUrl = `${window.location.origin}/shared-listing/${listing.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      
+      // Show success message (you can implement a toast notification here)
+      alert('Shareable link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      // Fallback for older browsers
+      const shareUrl = `${window.location.origin}/shared-listing/${listing.id}`;
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Shareable link copied to clipboard!');
+    }
+  };
+
   // Filter and sort listings
   const filteredAndSortedListings = React.useMemo(() => {
     let filtered = myListings.filter(listing => {
@@ -187,9 +209,16 @@ const Products = () => {
           <button
             className={styles.actionButton}
             onClick={() => handleEditListing(listing)}
-            title="Edit listing"
+            title="Edit listing (Note: Prices cannot be changed)"
           >
             <Edit3 size={16} />
+          </button>
+          <button
+            className={`${styles.actionButton} ${styles.shareButton}`}
+            onClick={() => handleShareListing(listing)}
+            title="Copy shareable link"
+          >
+            <Share2 size={16} />
           </button>
         </div>
       </div>
@@ -276,9 +305,18 @@ const Products = () => {
             <button
               className={styles.editButton}
               onClick={() => handleEditListing(listing)}
+              title="Edit listing (Note: Prices cannot be changed)"
             >
               <Edit3 size={14} />
               Edit
+            </button>
+            <button
+              className={`${styles.editButton} ${styles.shareButton}`}
+              onClick={() => handleShareListing(listing)}
+              title="Copy shareable link"
+            >
+              <Share2 size={14} />
+              Share
             </button>
           </div>
         </div>
@@ -372,6 +410,15 @@ const Products = () => {
         </div>
       </div>
 
+      {/* Pricing Notice */}
+      <div className={styles.pricingNotice}>
+        <div className={styles.pricingNoticeIcon}>ℹ️</div>
+        <div className={styles.pricingNoticeText}>
+          <strong>Important:</strong> Product prices cannot be changed once a listing is created. 
+          If you need to adjust pricing, please create a new listing instead of editing the existing one.
+        </div>
+      </div>
+
       {/* Filters and Controls */}
       <div className={styles.controlsBar}>
         <div className={styles.searchSection}>
@@ -444,7 +491,7 @@ const Products = () => {
       </div>
 
       {/* Listings Grid/List */}
-      <div className={styles.listingsContainer}>
+      <div className={`${styles.listingsGrid} ${viewMode === 'list' ? styles.listView : styles.gridView}`}>
         {filteredAndSortedListings.length === 0 ? (
           <div className={styles.emptyState}>
             <Package size={64} />
@@ -471,15 +518,13 @@ const Products = () => {
             )}
           </div>
         ) : (
-          <div className={`${styles.listingsGrid} ${viewMode === 'list' ? styles.listView : styles.gridView}`}>
-            {filteredAndSortedListings.map(listing => (
-              viewMode === 'grid' ? (
-                <GridListingCard key={listing.id} listing={listing} />
-              ) : (
-                <ListListingCard key={listing.id} listing={listing} />
-              )
-            ))}
-          </div>
+          filteredAndSortedListings.map(listing => (
+            viewMode === 'grid' ? (
+              <GridListingCard key={listing.id} listing={listing} />
+            ) : (
+              <ListListingCard key={listing.id} listing={listing} />
+            )
+          ))
         )}
       </div>
 

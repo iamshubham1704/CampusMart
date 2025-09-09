@@ -1,6 +1,6 @@
 import GlobalReportButton from '@/components/GlobalReportButton';
 import styles from './global.css';
-
+import Script from "next/script";
 
 export const metadata = {
   title: 'CampusMart',
@@ -33,22 +33,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" type="image/jpeg" sizes="32x32" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="64x64" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="96x96" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="128x128" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="192x192" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="256x256" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="384x384" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="512x512" href="/fav.jpg" />
-        <link rel="icon" type="image/jpeg" sizes="1024x1024" href="/fav.jpg" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/fav.jpg" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/fav.jpg" />
-        <link rel="apple-touch-icon" sizes="167x167" href="/fav.jpg" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/fav.jpg" />
-        <link rel="apple-touch-icon" sizes="256x256" href="/fav.jpg" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/fav.jpg" />
-        <link rel="shortcut icon" href="/fav.jpg" />
+        <meta name="google-adsense-account" content="ca-pub-8234149876760532" />
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8234149876760532"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </head>
       <body className={styles.root}>
         {children}

@@ -1,4 +1,4 @@
-// // // app/api/admin/register/route.js
+
 // import { MongoClient } from 'mongodb';
 // import bcrypt from 'bcryptjs';
 
@@ -63,7 +63,6 @@
 //     // Insert admin into database
 //     const result = await adminsCollection.insertOne(adminData);
 
-
 //     return Response.json({ 
 //       message: 'Admin registered successfully', 
 //       adminId: result.insertedId,
@@ -77,6 +76,7 @@
 
 //   } catch (err) {
 //     console.error('Admin registration error:', err);
+
 
 //     if (err.code === 11000) {
 //       return Response.json({ 
@@ -97,3 +97,4 @@
 //     }
 //   }
 // }
+
