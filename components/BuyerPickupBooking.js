@@ -187,8 +187,21 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
     );
   }
 
+  // Group schedules by date to render a 7-column calendar-like grid without changing data fetching
+  const schedulesByDate = availableSchedules.reduce((acc, s) => {
+    const key = new Date(s.date).toDateString();
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(s);
+    return acc;
+  }, {});
+
+  const orderedDates = Object.keys(schedulesByDate)
+    .map(d => new Date(d))
+    .sort((a,b) => a - b)
+    .map(d => d.toDateString());
+
   return (
-    <div className="space-y-6">
+    <div className="pickupBookingContainer space-y-6">
       {/* Header */}
       <div className="text-center">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Book Pickup Slot</h3>
@@ -208,71 +221,62 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
         </div>
       )}
 
-      {/* Available Schedules */}
-      <div className="grid gap-4">
-        {availableSchedules.map((schedule) => {
-          const availability = getSlotAvailability(schedule);
-          return (
-            <div
-              key={schedule._id}
-              className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                selectedSchedule?._id === schedule._id
-                  ? 'border-purple-500 bg-purple-50'
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              }`}
-              onClick={() => handleScheduleSelect(schedule)}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                  <span className="font-medium text-gray-900">Pickup Schedule</span>
+      {/* Available Schedules as calendar-like grid */}
+      <div className="pickupCalendar">
+        <div className="pickupCalendarHeader">
+          <div className="pickupCalendarTitle">Available Pickup Slots</div>
+          <div className="pickupCalendarLegend">
+            <span className="pickupLegendItem"><span className="pickupLegendDot" style={{background:'#059669'}}></span> Available</span>
+            <span className="pickupLegendItem"><span className="pickupLegendDot" style={{background:'#ea580c'}}></span> Limited</span>
+            <span className="pickupLegendItem"><span className="pickupLegendDot" style={{background:'#dc2626'}}></span> Almost Full</span>
+          </div>
+        </div>
+        <div className="pickupCalendarGrid">
+          {orderedDates.map((dateStr, idx) => {
+            const dateObj = new Date(dateStr);
+            const isToday = (() => { const t=new Date(); return t.toDateString()===dateObj.toDateString(); })();
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayNum = dateObj.getDate();
+            const schedules = schedulesByDate[dateStr] || [];
+            return (
+              <div key={dateStr + idx} className={`pickupDay ${isToday ? 'today' : ''}`}>
+                <div className="pickupDayHeader">
+                  <div className="pickupDayName">{dayName}</div>
+                  <div className="pickupDayDate">{dayNum}</div>
                 </div>
-                <span className={`text-sm font-medium ${availability.color}`}>
-                  {availability.text}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-1">Date</div>
-                  <div className="text-gray-900">{formatDate(schedule.date)}</div>
-                </div>
-                
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-1">Time</div>
-                  <div className="text-gray-900">
-                    {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-1">Location</div>
-                  <div className="text-gray-900">{schedule.location}</div>
-                </div>
-              </div>
-              
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Available slots:</span>
-                  <span className="font-medium text-gray-900">
-                    {schedule.maxSlots - schedule.currentSlots} of {schedule.maxSlots}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div
-                    className="bg-purple-600 h-2 rounded-full transition-all"
-                    style={{ width: `${(schedule.currentSlots / schedule.maxSlots) * 100}%` }}
-                  ></div>
+                <div className="pickupSlots">
+                  {schedules.map((schedule) => {
+                    const availability = getSlotAvailability(schedule);
+                    return (
+                      <div
+                        key={schedule._id}
+                        className={`pickupSlot ${selectedSchedule?._id === schedule._id ? 'selected' : ''}`}
+                        onClick={() => handleScheduleSelect(schedule)}
+                      >
+                        <div className="pickupSlotHeader">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2.5 h-2.5 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-900">{formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}</span>
+                          </div>
+                          <span className={`pickupAvailability ${availability.text === 'Available' ? 'available' : availability.text === 'Limited Slots' ? 'limited' : 'almost'}`}>{availability.text}</span>
+                        </div>
+                        <div className="text-xs text-gray-600 mb-2">{schedule.location}</div>
+                        <div className="pickupProgress">
+                          <div className="pickupProgressFill" style={{ width: `${(schedule.currentSlots / schedule.maxSlots) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Booking Form */}
       {selectedSchedule && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="pickupInlineCard">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Complete Your Pickup Booking</h4>
           
           <form onSubmit={handleBooking} className="space-y-4">
@@ -309,18 +313,18 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
               />
             </div>
             
-            <div className="flex gap-3">
+            <div className="pickupActions">
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                className="bookPickupButton"
               >
                 {loading ? 'Booking...' : 'Confirm Pickup Booking'}
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSchedule(null)}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition-colors"
+                className="openFullBookingButton"
               >
                 Cancel
               </button>

@@ -3,6 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Package, Calendar, Clock, MapPin, User, CheckCircle, AlertCircle } from 'lucide-react';
 import BuyerPickupBooking from '@/components/BuyerPickupBooking';
+import './pickup-booking.css';
 
 // Component that uses useSearchParams
 const PickupBookingContent = () => {
@@ -131,7 +132,7 @@ const productId = searchParams.get('productId');
                 Back to Order History
               </button>
               <div className="h-6 w-px bg-gray-300"></div>
-              <h1 className="text-2xl font-bold text-gray-900">Book Pickup Slot</h1>
+              <h1 className="text-2xl font-bold text-royalblue-900">Book Pickup Slot</h1>
             </div>
           </div>
         </div>
@@ -139,7 +140,7 @@ const productId = searchParams.get('productId');
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Order Summary */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+        <div className="pickupBookingContainer mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Package size={20} />
             Order Summary
@@ -191,7 +192,7 @@ const productId = searchParams.get('productId');
         </div>
 
         {/* Pickup Booking Component */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="pickupBookingContainer">
           <BuyerPickupBooking
             productId={orderDetails.product?._id || productId}
             deliveryId={deliveryId}
@@ -200,7 +201,7 @@ const productId = searchParams.get('productId');
         </div>
 
         {/* Important Information */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-8">
+        <div className="pickupInlineCard mt-8" style={{borderColor:'#fde68a'}}>
           <h3 className="text-lg font-semibold text-yellow-900 mb-4 flex items-center gap-2">
             <AlertCircle size={20} />
             Important Information
@@ -228,7 +229,7 @@ const productId = searchParams.get('productId');
             </div>
           </div>
           
-          <div className="mt-4 p-4 bg-white rounded-lg border border-yellow-200">
+          <div className="mt-4 p-4 bg-white rounded-lg border" style={{borderColor:'#fde68a'}}>
             <p className="text-sm text-yellow-800">
               <strong>Note:</strong> If you cannot make it to your scheduled pickup time, please cancel at least 2 hours in advance. 
               Failure to show up for multiple scheduled pickups may result in restrictions on future bookings.
