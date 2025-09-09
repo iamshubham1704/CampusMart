@@ -562,30 +562,6 @@ const SellerDashboard = () => {
             </button>
           )}
         </div>
-
-//                   <div className={styles.listingFooter}>
-//             <div className={styles.listingViews}>
-//               <Eye size={14} style={{ marginRight: '4px' }} />
-//               {listing.views} views
-//             </div>
-//             <div className={styles.listingActions}>
-//               <button
-//                 className={styles.messageButton}
-//                 onClick={() => handleEditListing(listing)}
-//               >
-//                 Edit
-//               </button>
-//               <button
-//                 className={`${styles.messageButton} ${styles.shareButton}`}
-//                 onClick={() => handleShareListing(listing)}
-//                 title="Copy shareable link"
-//               >
-//                 <Share2 size={14} />
-//                 Share
-//               </button>
-//             </div>
-//           </div>
-
       </div>
     </div>
   );

@@ -210,6 +210,23 @@ export default function BuyerPickupSchedule({ orderId, productId, delivery, isFu
               </div>
             </div>
 
+            {/* Warning Message */}
+            <div style={{ 
+              background: '#fef2f2', 
+              border: '1px solid #fecaca', 
+              color: '#dc2626', 
+              padding: '0.75rem 1rem', 
+              borderRadius: '0.5rem', 
+              marginBottom: '1.5rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <AlertCircle size={16} />
+              Before selecting schedule consult the assigned admin
+            </div>
+
             <p style={{ color: 'royalblue', marginBottom: '1.5rem' }}>
               Select an available pickup schedule for your product
             </p>
@@ -488,6 +505,23 @@ export default function BuyerPickupSchedule({ orderId, productId, delivery, isFu
         </div>
         
         <div style={{ marginBottom: '1rem' }}>
+          {/* Warning Message */}
+          <div style={{ 
+            background: '#fef2f2', 
+            border: '1px solid #fecaca', 
+            color: '#dc2626', 
+            padding: '0.75rem 1rem', 
+            borderRadius: '0.5rem', 
+            marginBottom: '1rem',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <AlertCircle size={16} />
+            Before selecting schedule consult the assigned admin
+          </div>
+
           <p style={{ color: 'darkblue', marginBottom: '0.75rem' }}>
             Your order is ready for pickup! The seller has scheduled a delivery, and now you can book a pickup slot.
           </p>

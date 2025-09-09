@@ -208,6 +208,27 @@ export default function BuyerPickupBooking({ productId, deliveryId, onBookingCom
         <p className="text-gray-600">Select an available pickup schedule for your product</p>
       </div>
 
+      {/* Warning Message */}
+      <div style={{ 
+        background: '#fef2f2', 
+        border: '1px solid #fecaca', 
+        color: '#dc2626', 
+        padding: '0.75rem 1rem', 
+        borderRadius: '0.5rem', 
+        marginBottom: '1.5rem',
+        fontWeight: '500',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem'
+      }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Before selecting schedule consult the assigned admin
+      </div>
+
       {/* Error and Success Messages */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
