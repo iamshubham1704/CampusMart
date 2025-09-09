@@ -485,6 +485,11 @@ const BuyerDashboard = () => {
     isCartOpen
   } = useCart();
   const { buyer, loading: buyerLoading, error: buyerError, updateProfile: updateBuyerProfile } = useBuyer();
+  // Promo slideshow state
+  const promoSlides = [
+    '5% discount if you follow our insta page campusmart.store and show us at the time of delivery'
+  ];
+  const [promoIndex, setPromoIndex] = useState(0);
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 10000 },
     conditions: [],
@@ -571,6 +576,15 @@ const BuyerDashboard = () => {
       return;
     }
   }, []);
+
+  // Auto-rotate promo banner
+  useEffect(() => {
+    if (promoSlides.length <= 1) return;
+    const id = setInterval(() => {
+      setPromoIndex((prev) => (prev + 1) % promoSlides.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [promoSlides.length]);
 
   // Mouse tracking effect
   useEffect(() => {
@@ -1038,6 +1052,93 @@ const BuyerDashboard = () => {
           </div>
         </div>
       </header>
+
+      {/* Promo Slideshow Banner */}
+      <div
+        className="promoSlideshow"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          padding: '10px 16px',
+          background:
+            'linear-gradient(90deg, rgba(2,6,23,1) 0%, rgba(15,23,42,1) 35%, rgba(30,41,59,1) 100%)',
+          borderBottom: '1px solid rgba(148,163,184,0.25)'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            minHeight: 56
+          }}
+        >
+          <span
+            aria-hidden
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 36,
+              borderRadius: 9999,
+              background:
+                'conic-gradient(from 180deg at 50% 50%, #f59e0b 0deg, #ef4444 120deg, #8b5cf6 240deg, #3b82f6 360deg)',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.12)'
+            }}
+          >
+            <Sparkles size={18} color="#fff" />
+          </span>
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: 1200,
+              height: 'auto'
+            }}
+          >
+            {promoSlides.map((text, idx) => (
+              <div
+                key={idx}
+                style={{
+                  transition: 'opacity 400ms ease, transform 400ms ease',
+                  position: idx === promoIndex ? 'relative' : 'absolute',
+                  inset: 0,
+                  opacity: idx === promoIndex ? 1 : 0,
+                  transform: `translateY(${idx === promoIndex ? 0 : 8}px)`
+                }}
+              >
+                <strong
+                  style={{
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: 18,
+                    letterSpacing: 0.2,
+                    textAlign: 'center',
+                    display: 'block',
+                    textShadow: '0 2px 8px rgba(0,0,0,0.35)'
+                  }}
+                >
+                  {text}
+                </strong>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    marginTop: 4,
+                    fontSize: 12,
+                    color: '#e5e7eb',
+                    fontWeight: 600,
+                    textShadow: '0 1px 4px rgba(0,0,0,0.35)'
+                  }}
+                >
+                  Follow us on Instagram: <span style={{ color: '#fde047', fontWeight: 900 }}>campusmart.store</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <div className="mainContent">
         {/* Sidebar */}
