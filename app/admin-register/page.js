@@ -1,13 +1,15 @@
-// app/admin-login/page.js
+// app/admin-registration/page.js
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function AdminLogin() {
+export default function AdminRegistration() {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,13 +27,31 @@ export default function AdminLogin() {
     setError('');
     setLoading(true);
 
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch('/api/admin/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        }),
       });
 
       const data = await response.json();
@@ -44,10 +64,10 @@ export default function AdminLogin() {
         // Redirect to admin dashboard
         router.push('/admin-dashboard');
       } else {
-        setError(data.error || 'Login failed');
+        setError(data.error || 'Registration failed');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Registration error:', error);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -76,7 +96,7 @@ export default function AdminLogin() {
           marginBottom: '2rem',
           color: '#333'
         }}>
-          Admin Login
+          Admin Registration
         </h1>
 
         {error && (
@@ -93,6 +113,31 @@ export default function AdminLogin() {
         )}
 
         <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+
           <div style={{ marginBottom: '1rem' }}>
             <label style={{
               display: 'block',
@@ -118,7 +163,7 @@ export default function AdminLogin() {
             />
           </div>
 
-          <div style={{ marginBottom: '2rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
             <label style={{
               display: 'block',
               marginBottom: '0.5rem',
@@ -143,13 +188,38 @@ export default function AdminLogin() {
             />
           </div>
 
+          <div style={{ marginBottom: '2rem' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
             style={{
               width: '100%',
               padding: '0.75rem',
-              backgroundColor: loading ? '#ccc' : '#007bff',
+              backgroundColor: loading ? '#ccc' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -158,7 +228,7 @@ export default function AdminLogin() {
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
 
@@ -167,15 +237,15 @@ export default function AdminLogin() {
           marginTop: '1rem',
           color: '#666'
         }}>
-          Don't have an admin account?{' '}
+          Already have an admin account?{' '}
           <Link 
-            href="/admin-register"
+            href="/admin-login"
             style={{
               color: '#007bff',
               textDecoration: 'none'
             }}
           >
-            Register here
+            Login here
           </Link>
         </div>
       </div>

@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from './OrderHistory.module.css'; // Correct import for CSS Modules
 import {
   Package,
@@ -21,8 +22,11 @@ import {
   Shield, // Added for Admin icon
 } from 'lucide-react';
 import Link from 'next/link';
+import BuyerPickupSchedule from '@/components/BuyerPickupSchedule';
 
-const OrderHistory = () => {
+// Component that uses useSearchParams
+const OrderHistoryContent = () => {
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,12 +88,12 @@ const OrderHistory = () => {
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.data && data.data.orders) {
         setOrders(data.data.orders || []);
         setTotalPages(data.data.pagination?.totalPages || 1);
         setCurrentPage(page);
-        
+
         // Fetch admin details for each order
         fetchAdminDetailsForOrders(data.data.orders, token);
       } else {
@@ -108,7 +112,7 @@ const OrderHistory = () => {
   const fetchAdminDetailsForOrders = async (orders, token) => {
     console.log('🔄 Fetching admin details for', orders.length, 'orders');
     const adminDetailsMap = {};
-    
+
     for (const order of orders) {
       try {
         console.log('🔍 Fetching admin details for order:', order._id);
@@ -133,7 +137,7 @@ const OrderHistory = () => {
         console.error('❌ Error fetching admin details for order:', order._id, error);
       }
     }
-    
+
     console.log('📋 Final admin details map:', adminDetailsMap);
     setAdminDetails(adminDetailsMap);
   };
@@ -188,17 +192,17 @@ const OrderHistory = () => {
 
   const filteredOrders = orders.filter(order => {
     if (!searchQuery) return true;
-    
+
     const searchLower = searchQuery.toLowerCase();
     const productTitle = order.product?.title?.toLowerCase() || '';
     const adminName = adminDetails[order._id]?.admin?.name?.toLowerCase() || '';
     const adminEmail = adminDetails[order._id]?.admin?.email?.toLowerCase() || '';
     const statusMessage = order.statusMessage?.toLowerCase() || '';
-    
+
     return productTitle.includes(searchLower) ||
-           adminName.includes(searchLower) ||
-           adminEmail.includes(searchLower) ||
-           statusMessage.includes(searchLower);
+      adminName.includes(searchLower) ||
+      adminEmail.includes(searchLower) ||
+      statusMessage.includes(searchLower);
   });
 
   const getStatusInfo = (status) => {
@@ -262,8 +266,9 @@ const OrderHistory = () => {
           <h1>Order History</h1>
           <p>Track all your orders and their current status.</p>
         </div>
+
         <div className={styles.headerRight}>
-          <button 
+          <button
             className={`${styles.refreshButton} ${refreshing ? styles.refreshing : ''}`}
             onClick={refreshOrders}
             disabled={refreshing}
@@ -271,7 +276,7 @@ const OrderHistory = () => {
             <RefreshCw size={18} className={refreshing ? styles.spinning : ''} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
-          <button 
+          <button
             className={`${styles.refreshAdminButton} ${styles.headerRefreshAdmin}`}
             onClick={async () => {
               if (orders.length > 0) {
@@ -291,6 +296,9 @@ const OrderHistory = () => {
             <Shield size={18} />
           </button>
         </div>
+      </div>
+      <div style={{ color: 'red', fontWeight: 'bold', fontSize: '24px' }}>
+        Before Scheduling Consult Assigned Admin
       </div>
 
       <div className={styles.filtersSection}>
@@ -334,19 +342,26 @@ const OrderHistory = () => {
         </div>
       )}
 
+      {searchParams.get('pickupBooked') === 'true' && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 mb-6">
+          <CheckCircle size={20} />
+          <span>Pickup slot booked successfully! You can view your pickup schedule below.</span>
+        </div>
+      )}
+
       <div className={styles.ordersList}>
         {filteredOrders.length === 0 ? (
           <div className={styles.noOrders}>
             <Package size={64} />
             <h3>No Orders Found</h3>
             <p>
-              {searchQuery || selectedStatus !== 'all' 
+              {searchQuery || selectedStatus !== 'all'
                 ? 'Try adjusting your search or filters.'
                 : "You haven't placed any orders yet. Start shopping to see them here!"
               }
             </p>
             {searchQuery || selectedStatus !== 'all' ? (
-              <button 
+              <button
                 className={styles.clearFiltersButton}
                 onClick={() => {
                   setSearchQuery('');
@@ -367,99 +382,99 @@ const OrderHistory = () => {
             const statusInfo = getStatusInfo(order.status);
             const StatusIcon = statusInfo.icon;
             const orderAdminDetails = adminDetails[order._id];
-            
-            return (
-            <div key={order._id} className={`${styles.orderCard} ${styles[statusInfo.color]}`}>
-              <div className={styles.orderHeader}>
-                <div className={styles.orderInfo}>
-                  <h3 className={styles.productTitle}>
-                    {order.product?.title || 'Product Not Found'}
-                  </h3>
-                  <div className={styles.orderMeta}>
-                    <span>Order #{order._id.toString().slice(-8).toUpperCase()}</span>
-                    <span><Calendar size={14} />{formatDate(order.createdAt)}</span>
-                  </div>
-                </div>
-                <div className={styles.orderHeaderRight}>
-                  <div className={`${styles.statusBadge} ${styles[statusInfo.color]}`}>
-                    <StatusIcon size={16} />
-                    {order.statusMessage}
-                  </div>
-                  <button
-                    className={styles.refreshAdminButton}
-                    onClick={() => refreshAdminDetailsForOrder(order._id)}
-                    title="Refresh admin details"
-                    disabled={refreshingAdmin[order._id]}
-                  >
-                    <RefreshCw size={14} />
-                    {refreshingAdmin[order._id] && <span className={styles.spinningDot}></span>}
-                  </button>
-                </div>
-              </div>
 
-              <div className={styles.orderContent}>
-                <div className={styles.productSection}>
-                  <div className={styles.productImage}>
-                    {order.product?.image && order.product.image !== 'https://via.placeholder.com/80x80?text=No+Image' ? (
-                      <img 
-                        src={order.product.image} 
-                        alt={order.product.title || 'Product'}
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/100x100?text=No+Image'; }}
-                      />
-                    ) : (
-                      <div className={styles.noImage}><Package size={32} /></div>
-                    )}
+            return (
+              <div key={order._id} className={`${styles.orderCard} ${styles[statusInfo.color]}`}>
+                <div className={styles.orderHeader}>
+                  <div className={styles.orderInfo}>
+                    <h3 className={styles.productTitle}>
+                      {order.product?.title || 'Product Not Found'}
+                    </h3>
+                    <div className={styles.orderMeta}>
+                      <span>Order #{order._id.toString().slice(-8).toUpperCase()}</span>
+                      <span><Calendar size={14} />{formatDate(order.createdAt)}</span>
+                    </div>
                   </div>
-                  <div className={styles.productDetails}>
-                    <div className={styles.productMetaTags}>
-                      <span className={styles.category}><Tag size={14}/>{order.product?.category || 'Unknown'}</span>
-                      {order.product?.condition && (
-                        <span className={styles.condition}>{order.product.condition}</span>
+                  <div className={styles.orderHeaderRight}>
+                    <div className={`${styles.statusBadge} ${styles[statusInfo.color]}`}>
+                      <StatusIcon size={16} />
+                      {order.statusMessage}
+                    </div>
+                    <button
+                      className={styles.refreshAdminButton}
+                      onClick={() => refreshAdminDetailsForOrder(order._id)}
+                      title="Refresh admin details"
+                      disabled={refreshingAdmin[order._id]}
+                    >
+                      <RefreshCw size={14} />
+                      {refreshingAdmin[order._id] && <span className={styles.spinningDot}></span>}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.orderContent}>
+                  <div className={styles.productSection}>
+                    <div className={styles.productImage}>
+                      {order.product?.image && order.product.image !== 'https://via.placeholder.com/80x80?text=No+Image' ? (
+                        <img
+                          src={order.product.image}
+                          alt={order.product.title || 'Product'}
+                          onError={(e) => { e.target.src = 'https://via.placeholder.com/100x100?text=No+Image'; }}
+                        />
+                      ) : (
+                        <div className={styles.noImage}><Package size={32} /></div>
                       )}
                     </div>
-                     {order.product?.description && (
-                       <p className={styles.productDescription}>{order.product.description}</p>
-                     )}
-                     {!order.product?.title && (
-                       <p className={styles.productDescription} style={{color: '#ef4444'}}>
-                         ⚠️ Product details could not be loaded.
-                       </p>
-                     )}
-                  </div>
-                </div>
-
-                <div className={styles.orderDetails}>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}><DollarSign size={16}/>Amount Paid</span>
-                    <span className={`${styles.value} ${styles.amount}`}>₹{order.amount}</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                     <span className={styles.label}><Shield size={16}/>Assigned Admin</span>
-                     {orderAdminDetails?.hasAssignedAdmin && orderAdminDetails.admin ? (
-                       <span className={`${styles.value} ${styles.adminName}`}>
-                         {orderAdminDetails.admin.name}
-                       </span>
-                     ) : (
-                       <span className={`${styles.value} ${styles.noAdmin}`}>
-                         Not assigned yet
-                       </span>
-                     )}
-                  </div>
-                  {refreshingAdmin[order._id] && (
-                    <div className={styles.adminRefreshing}>
-                      <RefreshCw size={12} className={styles.spinning} />
-                      <span>Refreshing admin details...</span>
+                    <div className={styles.productDetails}>
+                      <div className={styles.productMetaTags}>
+                        <span className={styles.category}><Tag size={14} />{order.product?.category || 'Unknown'}</span>
+                        {order.product?.condition && (
+                          <span className={styles.condition}>{order.product.condition}</span>
+                        )}
+                      </div>
+                      {order.product?.description && (
+                        <p className={styles.productDescription}>{order.product.description}</p>
+                      )}
+                      {!order.product?.title && (
+                        <p className={styles.productDescription} style={{ color: '#ef4444' }}>
+                          ⚠️ Product details could not be loaded.
+                        </p>
+                      )}
                     </div>
-                  )}
-                   <div className={styles.detailRow}>
-                      <span className={styles.label}><Phone size={16}/>Contact</span>
+                  </div>
+
+                  <div className={styles.orderDetails}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.label}><DollarSign size={16} />Amount Paid</span>
+                      <span className={`${styles.value} ${styles.amount}`}>₹{order.amount}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.label}><Shield size={16} />Assigned Admin</span>
+                      {orderAdminDetails?.hasAssignedAdmin && orderAdminDetails.admin ? (
+                        <span className={`${styles.value} ${styles.adminName}`}>
+                          {orderAdminDetails.admin.name}
+                        </span>
+                      ) : (
+                        <span className={`${styles.value} ${styles.noAdmin}`}>
+                          Not assigned yet
+                        </span>
+                      )}
+                    </div>
+                    {refreshingAdmin[order._id] && (
+                      <div className={styles.adminRefreshing}>
+                        <RefreshCw size={12} className={styles.spinning} />
+                        <span>Refreshing admin details...</span>
+                      </div>
+                    )}
+                    <div className={styles.detailRow}>
+                      <span className={styles.label}><Phone size={16} />Contact</span>
                       <div className={styles.contactInfo}>
                         {orderAdminDetails?.hasAssignedAdmin && orderAdminDetails.admin ? (
                           <div className={styles.contactDetails}>
                             <div className={styles.contactItem}>
                               <Mail size={14} />
-                              <a 
-                                href={`mailto:${orderAdminDetails.admin.email}`} 
+                              <a
+                                href={`mailto:${orderAdminDetails.admin.email}`}
                                 className={styles.contactText}
                                 title="Click to send email"
                               >
@@ -469,8 +484,8 @@ const OrderHistory = () => {
                             {orderAdminDetails.admin.phone && (
                               <div className={styles.contactItem}>
                                 <Phone size={14} />
-                                <a 
-                                  href={`tel:${orderAdminDetails.admin.phone}`} 
+                                <a
+                                  href={`tel:${orderAdminDetails.admin.phone}`}
                                   className={styles.contactText}
                                   title="Click to call"
                                 >
@@ -483,10 +498,10 @@ const OrderHistory = () => {
                           <span className={styles.noContact}>Contact admin support</span>
                         )}
                       </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
+
                 {order.status === 'payment_rejected' && (
                   <div className={`${styles.orderActions} ${styles.error}`}>
                     <AlertCircle size={18} />
@@ -505,8 +520,18 @@ const OrderHistory = () => {
                     <span>Order successfully delivered! Thank you for shopping with us.</span>
                   </div>
                 )}
-            </div>
-          )})
+
+                {/* Pickup Schedule Section */}
+                {(order.status === 'will_be_delivered_soon' || order.status === 'delivered' || order.status === 'payment_verified') && (
+                  <BuyerPickupSchedule
+                    orderId={order._id}
+                    productId={order.product?._id}
+                    delivery={order.delivery}
+                  />
+                )}
+              </div>
+            )
+          })
         )}
       </div>
 
@@ -534,6 +559,25 @@ const OrderHistory = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Loading fallback component
+const OrderHistoryFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="text-center">
+      <RefreshCw size={48} className="animate-spin mx-auto mb-4" />
+      <p>Loading order history...</p>
+    </div>
+  </div>
+);
+
+// Main component wrapped in Suspense
+const OrderHistory = () => {
+  return (
+    <Suspense fallback={<OrderHistoryFallback />}>
+      <OrderHistoryContent />
+    </Suspense>
   );
 };
 

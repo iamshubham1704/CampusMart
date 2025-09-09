@@ -94,8 +94,10 @@ export async function POST(req) {
     const token = jwt.sign(
       { 
         sellerId: seller._id.toString(),
+        userId: seller._id.toString(), // For compatibility
         email: seller.email,
-        name: seller.name
+        name: seller.name,
+        role: 'seller' // ✅ Add the missing role field
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
