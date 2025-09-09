@@ -13,80 +13,53 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const available = searchParams.get('available'); // 'true' to get users not yet assigned
     const type = searchParams.get('type'); // 'seller' or 'buyer'
-    const search = searchParams.get('search'); // Search by name or email
+    const search = searchParams.get('search'); // Search text
+    const limitParam = parseInt(searchParams.get('limit') || '200', 10);
 
     const client = await clientPromise;
     const db = client.db('campusmart');
 
-    let filter = {};
-    
-    // Filter by user type if specified
-    if (type) {
-      filter.role = type;
-    }
-
-    // Search filter
+    // Build filters for buyers and sellers separately
+    const buildFilter = () => {
+      const f = {};
     if (search) {
-      filter.$or = [
+        f.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
-        { college: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    // If available=true, exclude users already assigned to any admin team
-    if (available === 'true') {
-      const assignedUserIds = await db.collection('admin_team_assignments')
-        .find({ status: 'active' })
-        .project({ userId: 1 })
-        .toArray();
-      
-      if (assignedUserIds.length > 0) {
-        const assignedIds = assignedUserIds.map(a => a.userId);
-        filter._id = { $nin: assignedIds };
+          { college: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } }
+        ];
       }
-    }
+      return f;
+    };
 
-    // Get users with basic info (include only necessary fields)
-    const users = await db.collection('users')
-      .find(filter, {
-        projection: {
-          _id: 1,
-          name: 1,
-          email: 1,
-          phone: 1,
-          college: 1,
-          role: 1,
-          createdAt: 1
-        }
-      })
-      .sort({ createdAt: -1 })
-      .limit(100) // Limit results for performance
-      .toArray();
+    const projection = { _id: 1, name: 1, email: 1, phone: 1, college: 1, isActive: 1, createdAt: 1 };
 
-    // Add assignment status for each user
-    const usersWithStatus = await Promise.all(
-      users.map(async (user) => {
-        const assignment = await db.collection('admin_team_assignments').findOne({
-          userId: user._id,
-          status: 'active'
-        });
+    const shouldFetchBuyers = !type || type === 'buyer';
+    const shouldFetchSellers = !type || type === 'seller';
 
-        return {
-          ...user,
-          isAssigned: !!assignment,
-          assignedAdminId: assignment?.assignedAdminId || null,
-          assignmentStatus: assignment?.status || null
-        };
-      })
-    );
+    const [buyers, sellers] = await Promise.all([
+      shouldFetchBuyers
+        ? db.collection('buyers').find(buildFilter(), { projection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
+        : Promise.resolve([]),
+      shouldFetchSellers
+        ? db.collection('sellers').find(buildFilter(), { projection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
+        : Promise.resolve([])
+    ]);
+
+    // Normalize into a single list
+    const normalized = [
+      ...buyers.map(b => ({ ...b, role: 'buyer', userType: 'buyer' })),
+      ...sellers.map(s => ({ ...s, role: 'seller', userType: 'seller' }))
+    ]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, limitParam);
 
     return NextResponse.json({ 
       success: true, 
-      data: usersWithStatus,
-      total: usersWithStatus.length
+      data: normalized,
+      total: normalized.length
     }, { status: 200 });
   } catch (error) {
     console.error('GET /api/admin/users error:', error);
