@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function AlphaRegister() {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    phone: ''     // <-- added phone
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -28,7 +33,6 @@ export default function AlphaRegister() {
 
       const data = await response.json();
       if (response.ok) {
-        // store alpha details in localStorage
         localStorage.setItem('alphaData', JSON.stringify(data.alpha));
         router.push('/alpha-dashboard');
       } else {
@@ -118,6 +122,32 @@ export default function AlphaRegister() {
               value={formData.email}
               onChange={handleChange}
               required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                transition: 'border 0.3s'
+              }}
+              onFocus={(e) => (e.target.style.borderColor = '#667eea')}
+              onBlur={(e) => (e.target.style.borderColor = '#ddd')}
+            />
+          </div>
+
+          {/* New phone number field */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#555' }}>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              pattern="[0-9]{10}"
+              placeholder="Enter 10-digit phone number"
               style={{
                 width: '100%',
                 padding: '0.75rem',

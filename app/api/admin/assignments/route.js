@@ -76,7 +76,7 @@ export async function GET(request) {
           if (assignment.assignedTo) {
             assignedToAlpha = await db.collection("alphas").findOne(
               { _id: new ObjectId(assignment.assignedTo) },
-              { projection: { name: 1, email: 1 } } // Project only non-sensitive fields
+              { projection: { name: 1, email: 1, phone:1 } } // Project only non-sensitive fields
             );
           }
 
@@ -231,6 +231,30 @@ export async function PUT(request) {
       ...updatedAssignment,
       buyer: buyer || {},
     };
+
+    // If admin marked delivery completed, create a payment request for the assigned alpha (if any)
+    try {
+      if (status === "completed" && updatedAssignment.assignedTo) {
+        const existing = await db.collection("alpha_payment_requests").findOne({
+          assignmentId: updatedAssignment._id,
+        });
+        if (!existing) {
+          const alphaId = updatedAssignment.assignedTo;
+          const amount = Number(updatedAssignment.alphaPaymentAmount || updatedAssignment.budget || 0);
+          await db.collection("alpha_payment_requests").insertOne({
+            assignmentId: updatedAssignment._id,
+            alphaId,
+            adminId: new ObjectId(decoded.adminId || decoded.userId),
+            amount,
+            status: "pending", // pending payout request for alpha to manage
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to create alpha payment request:", e);
+    }
 
     console.log("✅ Assignment updated:", {
       assignmentId: assignmentObjectId.toString(),

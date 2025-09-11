@@ -79,7 +79,8 @@ export async function PUT(request) {
         $set: {
           assignedTo: new ObjectId(alphaId),
           assignedToName: alphaName, // Assign the alpha's name
-          status: "in progress",
+          // Mark as pending until alpha accepts
+          status: "pending",
           updatedAt: new Date(),
         },
       }

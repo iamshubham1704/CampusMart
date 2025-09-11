@@ -709,3 +709,69 @@
   }
 }
 
+.notificationStyles {
+  .notificationsSection {
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05)
+  }
+  .notificationHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .closeNotifications {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0.25rem;
+  }
+  .notificationsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .notificationItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #fff;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  .notificationIcon {
+    flex-shrink: 0
+  }
+  .notificationContent {
+    flex: 1
+  }
+  .notificationMessage {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #111827;
+    font-weight: 500;
+  }
+  .notificationTime:\ {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+}
+
+.completionIndicatorStyle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+};

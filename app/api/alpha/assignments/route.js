@@ -97,6 +97,7 @@ export async function POST(request) {
             buyerRole: { $arrayElemAt: ['$buyer.role', 0] },
             assignedBy: { $arrayElemAt: ['$admin.name', 0] },
             assignedByEmail: { $arrayElemAt: ['$admin.email', 0] },
+            assignedByPhone: { $arrayElemAt: ['$admin.phone', 0] }, // <-- ✅ Added phone
             createdAt: 1,
             updatedAt: 1,
           }

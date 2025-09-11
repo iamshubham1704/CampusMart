@@ -48,10 +48,13 @@ const AdminAssignmentsPage = () => {
     adminNotes: "",
   });
   const [submitting, setSubmitting] = useState(false);
-
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false); // New state for assign modal
-  const [alphas, setAlphas] = useState([]); // New state for alphas
-  const [selectedAlpha, setSelectedAlpha] = useState(""); // New state for selected alpha
+  const [recentUpdates, setRecentUpdates] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(new Date());
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [alphas, setAlphas] = useState([]);
+  const [selectedAlpha, setSelectedAlpha] = useState("");
+  const [paymentRequestsCount, setPaymentRequestsCount] = useState(0);
 
   const statusOptions = [
     { value: "all", label: "All Statuses", color: "text-gray-600" },
@@ -62,8 +65,11 @@ const AdminAssignmentsPage = () => {
     { value: "cancelled", label: "Cancelled", color: "text-red-600" },
   ];
 
+  // ALL useEffect hooks must be at the top level, before any conditional logic
   useEffect(() => {
     checkAuthAndFetchProfile();
+    fetchAlphas();
+    fetchPaymentRequestsCount();
   }, []);
 
   useEffect(() => {
@@ -73,18 +79,19 @@ const AdminAssignmentsPage = () => {
   }, [assignments, searchTerm, statusFilter]);
 
   useEffect(() => {
-    checkAuthAndFetchProfile();
-    fetchAlphas(); // Fetch alphas when component mounts
-  }, []);
+    const interval = setInterval(() => {
+      fetchRecentUpdates();
+    }, 30000); // Poll every 30 seconds
 
-  // ... (inside the component)
+    return () => clearInterval(interval);
+  }, [lastFetchTime]);
 
+  // Helper functions
   const fetchAlphas = async () => {
     try {
       const token = getStoredToken("admin");
       if (!token) return;
       const response = await fetch("/api/alpha/list", {
-        // New API endpoint
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -101,9 +108,85 @@ const AdminAssignmentsPage = () => {
     }
   };
 
+  const fetchRecentUpdates = async () => {
+    try {
+      const token = getStoredToken("admin");
+      if (!token) return;
+
+      const response = await fetch(
+        `/api/admin/recent-updates?since=${lastFetchTime.toISOString()}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.updates && data.updates.length > 0) {
+          setRecentUpdates((prev) => [...data.updates, ...prev].slice(0, 10));
+          setShowNotifications(true);
+          fetchAssignments();
+          fetchPaymentRequestsCount();
+        }
+        setLastFetchTime(new Date());
+      }
+    } catch (error) {
+      console.error("Error fetching recent updates:", error);
+    }
+  };
+
+  const fetchPaymentRequestsCount = async () => {
+    try {
+      const token = getStoredToken("admin");
+      if (!token) return;
+      const res = await fetch(`/api/admin/alpha-payments?status=all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const items = data?.data || [];
+      const count = items.filter((p) => p.status === "pending" || p.status === "requested").length;
+      setPaymentRequestsCount(count);
+    } catch (e) {
+      // Non-fatal
+    }
+  };
+
+  const handleCompleteDelivery = async (assignmentId) => {
+    try {
+      setSubmitting(true);
+      setError("");
+      setSuccess("");
+      const token = getStoredToken("admin");
+      const response = await fetch("/api/admin/assignments", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ assignmentId, status: "completed" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to complete delivery");
+      }
+      setSuccess("Delivery marked as completed. Payment request created.");
+      setAssignments((prev) => prev.map((a) => (a._id === assignmentId ? { ...a, ...data.data } : a)));
+      fetchPaymentRequestsCount();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleOpenAssignModal = (assignment) => {
     setSelectedAssignment(assignment);
-    setSelectedAlpha(assignment.alpha?._id || ""); // Pre-select if already assigned
+    setSelectedAlpha(assignment.assignedToAlpha?._id || "");
     setIsAssignModalOpen(true);
   };
 
@@ -119,7 +202,6 @@ const AdminAssignmentsPage = () => {
       setSuccess("");
       const token = getStoredToken("admin");
       const response = await fetch("/api/alpha/assign-alpha", {
-        // New API endpoint
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -136,7 +218,6 @@ const AdminAssignmentsPage = () => {
       }
       const data = await response.json();
       setSuccess("Alpha assigned successfully!");
-      // Update the assignment in the local state
       setAssignments((prev) =>
         prev.map((assignment) =>
           assignment._id === selectedAssignment._id
@@ -224,14 +305,12 @@ const AdminAssignmentsPage = () => {
   const filterAssignments = () => {
     let filtered = assignments;
 
-    // Apply status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter(
         (assignment) => assignment.status === statusFilter
       );
     }
 
-    // Apply search filter
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -292,7 +371,6 @@ const AdminAssignmentsPage = () => {
       const data = await response.json();
       setSuccess("Assignment updated successfully!");
 
-      // Update the assignment in the local state
       setAssignments((prev) =>
         prev.map((assignment) =>
           assignment._id === selectedAssignment._id
@@ -385,6 +463,7 @@ const AdminAssignmentsPage = () => {
     }
   };
 
+  // Early return for loading state - AFTER all hooks
   if (loading) {
     return (
       <div className={styles["admin-assignments-page"]}>
@@ -408,6 +487,59 @@ const AdminAssignmentsPage = () => {
           <h1>Assignment Management</h1>
         </div>
       </div>
+
+      {/* Notifications Section */}
+      {showNotifications && recentUpdates.length > 0 && (
+        <div className={styles["notifications-section"]}>
+          <div className={styles["notification-header"]}>
+            <h3>Recent Updates</h3>
+            <button
+              className={styles["close-notifications"]}
+              onClick={() => setShowNotifications(false)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className={styles["notifications-list"]}>
+            {recentUpdates.slice(0, 5).map((update, index) => (
+              <div key={index} className={styles["notification-item"]}>
+                <div className={styles["notification-icon"]}>
+                  {update.type === "completed" && (
+                    <CheckCircle2 size={16} className="text-green-600" />
+                  )}
+                  {update.type === "status_change" && (
+                    <Clock size={16} className="text-blue-600" />
+                  )}
+                </div>
+                <div className={styles["notification-content"]}>
+                  <p className={styles["notification-message"]}>
+                    {update.message}
+                  </p>
+                  <span className={styles["notification-time"]}>
+                    {new Date(update.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Error/Success Messages */}
+      {error && (
+        <div className={styles["error-message"]}>
+          <AlertCircle size={16} />
+          {error}
+          <button onClick={() => setError("")}>×</button>
+        </div>
+      )}
+      {success && (
+        <div className={styles["success-message"]}>
+          <CheckCircle size={16} />
+          {success}
+          <button onClick={() => setSuccess("")}>×</button>
+        </div>
+      )}
 
       {/* Stats Section */}
       <div className={styles["stats-section"]}>
@@ -451,6 +583,15 @@ const AdminAssignmentsPage = () => {
             <p>Completed</p>
           </div>
         </div>
+        <div className={styles["stat-card"]}>
+          <div className={styles["stat-icon"]}>
+            <DollarSign size={24} />
+          </div>
+          <div className={styles["stat-content"]}>
+            <h3>{paymentRequestsCount}</h3>
+            <p>Payment Requests</p>
+          </div>
+        </div>
       </div>
 
       {/* Filters and Search */}
@@ -490,7 +631,12 @@ const AdminAssignmentsPage = () => {
         ) : (
           <div className={styles["assignments-list"]}>
             {filteredAssignments.map((assignment) => (
-              <div key={assignment._id} className={styles["assignment-card"]}>
+              <div
+                key={assignment._id}
+                className={`${styles["assignment-card"]} ${
+                  assignment.status === "completed" ? styles.completed : ""
+                }`}
+              >
                 <div className={styles["assignment-header"]}>
                   <div className={styles["assignment-type"]}>
                     <FileText size={20} />
@@ -542,6 +688,21 @@ const AdminAssignmentsPage = () => {
                     )}
                   </div>
 
+                  {/* Completion Indicator */}
+                  {assignment.status === "completed" &&
+                    assignment.completedAt && (
+                      <div className={styles["completion-indicator"]}>
+                        <CheckCircle2 size={16} />
+                        <span>
+                          Completed on{" "}
+                          {new Date(
+                            assignment.completedAt
+                          ).toLocaleDateString()}
+                          {assignment.completedByAlpha && " by Alpha"}
+                        </span>
+                      </div>
+                    )}
+
                   {/* Buyer Information */}
                   <div className={styles["buyer-info"]}>
                     <h4>Buyer Details:</h4>
@@ -578,6 +739,7 @@ const AdminAssignmentsPage = () => {
                   </div>
 
                   {/* Assigned Alpha Information */}
+                  {/* Assigned Alpha Information */}
                   {assignment.assignedToAlpha && (
                     <div className={styles["buyer-info"]}>
                       <h4>Alpha Details:</h4>
@@ -593,6 +755,12 @@ const AdminAssignmentsPage = () => {
                           <span>
                             <strong>Email:</strong>{" "}
                             {assignment.assignedToAlpha.email || "N/A"}
+                          </span>
+                        </div>
+                        <div className={styles["buyer-item"]}>
+                          <span>
+                            <strong>Phone:</strong>{" "}
+                            {assignment.assignedToAlpha.phone || "N/A"}
                           </span>
                         </div>
                       </div>
@@ -675,6 +843,22 @@ const AdminAssignmentsPage = () => {
                       <Users size={16} />
                       Assign Alpha
                     </button>
+                    {assignment.status === "alpha_completed" && (
+                      <button
+                        className={`${styles["action-button"]}`}
+                        onClick={() => handleCompleteDelivery(assignment._id)}
+                        disabled={submitting}
+                      >
+                        <CheckCircle2 size={16} />
+                        Complete Delivery
+                      </button>
+                    )}
+                    {assignment.status === "completed" && (
+                      <button className={`${styles["action-button"]}`} disabled>
+                        <CheckCircle2 size={16} />
+                        Delivery Completed
+                      </button>
+                    )}
                     <button
                       className={`${styles["action-button"]} ${styles.delete}`}
                       onClick={() => handleDeleteAssignment(assignment._id)}
@@ -739,20 +923,6 @@ const AdminAssignmentsPage = () => {
               onSubmit={handleUpdateAssignment}
               className={styles["edit-form"]}
             >
-              {error && (
-                <div className={styles["error-message"]}>
-                  <AlertCircle size={16} />
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className={styles["success-message"]}>
-                  <CheckCircle size={16} />
-                  {success}
-                </div>
-              )}
-
               <div className={styles["form-group"]}>
                 <label>Assignment Title</label>
                 <input

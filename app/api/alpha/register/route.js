@@ -11,12 +11,12 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    const { name, email, password } = body;
+    const { name, email, password, phone } = body; // <-- added phone
 
     // Validate required fields
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone) {
       return Response.json(
-        { error: "All fields are required" },
+        { error: "All fields (name, email, password, phone) are required" },
         { status: 400 }
       );
     }
@@ -31,6 +31,15 @@ export async function POST(req) {
     if (password.length < 6) {
       return Response.json(
         { error: "Password must be at least 6 characters long" },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone number format (basic)
+    const phoneRegex = /^[0-9]{10}$/; // expecting 10 digits
+    if (!phoneRegex.test(phone)) {
+      return Response.json(
+        { error: "Invalid phone number. Must be 10 digits." },
         { status: 400 }
       );
     }
@@ -58,10 +67,23 @@ export async function POST(req) {
       );
     }
 
+    // Check if phone number already used (optional)
+    const existingPhone = await alphasCollection.findOne({
+      phone: phone.trim(),
+    });
+
+    if (existingPhone) {
+      return Response.json(
+        { error: "Alpha already exists with this phone number" },
+        { status: 409 }
+      );
+    }
+
     // Create alpha data object
     const alphaData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
+      phone: phone.trim(),              // <-- added phone here
       password: hashedPassword,
       role: "alpha",
       isActive: true,
@@ -79,6 +101,7 @@ export async function POST(req) {
         alpha: {
           name: alphaData.name,
           email: alphaData.email,
+          phone: alphaData.phone,    // <-- also return phone
           role: alphaData.role,
           createdAt: alphaData.createdAt,
         },
@@ -91,7 +114,7 @@ export async function POST(req) {
     if (err.code === 11000) {
       return Response.json(
         {
-          error: "Alpha already exists with this email",
+          error: "Alpha already exists with this email or phone",
         },
         { status: 409 }
       );
