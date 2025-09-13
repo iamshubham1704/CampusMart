@@ -48,6 +48,7 @@ import WishlistModal from './wishlist/page';
 import Link from 'next/link';
 import { getStoredToken, isAuthenticated, redirectToLogin, clearAllTokens } from '../../lib/auth';
 import './BuyerDashboard.css';
+import './QuickFilters.css';
 
 const useBuyer = () => {
   const [buyer, setBuyer] = useState(null);
@@ -757,6 +758,17 @@ const BuyerDashboard = () => {
     }
   });
 
+  // Quick filter functions
+  const handleDrafterFilter = () => {
+    setSearchQuery('drafter');
+    setSelectedCategory('all');
+  };
+
+  const handleAkashFilter = () => {
+    setSearchQuery('akash');
+    setSelectedCategory('all');
+  };
+
   // Helper functions
   const handleWishlistToggle = async (product, event) => {
     event.stopPropagation();
@@ -1339,6 +1351,22 @@ const BuyerDashboard = () => {
             </div>
 
             <div className="viewControls">
+              {/* Quick filter buttons */}
+              <div className="quickFilters">
+                <button
+                  className={`quickFilterButton ${searchQuery.toLowerCase().includes('drafter') ? 'active' : ''}`}
+                  onClick={handleDrafterFilter}
+                >
+                  📐 Drafter
+                </button>
+                <button
+                  className={`quickFilterButton ${searchQuery.toLowerCase().includes('akash') ? 'active' : ''}`}
+                  onClick={handleAkashFilter}
+                >
+                  📖 Akash
+                </button>
+              </div>
+              
               <button
                 className={`filterToggle mobileOnly ${getActiveFilterCount() > 0 ? 'active' : ''}`}
                 onClick={openSidebar}
