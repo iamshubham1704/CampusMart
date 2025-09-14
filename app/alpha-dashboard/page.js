@@ -604,7 +604,7 @@ const updateAssignmentStatus = async (assignmentId, newStatus) => {
                             fontWeight: '600',
                             fontSize: '16px'
                           }}>
-                            ₹{assignment.finalPrice || assignment.budget || 'Not set'}
+                            ₹{assignment.alphaPrice || assignment.budget || 'Not set'}
                           </span>
                         </div>
                         {assignment.subject && (

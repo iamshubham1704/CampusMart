@@ -46,7 +46,8 @@ const AdminAssignmentsPage = () => {
     status: "",
     tentativeDeliveryDate: "",
     adminNotes: "",
-    finalPrice: "",
+    buyerPrice: "",
+    alphaPrice: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [recentUpdates, setRecentUpdates] = useState([]);
@@ -334,7 +335,8 @@ const AdminAssignmentsPage = () => {
         ? new Date(assignment.tentativeDeliveryDate).toISOString().split("T")[0]
         : "",
       adminNotes: assignment.adminNotes || "",
-      finalPrice: assignment.finalPrice || assignment.budget || "",
+      buyerPrice: assignment.buyerPrice || assignment.budget || "",
+      alphaPrice: assignment.alphaPrice || assignment.budget || "",
     });
     setIsEditModalOpen(true);
   };
@@ -347,8 +349,13 @@ const AdminAssignmentsPage = () => {
       return;
     }
 
-    if (!editFormData.finalPrice || editFormData.finalPrice <= 0) {
-      setError("Valid Alpha price is required");
+    if (!editFormData.buyerPrice || editFormData.buyerPrice <= 0) {
+      setError("Valid buyer price is required");
+      return;
+    }
+
+    if (!editFormData.alphaPrice || editFormData.alphaPrice <= 0) {
+      setError("Valid alpha price is required");
       return;
     }
 
@@ -392,7 +399,8 @@ const AdminAssignmentsPage = () => {
         status: "",
         tentativeDeliveryDate: "",
         adminNotes: "",
-        finalPrice: "",
+        buyerPrice: "",
+        alphaPrice: "",
       });
     } catch (error) {
       setError(error.message);
@@ -688,14 +696,19 @@ const AdminAssignmentsPage = () => {
                       <DollarSign size={16} />
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <span>Original Budget: ₹{assignment.budget}</span>
-                        {assignment.finalPrice && (
-                          <span style={{ color: '#059669', fontWeight: '600' }}>
-                            Alpha Price: ₹{assignment.finalPrice}
+                        {assignment.buyerPrice && (
+                          <span style={{ color: '#007bff', fontWeight: '600' }}>
+                            Buyer Price: ₹{assignment.buyerPrice}
                           </span>
                         )}
-                        {!assignment.finalPrice && (
+                        {assignment.alphaPrice && (
+                          <span style={{ color: '#059669', fontWeight: '600' }}>
+                            Alpha Price: ₹{assignment.alphaPrice}
+                          </span>
+                        )}
+                        {(!assignment.buyerPrice || !assignment.alphaPrice) && (
                           <span style={{ color: '#dc3545', fontSize: '0.8rem' }}>
-                            Alpha price not set
+                            Prices not set
                           </span>
                         )}
                       </div>
@@ -989,31 +1002,62 @@ const AdminAssignmentsPage = () => {
                 />
               </div>
 
-              <div className={styles["form-group"]}>
-                <label>Alpha Price (₹) *</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className={styles["form-row"]}>
+                <div className={styles["form-group"]}>
+                  <label>Buyer Price (₹) *</label>
                   <input
                     type="number"
-                    value={editFormData.finalPrice}
+                    value={editFormData.buyerPrice}
                     onChange={(e) =>
                       setEditFormData((prev) => ({
                         ...prev,
-                        finalPrice: e.target.value,
+                        buyerPrice: e.target.value,
                       }))
                     }
-                    placeholder="Enter Alpha price"
+                    placeholder="Enter buyer price"
                     min="0"
                     step="0.01"
                     required
-                    style={{ flex: 1 }}
                   />
-                  <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                    Original: ₹{selectedAssignment.budget}
-                  </div>
+                  <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                    What buyer will pay (visible to buyer)
+                  </small>
                 </div>
-                <small style={{ color: '#666', fontSize: '0.8rem' }}>
-                  This is the final price that will be shown to Alpha users. Buyers will only see their original budget.
-                </small>
+                <div className={styles["form-group"]}>
+                  <label>Alpha Price (₹) *</label>
+                  <input
+                    type="number"
+                    value={editFormData.alphaPrice}
+                    onChange={(e) =>
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        alphaPrice: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter alpha price"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                  <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                    What alpha will receive (visible to alpha)
+                  </small>
+                </div>
+              </div>
+              
+              <div style={{ 
+                backgroundColor: '#f8f9fa', 
+                padding: '10px', 
+                borderRadius: '6px', 
+                marginBottom: '20px',
+                border: '1px solid #e9ecef'
+              }}>
+                <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '5px' }}>
+                  <strong>Original Budget:</strong> ₹{selectedAssignment.budget}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                  <strong>Profit Margin:</strong> ₹{(parseFloat(editFormData.buyerPrice || 0) - parseFloat(editFormData.alphaPrice || 0)).toFixed(2)}
+                </div>
               </div>
 
               <div className={styles["form-group"]}>

@@ -389,7 +389,19 @@ const AssignmentsPage = () => {
                     )}
                     <div className={styles['detail-item']}>
                       <DollarSign size={16} />
-                      <span>Budget: ₹{assignment.budget}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span>Your Budget: ₹{assignment.budget}</span>
+                        {assignment.buyerPrice && (
+                          <span style={{ color: '#059669', fontWeight: '600', fontSize: '0.9rem' }}>
+                            Final Price: ₹{assignment.buyerPrice}
+                          </span>
+                        )}
+                        {!assignment.buyerPrice && (
+                          <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                            Final price pending admin review
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {assignment.location && (
                       <div className={styles['detail-item']}>

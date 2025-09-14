@@ -221,8 +221,9 @@ export async function POST(request) {
       description: description || '',
       type,
       deadline: deadline ? new Date(deadline) : null,
-      budget: parseFloat(budget),
-      finalPrice: null, // Will be set by admin
+      budget: parseFloat(budget), // Original budget set by buyer
+      buyerPrice: null, // Will be set by admin (what buyer pays)
+      alphaPrice: null, // Will be set by admin (what alpha receives)
       location: location || '',
       additionalRequirements: additionalRequirements || '',
       pdfUrl: pdfUrl || '',
