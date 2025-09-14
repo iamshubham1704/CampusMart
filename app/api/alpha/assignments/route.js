@@ -89,6 +89,7 @@ export async function POST(request) {
             subject: 1,
             deadline: 1,
             budget: 1,
+            finalPrice: 1,
             location: 1,
             additionalRequirements: 1,
             pdfUrl: 1,

@@ -180,7 +180,6 @@ export async function POST(request) {
       title, 
       description, 
       type, 
-      subject, 
       deadline, 
       budget, 
       location, 
@@ -188,9 +187,9 @@ export async function POST(request) {
       pdfUrl 
     } = body;
 
-    if (!title || !type || !subject || !budget) {
+    if (!title || !type || !budget) {
       return NextResponse.json({ 
-        error: 'Title, type, subject, and budget are required' 
+        error: 'Title, type, and budget are required' 
       }, { status: 400 });
     }
 
@@ -221,9 +220,9 @@ export async function POST(request) {
       title,
       description: description || '',
       type,
-      subject,
       deadline: deadline ? new Date(deadline) : null,
       budget: parseFloat(budget),
+      finalPrice: null, // Will be set by admin
       location: location || '',
       additionalRequirements: additionalRequirements || '',
       pdfUrl: pdfUrl || '',

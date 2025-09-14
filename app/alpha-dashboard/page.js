@@ -596,6 +596,17 @@ const updateAssignmentStatus = async (assignmentId, newStatus) => {
                             ).toLocaleDateString()}
                           </span>
                         </div>
+                        <div style={taskDetailItemStyle}>
+                          <span style={taskDetailLabelStyle}>Price:</span>
+                          <span style={{ 
+                            ...taskDetailValueStyle, 
+                            color: '#059669', 
+                            fontWeight: '600',
+                            fontSize: '16px'
+                          }}>
+                            ₹{assignment.finalPrice || assignment.budget || 'Not set'}
+                          </span>
+                        </div>
                         {assignment.subject && (
                           <div style={taskDetailItemStyle}>
                             <span style={taskDetailLabelStyle}>Subject:</span>

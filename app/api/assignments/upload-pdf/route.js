@@ -16,22 +16,27 @@ export async function POST(request) {
     const assignmentId = formData.get('assignmentId');
 
     if (!file) {
-      return NextResponse.json({ error: 'No PDF file provided' }, { status: 400 });
+      return NextResponse.json({ error: 'No PDF file provided. Please select a file to upload.' }, { status: 400 });
     }
 
     if (!assignmentId) {
-      return NextResponse.json({ error: 'Assignment ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Assignment ID is required. Please try again.' }, { status: 400 });
     }
 
     // Validate file type
     if (file.type !== 'application/pdf') {
-      return NextResponse.json({ error: 'Only PDF files are allowed' }, { status: 400 });
+      return NextResponse.json({ 
+        error: `Invalid file type. Only PDF files are allowed. Selected file type: ${file.type || 'unknown'}` 
+      }, { status: 400 });
     }
 
     // Validate file size (max 25MB)
     const maxSize = 25 * 1024 * 1024; // 25MB
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'File size must be less than or equal to 25MB' }, { status: 400 });
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      return NextResponse.json({ 
+        error: `File size (${fileSizeMB}MB) exceeds the maximum limit of 25MB. Please choose a smaller file.` 
+      }, { status: 400 });
     }
 
     // Ensure ImageKit is available
@@ -48,7 +53,9 @@ export async function POST(request) {
     });
 
     if (!assignment) {
-      return NextResponse.json({ error: 'Assignment not found or unauthorized' }, { status: 404 });
+      return NextResponse.json({ 
+        error: 'Assignment not found or you do not have permission to upload files for this assignment.' 
+      }, { status: 404 });
     }
 
     // Convert file to Buffer (no local writes)
@@ -77,11 +84,15 @@ export async function POST(request) {
       });
     } catch (err) {
       console.error('ImageKit upload failed:', err);
-      return NextResponse.json({ error: 'Failed to upload file. Please try again.' }, { status: 502 });
+      return NextResponse.json({ 
+        error: 'Failed to upload file to our servers. Please check your internet connection and try again.' 
+      }, { status: 502 });
     }
 
     if (!uploadResponse || !uploadResponse.url) {
-      return NextResponse.json({ error: 'Upload failed. No URL returned.' }, { status: 502 });
+      return NextResponse.json({ 
+        error: 'Upload failed. The file was not properly saved. Please try again.' 
+      }, { status: 502 });
     }
 
     // Persist the ImageKit URL to the assignment

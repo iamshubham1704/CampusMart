@@ -1179,7 +1179,7 @@ const BuyerDashboard = () => {
             href="/buyer-dashboard/assignments"
             className="view-all-link-horizontal"
           >
-            View All Assignments
+            Create Assignment
             <ArrowLeft size={16} style={{ transform: "rotate(180deg)" }} />
           </Link>
         </div>

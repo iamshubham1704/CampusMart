@@ -34,7 +34,6 @@ const AssignmentsPage = () => {
     title: '',
     description: '',
     type: '',
-    subject: '',
     deadline: '',
     budget: '',
     location: '',
@@ -55,12 +54,6 @@ const AssignmentsPage = () => {
     { id: 'other', name: 'Other', icon: FileText, description: 'Other academic work' }
   ];
 
-  // Common subjects
-  const subjects = [
-    'Computer Science', 'Engineering', 'Mathematics', 'Physics', 'Chemistry',
-    'Biology', 'Economics', 'Business', 'Literature', 'History', 'Geography',
-    'Psychology', 'Sociology', 'Political Science', 'Other'
-  ];
 
   useEffect(() => {
     checkAuthAndFetchProfile();
@@ -135,10 +128,44 @@ const AssignmentsPage = () => {
     }));
   };
 
+  const validateFile = (file) => {
+    if (!file) return null;
+
+    // Check file type
+    if (file.type !== 'application/pdf') {
+      return 'Only PDF files are allowed.';
+    }
+
+    // Check file size (25MB = 25 * 1024 * 1024 bytes)
+    const maxSize = 25 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      return `File size (${fileSizeMB}MB) exceeds the maximum limit of 25MB.`;
+    }
+
+    return null; // No errors
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    const validationError = validateFile(file);
+    
+    if (validationError) {
+      setError(validationError);
+      // Clear the file input
+      e.target.value = '';
+      return;
+    }
+
+    // Clear any previous errors
+    setError('');
+    handleInputChange('pdfFile', file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.type || !formData.subject || !formData.budget) {
+    if (!formData.title || !formData.type || !formData.budget) {
       setError('Please fill in all required fields');
       return;
     }
@@ -184,20 +211,29 @@ const AssignmentsPage = () => {
           body: pdfFormData
         });
 
-        if (pdfResponse.ok) {
-          const pdfData = await pdfResponse.json();
-          // Update assignment with PDF URL
-          await fetch('/api/assignments', {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              assignmentId,
-              pdfUrl: pdfData.data.url
-            })
-          });
+        if (!pdfResponse.ok) {
+          const errorData = await pdfResponse.json();
+          throw new Error(`PDF upload failed: ${errorData.error || 'Unknown error occurred'}`);
+        }
+
+        const pdfData = await pdfResponse.json();
+        
+        // Update assignment with PDF URL
+        const updateResponse = await fetch('/api/assignments', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            assignmentId,
+            pdfUrl: pdfData.data.url
+          })
+        });
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json();
+          throw new Error(`Failed to update assignment with PDF: ${errorData.error || 'Unknown error occurred'}`);
         }
       }
 
@@ -206,7 +242,6 @@ const AssignmentsPage = () => {
         title: '',
         description: '',
         type: '',
-        subject: '',
         deadline: '',
         budget: '',
         location: '',
@@ -271,7 +306,7 @@ const AssignmentsPage = () => {
             onClick={() => setIsCreateModalOpen(true)}
           >
             <Plus size={20} />
-            Create Request
+            Create Assignment
           </button>
         </div>
       </div>
@@ -319,7 +354,7 @@ const AssignmentsPage = () => {
               onClick={() => setIsCreateModalOpen(true)}
             >
               <Plus size={20} />
-              Create Your First Request
+              Create Assignment
             </button>
           </div>
         ) : (
@@ -346,10 +381,6 @@ const AssignmentsPage = () => {
                   <p className={styles['assignment-description']}>{assignment.description}</p>
                   
                   <div className={styles['assignment-details']}>
-                    <div className={styles['detail-item']}>
-                      <BookOpen size={16} />
-                      <span>{assignment.subject}</span>
-                    </div>
                     {assignment.deadline && (
                       <div className={styles['detail-item']}>
                         <Calendar size={16} />
@@ -481,10 +512,6 @@ const AssignmentsPage = () => {
                       </span>
                     )}
                   </div>
-                  <div className={styles['assignment-actions']}>
-                    <button className={`${styles['action-button']} ${styles.edit}`}>Edit</button>
-                    <button className={`${styles['action-button']} ${styles.cancel}`}>Cancel</button>
-                  </div>
                 </div>
               </div>
             ))}
@@ -562,30 +589,15 @@ const AssignmentsPage = () => {
                 </div>
               </div>
 
-              <div className={styles['form-row']}>
-                <div className={styles['form-group']}>
-                  <label>Title *</label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="e.g., Data Structures Assignment"
-                    required
-                  />
-                </div>
-                <div className={styles['form-group']}>
-                  <label>Subject *</label>
-                  <select
-                    value={formData.subject}
-                    onChange={(e) => handleInputChange('subject', e.target.value)}
-                    required
-                  >
-                    <option value="">Select Subject</option>
-                    {subjects.map(subject => (
-                      <option key={subject} value={subject}>{subject}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className={styles['form-group']}>
+                <label>Title *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  placeholder="e.g., Data Structures Assignment"
+                  required
+                />
               </div>
 
               <div className={styles['form-group']}>
@@ -636,14 +648,19 @@ const AssignmentsPage = () => {
                 <input
                   type="file"
                   accept=".pdf"
-                  onChange={(e) => handleInputChange('pdfFile', e.target.files[0])}
+                  onChange={handleFileChange}
                   className={styles['file-input']}
                 />
-                <small className={styles['file-help']}>Maximum file size: 10MB. Only PDF files are allowed.</small>
+                <small className={styles['file-help']}>Maximum file size: 25MB. Only PDF files are allowed.</small>
                 {formData.pdfFile && (
                   <div className={styles['file-preview']}>
                     <FileText size={16} />
-                    <span>{formData.pdfFile.name}</span>
+                    <div className={styles['file-info']}>
+                      <span className={styles['file-name']}>{formData.pdfFile.name}</span>
+                      <span className={styles['file-size']}>
+                        ({(formData.pdfFile.size / (1024 * 1024)).toFixed(2)} MB)
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -670,7 +687,7 @@ const AssignmentsPage = () => {
                   ) : (
                     <>
                       <Save size={16} />
-                      Create Request
+                      Create Assignment
                     </>
                   )}
                 </button>

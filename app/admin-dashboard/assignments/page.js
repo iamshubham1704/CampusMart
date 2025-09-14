@@ -46,6 +46,7 @@ const AdminAssignmentsPage = () => {
     status: "",
     tentativeDeliveryDate: "",
     adminNotes: "",
+    finalPrice: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [recentUpdates, setRecentUpdates] = useState([]);
@@ -333,6 +334,7 @@ const AdminAssignmentsPage = () => {
         ? new Date(assignment.tentativeDeliveryDate).toISOString().split("T")[0]
         : "",
       adminNotes: assignment.adminNotes || "",
+      finalPrice: assignment.finalPrice || assignment.budget || "",
     });
     setIsEditModalOpen(true);
   };
@@ -342,6 +344,11 @@ const AdminAssignmentsPage = () => {
 
     if (!editFormData.status) {
       setError("Status is required");
+      return;
+    }
+
+    if (!editFormData.finalPrice || editFormData.finalPrice <= 0) {
+      setError("Valid Alpha price is required");
       return;
     }
 
@@ -385,6 +392,7 @@ const AdminAssignmentsPage = () => {
         status: "",
         tentativeDeliveryDate: "",
         adminNotes: "",
+        finalPrice: "",
       });
     } catch (error) {
       setError(error.message);
@@ -678,7 +686,19 @@ const AdminAssignmentsPage = () => {
                     )}
                     <div className={styles["detail-item"]}>
                       <DollarSign size={16} />
-                      <span>Budget: ₹{assignment.budget}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span>Original Budget: ₹{assignment.budget}</span>
+                        {assignment.finalPrice && (
+                          <span style={{ color: '#059669', fontWeight: '600' }}>
+                            Alpha Price: ₹{assignment.finalPrice}
+                          </span>
+                        )}
+                        {!assignment.finalPrice && (
+                          <span style={{ color: '#dc3545', fontSize: '0.8rem' }}>
+                            Alpha price not set
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {assignment.location && (
                       <div className={styles["detail-item"]}>
@@ -967,6 +987,33 @@ const AdminAssignmentsPage = () => {
                   }
                   min={new Date().toISOString().split("T")[0]}
                 />
+              </div>
+
+              <div className={styles["form-group"]}>
+                <label>Alpha Price (₹) *</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="number"
+                    value={editFormData.finalPrice}
+                    onChange={(e) =>
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        finalPrice: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter Alpha price"
+                    min="0"
+                    step="0.01"
+                    required
+                    style={{ flex: 1 }}
+                  />
+                  <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                    Original: ₹{selectedAssignment.budget}
+                  </div>
+                </div>
+                <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                  This is the final price that will be shown to Alpha users. Buyers will only see their original budget.
+                </small>
               </div>
 
               <div className={styles["form-group"]}>

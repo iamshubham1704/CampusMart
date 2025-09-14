@@ -125,7 +125,7 @@ export async function PUT(request) {
     }
 
     const body = await request.json();
-    const { assignmentId, status, tentativeDeliveryDate, adminNotes } = body;
+    const { assignmentId, status, tentativeDeliveryDate, adminNotes, finalPrice } = body;
 
     if (!assignmentId) {
       return NextResponse.json(
@@ -170,6 +170,11 @@ export async function PUT(request) {
     if (tentativeDeliveryDate)
       updateData.tentativeDeliveryDate = new Date(tentativeDeliveryDate);
     if (adminNotes) updateData.adminNotes = adminNotes;
+    if (finalPrice !== undefined && finalPrice !== null) {
+      updateData.finalPrice = parseFloat(finalPrice);
+      updateData.priceUpdatedBy = new ObjectId(decoded.adminId || decoded.userId);
+      updateData.priceUpdatedAt = new Date();
+    }
 
     if (status === "confirmed") {
       updateData.confirmedAt = new Date();
@@ -240,7 +245,7 @@ export async function PUT(request) {
         });
         if (!existing) {
           const alphaId = updatedAssignment.assignedTo;
-          const amount = Number(updatedAssignment.alphaPaymentAmount || updatedAssignment.budget || 0);
+          const amount = Number(updatedAssignment.alphaPaymentAmount || updatedAssignment.finalPrice || updatedAssignment.budget || 0);
           await db.collection("alpha_payment_requests").insertOne({
             assignmentId: updatedAssignment._id,
             alphaId,
