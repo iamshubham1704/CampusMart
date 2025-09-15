@@ -1,90 +1,97 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
-import { Eye, EyeOff, Mail, Lock, GraduationCap, ArrowLeft } from 'lucide-react';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  GraduationCap,
+  ArrowLeft,
+} from "lucide-react";
 
 const UnifiedBuyerLogin = () => {
   const router = useRouter();
-  
+
   // Login form state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  
+
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotMessage, setForgotMessage] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       setLoading(false);
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
+      setError("Please enter a valid email address");
       setLoading(false);
       return;
     }
 
     try {
-      console.log('Attempting login for:', email);
-      
-      const res = await fetch('/api/buyer/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      console.log("Attempting login for:", email);
+
+      const res = await fetch("/api/buyer/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: 'include',
+        credentials: "include",
       });
 
-      console.log('Login response status:', res.status);
-      
+      console.log("Login response status:", res.status);
+
       const data = await res.json();
-      console.log('Login response data:', data);
+      console.log("Login response data:", data);
 
       if (res.ok) {
         // Store token and user data consistently
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('auth-token', data.token);
-          localStorage.setItem('buyerToken', data.token);
-          localStorage.setItem('buyerData', JSON.stringify(data.buyer));
-          localStorage.setItem('userType', 'buyer');
-          
-          console.log('Tokens stored successfully');
-          console.log('Stored buyerToken:', localStorage.getItem('buyerToken'));
-          console.log('Stored userType:', localStorage.getItem('userType'));
+        if (typeof window !== "undefined") {
+          localStorage.setItem("auth-token", data.token);
+          localStorage.setItem("buyerToken", data.token);
+          localStorage.setItem("buyerData", JSON.stringify(data.buyer));
+          localStorage.setItem("userType", "buyer");
+
+          console.log("Tokens stored successfully");
+          console.log("Stored buyerToken:", localStorage.getItem("buyerToken"));
+          console.log("Stored userType:", localStorage.getItem("userType"));
         }
 
-        setSuccess('Login successful! Redirecting...');
-        
+        setSuccess("Login successful! Redirecting...");
+
         // Immediate redirect for better performance
-        if (typeof window !== 'undefined') {
-          window.location.href = '/buyer-dashboard';
+        if (typeof window !== "undefined") {
+          window.location.href = "/buyer-dashboard";
         } else {
-          router.push('/buyer-dashboard');
+          router.push("/buyer-dashboard");
         }
       } else {
-        console.error('Login failed:', data.error);
-        setError(data.error || 'Login failed');
+        console.error("Login failed:", data.error);
+        setError(data.error || "Login failed");
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Something went wrong. Please try again.');
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -93,22 +100,22 @@ const UnifiedBuyerLogin = () => {
   const handleGoogleLogin = async () => {
     try {
       setGoogleLoading(true);
-      setError('');
-      
-      const result = await signIn('google', {
-        callbackUrl: '/buyer-dashboard',
+      setError("");
+
+      const result = await signIn("google", {
+        callbackUrl: "/buyer-dashboard",
         redirect: false,
       });
 
       if (result?.error) {
-        setError('Google login failed. Please try again.');
+        setError("Google login failed. Please try again.");
       } else if (result?.ok) {
-        setSuccess('Google login successful! Redirecting...');
-        router.push('/buyer-dashboard');
+        setSuccess("Google login successful! Redirecting...");
+        router.push("/buyer-dashboard");
       }
     } catch (err) {
-      console.error('Google login error:', err);
-      setError('Google login failed. Please try again.');
+      console.error("Google login error:", err);
+      setError("Google login failed. Please try again.");
     } finally {
       setGoogleLoading(false);
     }
@@ -117,40 +124,42 @@ const UnifiedBuyerLogin = () => {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setForgotLoading(true);
-    setForgotMessage('');
-    setError('');
+    setForgotMessage("");
+    setError("");
 
     if (!forgotEmail) {
-      setError('Please enter your email address');
+      setError("Please enter your email address");
       setForgotLoading(false);
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(forgotEmail)) {
-      setError('Please enter a valid email address');
+      setError("Please enter a valid email address");
       setForgotLoading(false);
       return;
     }
 
     try {
-      const res = await fetch('/api/buyer/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/buyer/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotEmail }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setForgotMessage('Password reset instructions have been sent to your email address.');
-        setForgotEmail('');
+        setForgotMessage(
+          "Password reset instructions have been sent to your email address."
+        );
+        setForgotEmail("");
       } else {
-        setError(data.error || 'Failed to send reset email');
+        setError(data.error || "Failed to send reset email");
       }
     } catch (err) {
-      console.error('Forgot password error:', err);
-      setError('Something went wrong. Please try again.');
+      console.error("Forgot password error:", err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setForgotLoading(false);
     }
@@ -158,298 +167,299 @@ const UnifiedBuyerLogin = () => {
 
   const resetForgotPasswordState = () => {
     setShowForgotPassword(false);
-    setForgotEmail('');
-    setForgotMessage('');
+    setForgotEmail("");
+    setForgotMessage("");
     setForgotLoading(false);
-    setError('');
+    setError("");
   };
 
   const styles = {
     container: {
-      minHeight: '100vh',
-      backgroundColor: '#111827',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1rem',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
+      minHeight: "100vh",
+      backgroundColor: "#111827",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "1rem",
+      fontFamily: "system-ui, -apple-system, sans-serif",
     },
-    
+
     formWrapper: {
-      backgroundColor: '#1f2937',
-      borderRadius: '12px',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      border: '1px solid #374151',
-      width: '100%',
-      maxWidth: '28rem',
-      padding: '2rem',
+      backgroundColor: "#1f2937",
+      borderRadius: "12px",
+      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+      border: "1px solid #374151",
+      width: "100%",
+      maxWidth: "28rem",
+      padding: "2rem",
     },
 
     header: {
-      textAlign: 'center',
-      marginBottom: '2rem',
+      textAlign: "center",
+      marginBottom: "2rem",
     },
 
     logoContainer: {
-      width: '4rem',
-      height: '4rem',
-      backgroundColor: '#2563eb',
-      borderRadius: '12px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      margin: '0 auto 1rem auto',
+      width: "4rem",
+      height: "4rem",
+      backgroundColor: "#2563eb",
+      borderRadius: "12px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      margin: "0 auto 1rem auto",
     },
 
     title: {
-      fontSize: '2rem',
-      fontWeight: '700',
-      color: '#ffffff',
-      margin: '0 0 0.5rem 0',
+      fontSize: "2rem",
+      fontWeight: "700",
+      color: "#ffffff",
+      margin: "0 0 0.5rem 0",
     },
 
     subtitle: {
-      color: '#9ca3af',
-      fontSize: '1rem',
+      color: "#9ca3af",
+      fontSize: "1rem",
       margin: 0,
     },
 
     backButton: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      color: '#3b82f6',
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      fontSize: '0.875rem',
-      marginBottom: '1rem',
-      padding: '0.5rem 0',
-      transition: 'color 0.2s ease-in-out',
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      color: "#3b82f6",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      fontSize: "0.875rem",
+      marginBottom: "1rem",
+      padding: "0.5rem 0",
+      transition: "color 0.2s ease-in-out",
     },
 
     backButtonHover: {
-      color: '#2563eb',
+      color: "#2563eb",
     },
 
     messageBox: {
-      marginBottom: '1.5rem',
-      padding: '1rem',
-      borderRadius: '8px',
-      fontSize: '0.875rem',
+      marginBottom: "1.5rem",
+      padding: "1rem",
+      borderRadius: "8px",
+      fontSize: "0.875rem",
     },
 
     errorBox: {
-      backgroundColor: '#7f1d1d',
-      border: '1px solid #dc2626',
-      color: '#fca5a5',
+      backgroundColor: "#7f1d1d",
+      border: "1px solid #dc2626",
+      color: "#fca5a5",
     },
 
     successBox: {
-      backgroundColor: '#14532d',
-      border: '1px solid #16a34a',
-      color: '#86efac',
+      backgroundColor: "#14532d",
+      border: "1px solid #16a34a",
+      color: "#86efac",
     },
 
     infoBox: {
-      backgroundColor: '#1e3a8a',
-      border: '1px solid #3b82f6',
-      color: '#93c5fd',
+      backgroundColor: "#1e3a8a",
+      border: "1px solid #3b82f6",
+      color: "#93c5fd",
     },
 
     form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1.5rem',
+      display: "flex",
+      flexDirection: "column",
+      gap: "1.5rem",
     },
 
     inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
+      display: "flex",
+      flexDirection: "column",
     },
 
     label: {
-      display: 'block',
-      color: '#d1d5db',
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      marginBottom: '0.5rem',
+      display: "block",
+      color: "#d1d5db",
+      fontSize: "0.875rem",
+      fontWeight: "500",
+      marginBottom: "0.5rem",
     },
 
     inputWrapper: {
-      position: 'relative',
-      display: 'flex',
-      alignItems: 'center',
+      position: "relative",
+      display: "flex",
+      alignItems: "center",
     },
 
     input: {
-      width: '100%',
-      backgroundColor: '#374151',
-      color: '#ffffff',
-      border: '1px solid #4b5563',
-      borderRadius: '8px',
-      padding: '0.75rem 1rem 0.75rem 3rem',
-      fontSize: '1rem',
-      outline: 'none',
-      transition: 'all 0.2s ease-in-out',
+      width: "100%",
+      backgroundColor: "#374151",
+      color: "#ffffff",
+      border: "1px solid #4b5563",
+      borderRadius: "8px",
+      padding: "0.75rem 1rem 0.75rem 3rem",
+      fontSize: "1rem",
+      outline: "none",
+      transition: "all 0.2s ease-in-out",
     },
 
     inputFocus: {
-      borderColor: '#3b82f6',
-      boxShadow: '0 0 0 1px #3b82f6',
+      borderColor: "#3b82f6",
+      boxShadow: "0 0 0 1px #3b82f6",
     },
 
     inputDisabled: {
-      opacity: '0.6',
-      cursor: 'not-allowed',
+      opacity: "0.6",
+      cursor: "not-allowed",
     },
 
     icon: {
-      position: 'absolute',
-      left: '1rem',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      color: '#9ca3af',
-      width: '1.25rem',
-      height: '1.25rem',
-      pointerEvents: 'none',
+      position: "absolute",
+      left: "1rem",
+      top: "50%",
+      transform: "translateY(-50%)",
+      color: "#9ca3af",
+      width: "1.25rem",
+      height: "1.25rem",
+      pointerEvents: "none",
     },
 
     passwordToggle: {
-      position: 'absolute',
-      right: '1rem',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      background: 'none',
-      border: 'none',
-      color: '#9ca3af',
-      cursor: 'pointer',
-      padding: '0.25rem',
-      borderRadius: '4px',
-      transition: 'color 0.2s ease-in-out',
+      position: "absolute",
+      right: "1rem",
+      top: "50%",
+      transform: "translateY(-50%)",
+      background: "none",
+      border: "none",
+      color: "#9ca3af",
+      cursor: "pointer",
+      padding: "0.25rem",
+      borderRadius: "4px",
+      transition: "color 0.2s ease-in-out",
     },
 
     passwordToggleHover: {
-      color: '#ffffff',
+      color: "#ffffff",
     },
 
     forgotPasswordLink: {
-      alignSelf: 'flex-end',
-      color: '#3b82f6',
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      fontSize: '0.875rem',
-      textDecoration: 'underline',
-      transition: 'color 0.2s ease-in-out',
+      alignSelf: "flex-end",
+      color: "#3b82f6",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      fontSize: "0.875rem",
+      textDecoration: "underline",
+      transition: "color 0.2s ease-in-out",
     },
 
     forgotPasswordLinkHover: {
-      color: '#2563eb',
+      color: "#2563eb",
     },
 
     submitButton: {
-      width: '100%',
-      backgroundColor: '#2563eb',
-      color: '#ffffff',
-      fontWeight: '500',
-      padding: '0.75rem 1rem',
-      borderRadius: '8px',
-      border: 'none',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      transition: 'all 0.2s ease-in-out',
-      marginTop: '0.5rem',
+      width: "100%",
+      backgroundColor: "#2563eb",
+      color: "#ffffff",
+      fontWeight: "500",
+      padding: "0.75rem 1rem",
+      borderRadius: "8px",
+      border: "none",
+      cursor: "pointer",
+      fontSize: "1rem",
+      transition: "all 0.2s ease-in-out",
+      marginTop: "0.5rem",
     },
 
     submitButtonHover: {
-      backgroundColor: '#1d4ed8',
+      backgroundColor: "#1d4ed8",
     },
 
     submitButtonDisabled: {
-      backgroundColor: '#1e40af',
-      cursor: 'not-allowed',
-      opacity: '0.7',
+      backgroundColor: "#1e40af",
+      cursor: "not-allowed",
+      opacity: "0.7",
     },
 
     divider: {
-      display: 'flex',
-      alignItems: 'center',
-      margin: '1.5rem 0',
+      display: "flex",
+      alignItems: "center",
+      margin: "1.5rem 0",
     },
 
     dividerLine: {
-      flex: '1',
-      height: '1px',
-      backgroundColor: '#4b5563',
+      flex: "1",
+      height: "1px",
+      backgroundColor: "#4b5563",
     },
 
     dividerText: {
-      padding: '0 1rem',
-      color: '#9ca3af',
-      fontSize: '0.875rem',
+      padding: "0 1rem",
+      color: "#9ca3af",
+      fontSize: "0.875rem",
     },
 
     googleButton: {
-      width: '100%',
-      backgroundColor: '#dc2626',
-      color: '#ffffff',
-      fontWeight: '500',
-      padding: '0.75rem 1rem',
-      borderRadius: '8px',
-      border: 'none',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      transition: 'all 0.2s ease-in-out',
+      width: "100%",
+      backgroundColor: "#dc2626",
+      color: "#ffffff",
+      fontWeight: "500",
+      padding: "0.75rem 1rem",
+      borderRadius: "8px",
+      border: "none",
+      cursor: "pointer",
+      fontSize: "1rem",
+      transition: "all 0.2s ease-in-out",
     },
 
     googleButtonHover: {
-      backgroundColor: '#b91c1c',
+      backgroundColor: "#b91c1c",
     },
 
     googleButtonDisabled: {
-      backgroundColor: '#991b1b',
-      cursor: 'not-allowed',
-      opacity: '0.7',
+      backgroundColor: "#991b1b",
+      cursor: "not-allowed",
+      opacity: "0.7",
     },
 
     footer: {
-      marginTop: '1.5rem',
-      textAlign: 'center',
+      marginTop: "1.5rem",
+      textAlign: "center",
     },
 
     footerText: {
-      color: '#9ca3af',
-      fontSize: '0.875rem',
+      color: "#9ca3af",
+      fontSize: "0.875rem",
       margin: 0,
     },
 
     footerLink: {
-      color: '#3b82f6',
-      fontWeight: '500',
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      textDecoration: 'underline',
+      color: "#3b82f6",
+      fontWeight: "500",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      textDecoration: "underline",
     },
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.formWrapper}>
-        
         {/* Header */}
         <div style={styles.header}>
           <div style={styles.logoContainer}>
-            <GraduationCap style={{ width: '2rem', height: '2rem', color: '#ffffff' }} />
+            <GraduationCap
+              style={{ width: "2rem", height: "2rem", color: "#ffffff" }}
+            />
           </div>
           <h1 style={styles.title}>
-            {showForgotPassword ? 'Reset Password' : 'Buyer Login'}
+            {showForgotPassword ? "Reset Password" : "Buyer Login"}
           </h1>
           <p style={styles.subtitle}>
-            {showForgotPassword 
-              ? 'Enter your email to receive reset instructions' 
-              : 'Welcome back to the student marketplace'}
+            {showForgotPassword
+              ? "Enter your email to receive reset instructions"
+              : "Welcome back to the student marketplace"}
           </p>
         </div>
 
@@ -458,10 +468,12 @@ const UnifiedBuyerLogin = () => {
           <button
             onClick={resetForgotPasswordState}
             style={styles.backButton}
-            onMouseOver={(e) => e.target.style.color = styles.backButtonHover.color}
-            onMouseOut={(e) => e.target.style.color = '#3b82f6'}
+            onMouseOver={(e) =>
+              (e.target.style.color = styles.backButtonHover.color)
+            }
+            onMouseOut={(e) => (e.target.style.color = "#3b82f6")}
           >
-            <ArrowLeft style={{ width: '1rem', height: '1rem' }} />
+            <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
             Back to Login
           </button>
         )}
@@ -501,8 +513,10 @@ const UnifiedBuyerLogin = () => {
                   }}
                   required
                   disabled={forgotLoading}
-                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                  onBlur={(e) => e.target.style.borderColor = '#4b5563'}
+                  onFocus={(e) =>
+                    Object.assign(e.target.style, styles.inputFocus)
+                  }
+                  onBlur={(e) => (e.target.style.borderColor = "#4b5563")}
                 />
               </div>
             </div>
@@ -514,10 +528,16 @@ const UnifiedBuyerLogin = () => {
                 ...(forgotLoading ? styles.submitButtonDisabled : {}),
               }}
               disabled={forgotLoading}
-              onMouseOver={(e) => !forgotLoading && (e.target.style.backgroundColor = styles.submitButtonHover.backgroundColor)}
-              onMouseOut={(e) => !forgotLoading && (e.target.style.backgroundColor = '#2563eb')}
+              onMouseOver={(e) =>
+                !forgotLoading &&
+                (e.target.style.backgroundColor =
+                  styles.submitButtonHover.backgroundColor)
+              }
+              onMouseOut={(e) =>
+                !forgotLoading && (e.target.style.backgroundColor = "#2563eb")
+              }
             >
-              {forgotLoading ? 'Sending...' : 'Send Reset Instructions'}
+              {forgotLoading ? "Sending..." : "Send Reset Instructions"}
             </button>
           </form>
         ) : (
@@ -538,8 +558,10 @@ const UnifiedBuyerLogin = () => {
                   }}
                   required
                   disabled={loading || googleLoading}
-                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                  onBlur={(e) => e.target.style.borderColor = '#4b5563'}
+                  onFocus={(e) =>
+                    Object.assign(e.target.style, styles.inputFocus)
+                  }
+                  onBlur={(e) => (e.target.style.borderColor = "#4b5563")}
                 />
               </div>
             </div>
@@ -555,32 +577,42 @@ const UnifiedBuyerLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
                     ...styles.input,
-                    paddingRight: '3rem',
+                    paddingRight: "3rem",
                     ...(loading || googleLoading ? styles.inputDisabled : {}),
                   }}
                   required
                   disabled={loading || googleLoading}
-                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                  onBlur={(e) => e.target.style.borderColor = '#4b5563'}
+                  onFocus={(e) =>
+                    Object.assign(e.target.style, styles.inputFocus)
+                  }
+                  onBlur={(e) => (e.target.style.borderColor = "#4b5563")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   style={styles.passwordToggle}
                   disabled={loading || googleLoading}
-                  onMouseOver={(e) => e.target.style.color = styles.passwordToggleHover.color}
-                  onMouseOut={(e) => e.target.style.color = '#9ca3af'}
+                  onMouseOver={(e) =>
+                    (e.target.style.color = styles.passwordToggleHover.color)
+                  }
+                  onMouseOut={(e) => (e.target.style.color = "#9ca3af")}
                 >
-                  {showPassword ? <EyeOff style={{ width: '1.25rem', height: '1.25rem' }} /> : <Eye style={{ width: '1.25rem', height: '1.25rem' }} />}
+                  {showPassword ? (
+                    <EyeOff style={{ width: "1.25rem", height: "1.25rem" }} />
+                  ) : (
+                    <Eye style={{ width: "1.25rem", height: "1.25rem" }} />
+                  )}
                 </button>
               </div>
-              
+
               <button
                 type="button"
                 onClick={() => setShowForgotPassword(true)}
                 style={styles.forgotPasswordLink}
-                onMouseOver={(e) => e.target.style.color = styles.forgotPasswordLinkHover.color}
-                onMouseOut={(e) => e.target.style.color = '#3b82f6'}
+                onMouseOver={(e) =>
+                  (e.target.style.color = styles.forgotPasswordLinkHover.color)
+                }
+                onMouseOut={(e) => (e.target.style.color = "#3b82f6")}
               >
                 Forgot Password?
               </button>
@@ -590,13 +622,22 @@ const UnifiedBuyerLogin = () => {
               type="submit"
               style={{
                 ...styles.submitButton,
-                ...(loading || googleLoading ? styles.submitButtonDisabled : {}),
+                ...(loading || googleLoading
+                  ? styles.submitButtonDisabled
+                  : {}),
               }}
               disabled={loading || googleLoading}
-              onMouseOver={(e) => !(loading || googleLoading) && (e.target.style.backgroundColor = styles.submitButtonHover.backgroundColor)}
-              onMouseOut={(e) => !(loading || googleLoading) && (e.target.style.backgroundColor = '#2563eb')}
+              onMouseOver={(e) =>
+                !(loading || googleLoading) &&
+                (e.target.style.backgroundColor =
+                  styles.submitButtonHover.backgroundColor)
+              }
+              onMouseOut={(e) =>
+                !(loading || googleLoading) &&
+                (e.target.style.backgroundColor = "#2563eb")
+              }
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
 
             {/* Divider */}
@@ -627,10 +668,10 @@ const UnifiedBuyerLogin = () => {
         {!showForgotPassword && (
           <div style={styles.footer}>
             <p style={styles.footerText}>
-              Don't have an account?{' '}
-              <button 
+              Don't have an account?{" "}
+              <button
                 type="button"
-                onClick={() => router.push('/buyer-registration')}
+                onClick={() => router.push("/buyer-registration")}
                 style={styles.footerLink}
               >
                 Register as Buyer

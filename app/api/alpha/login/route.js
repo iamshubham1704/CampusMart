@@ -1,4 +1,4 @@
-// app/api/seller/login/route.js
+// app/api/alpha/login/route.js
 import clientPromise from '@/lib/mongo';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -7,6 +7,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { email, password } = body;
+
     if (!email || !password) {
       return new Response(
         JSON.stringify({ error: 'Email and password are required' }), 
@@ -17,7 +18,6 @@ export async function POST(req) {
       );
     }
 
-    // Verify the input password is not empty
     if (!password || password.trim() === '') {
       return new Response(
         JSON.stringify({ error: 'Password cannot be empty' }), 
@@ -30,12 +30,12 @@ export async function POST(req) {
 
     const client = await clientPromise;
     const db = client.db('campusmart');
-    const sellers = db.collection('sellers');
+    const alphas = db.collection('alphas');
 
-    // Find seller by email
-    const seller = await sellers.findOne({ email: email.toLowerCase() });
+    // Find alpha by email
+    const alpha = await alphas.findOne({ email: email.toLowerCase() });
 
-    if (!seller) {
+    if (!alpha) {
       return new Response(
         JSON.stringify({ error: 'Invalid credentials' }), 
         { 
@@ -45,9 +45,8 @@ export async function POST(req) {
       );
     }
 
-    // Verify the password exists in the seller object
-    if (!seller.password) {
-
+    // Verify password
+    if (!alpha.password) {
       return new Response(
         JSON.stringify({ error: 'Account configuration error. Please contact support.' }), 
         { 
@@ -59,8 +58,9 @@ export async function POST(req) {
 
     let isValidPassword;
     try {
-      isValidPassword = await bcrypt.compare(password, seller.password);
+      isValidPassword = await bcrypt.compare(password, alpha.password);
     } catch (bcryptError) {
+      console.error('Bcrypt error:', bcryptError);
       return new Response(
         JSON.stringify({ error: 'Password verification failed' }), 
         { 
@@ -80,8 +80,8 @@ export async function POST(req) {
       );
     }
 
-    // Check if seller account is active (if you have this field)
-    if (seller.isActive !== undefined && !seller.isActive) {
+    // Check if alpha account is active
+    if (alpha.isActive !== undefined && !alpha.isActive) {
       return new Response(
         JSON.stringify({ error: 'Account is deactivated. Please contact support.' }), 
         { 
@@ -91,53 +91,39 @@ export async function POST(req) {
       );
     }
 
+    // Generate JWT token
     const token = jwt.sign(
       { 
-        sellerId: seller._id.toString(),
-        userId: seller._id.toString(), // For compatibility
-        email: seller.email,
-        name: seller.name,
-        role: 'seller' // ✅ Add the missing role field
+        alphaId: alpha._id.toString(),
+        email: alpha.email,
+        name: alpha.name,
+        role: 'alpha'
       },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '30d' }
+      { expiresIn: '7d' }
     );
 
-    // Update last login time (optional)
+    // Update last login time
     try {
-      await sellers.updateOne(
-        { _id: seller._id }, 
+      await alphas.updateOne(
+        { _id: alpha._id }, 
         { $set: { lastLogin: new Date() } }
       );
     } catch (updateError) {
-      // Don't fail the login for this
+      console.error('Error updating last login:', updateError);
     }
 
-
-    //IsActive Seller
-    try {
-      await sellers.updateOne(
-        { _id: seller._id }, 
-        { $set: { isActive: true } }
-      );
-    } catch (updateError) {
-      // Don't fail the login for this
-    }
-
-    // Create response headers with cookie (dev-safe: no Secure in development)
+    // Cookie setup
     const isProd = process.env.NODE_ENV === 'production';
     
-    // Enhanced cookie configuration for iOS Safari compatibility
     const cookieOptions = [
-      `auth-token=${token}`,
+      `alpha-auth-token=${token}`,
       'Path=/',
       'HttpOnly',
       isProd ? 'Secure' : '',
       'SameSite=Lax',
       `Max-Age=${7 * 24 * 60 * 60}`,
-      // Add domain if specified (helps with subdomain issues)
       process.env.COOKIE_DOMAIN ? `Domain=${process.env.COOKIE_DOMAIN}` : '',
-      // iOS Safari specific optimizations
       'Priority=High'
     ].filter(Boolean);
     
@@ -146,24 +132,21 @@ export async function POST(req) {
     const headers = new Headers({
       'Content-Type': 'application/json',
       'Set-Cookie': cookie,
-      // Add additional headers for mobile compatibility
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'
     });
 
-    // Return success response with token and cookie
     return new Response(
       JSON.stringify({ 
         success: true,
         message: 'Login successful',
         token,
-        seller: {
-          id: seller._id.toString(),
-          name: seller.name,
-          email: seller.email,
-          phone: seller.phone || null,
-          profileImage: seller.profileImage || null
+        alpha: {
+          id: alpha._id.toString(),
+          name: alpha.name,
+          email: alpha.email,
+          role: alpha.role
         }
       }), 
       { 
@@ -173,7 +156,7 @@ export async function POST(req) {
     );
 
   } catch (error) {
-    
+    console.error('Alpha login error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal Server Error' }), 
       { 

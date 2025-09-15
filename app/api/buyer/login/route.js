@@ -100,7 +100,7 @@ export async function POST(req) {
         role: 'buyer'
       },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // Update last login time (optional)
