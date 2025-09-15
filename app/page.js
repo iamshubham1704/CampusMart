@@ -987,10 +987,6 @@ const CampusMart = () => {
       <section className="professional-trust-section">
         <div className="container">
           <div className="trust-header">
-            <div className="trust-badge">
-              <div className="badge-icon">0</div>
-              <span>Trusted Platform</span>
-            </div>
             <h2 className="trust-title">
               Trusted by Students
               <span className="gradient-text"> Nationwide</span>
@@ -1207,7 +1203,6 @@ const CampusMart = () => {
                 <li><Link href="/buyer-dashboard">Buy Items</Link></li>
                 <li><Link href="/seller-dashboard">Sell Items</Link></li>
                 <li><Link href="/assignments">Assignment Help</Link></li>
-                <li><Link href="/tutoring">Tutoring Services</Link></li>
               </ul>
             </div>
 
@@ -1216,9 +1211,6 @@ const CampusMart = () => {
               <h4 className="footer-title-zeberai">Company</h4>
               <ul className="footer-links-zeberai">
                 <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/success-stories">Success Stories</Link></li>
-                <li><Link href="/blog">Blog</Link></li>
-                <li><Link href="/careers">Careers</Link></li>
               </ul>
             </div>
 
@@ -1228,15 +1220,15 @@ const CampusMart = () => {
               <div className="contact-info-zeberai">
                 <div className="contact-item-zeberai">
                   <Mail size={16} />
-                  <span>support@campusmart.com</span>
+                  <span>campusmart.store.mail@gmail.com</span>
                 </div>
                 <div className="contact-item-zeberai">
                   <Phone size={16} />
-                  <span>+1 (555) 123-4567</span>
+                  <span>+91 87504 71736</span>
                 </div>
                 <div className="contact-item-zeberai">
                   <MapPin size={16} />
-                  <span>Available on all campuses</span>
+                  <span>Available in MAIT only</span>
                 </div>
               </div>
               <div className="social-media-zeberai">
@@ -1260,25 +1252,11 @@ const CampusMart = () => {
           
           <div className="footer-bottom-zeberai">
             <div className="footer-bottom-left-zeberai">
-              <p className="copyright-zeberai">&copy; 2024 CampusMart. All rights reserved. | Privacy Policy | Terms of Service</p>
+              <p className="copyright-zeberai">&copy; 2025 CampusMart. All rights reserved. | Privacy Policy | Terms of Service</p>
             </div>
             <div className="footer-bottom-right-zeberai">
-              <div className="payment-methods-zeberai">
-                <span className="payment-text-zeberai">VISA</span>
-                <span className="payment-text-zeberai">Mastercard</span>
-                <span className="payment-text-zeberai">PayPal</span>
-              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Floating Chat Button */}
-        <div className="floating-chat-zeberai">
-          <button className="chat-button-zeberai">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </button>
         </div>
       </footer>
     </>
