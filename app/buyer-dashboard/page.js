@@ -648,7 +648,7 @@ const BuyerDashboard = () => {
           rating: 4.8,
           timePosted: '2 hours ago',
           views: 23,
-          image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop',
+          image: 'https://ik.imagekit.io/zuxeumnng/campusmart/Asserts/drafter.jpg?updatedAt=1757927822487',
           createdAt: '2023-12-01T10:00:00Z'
         },
         {
