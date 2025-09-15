@@ -562,6 +562,10 @@ const BuyerDashboard = () => {
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
+  // Promo banner state (safe defaults to avoid build-time errors)
+  const [promoIndex, setPromoIndex] = useState(0);
+  const promoSlides = [];
+
   // Location dropdown state
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
