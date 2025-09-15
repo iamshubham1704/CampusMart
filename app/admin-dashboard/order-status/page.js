@@ -191,7 +191,10 @@ export default function OrderStatusManagement() {
   const syncVerifiedPayments = async () => {
     try {
       setSyncLoading(true);
+      setError(''); // Clear previous errors
       const token = localStorage.getItem('adminToken');
+
+      console.log('Starting sync of verified payments...');
 
       const response = await fetch('/api/admin/order-status', {
         method: 'POST',
@@ -202,18 +205,83 @@ export default function OrderStatusManagement() {
       });
 
       const data = await response.json();
+      console.log('Sync response:', data);
 
       if (response.ok) {
-        alert(`Sync completed! Created ${data.data.created} new order status records.`);
-        fetchOrders();
+        if (data.data && data.data.created > 0) {
+          alert(`✅ Sync completed successfully!\n\nCreated ${data.data.created} new order status records.\nExisting records: ${data.data.existing}`);
+        } else {
+          alert(`ℹ️ Sync completed!\n\nNo new order status records were created.\nThis usually means:\n• All verified payments already have order statuses\n• No verified payments exist\n• All orders are already processed`);
+        }
+        fetchOrders(); // Refresh orders to show updated data
       } else {
-        setError(data.error || 'Failed to sync orders');
+        const errorMessage = data.error || 'Failed to sync orders';
+        console.error('Sync failed:', errorMessage);
+        setError(`Sync failed: ${errorMessage}`);
+        
+        // Show detailed error alert
+        alert(`❌ Sync failed!\n\nError: ${errorMessage}\n\nPlease check:\n• Database connection\n• Payment screenshot data\n• Admin permissions\n\nCheck browser console for more details.`);
       }
     } catch (error) {
-      console.error('Error syncing orders:', error);
-      setError('Failed to sync orders');
+      console.error('Network error during sync:', error);
+      const errorMessage = error.message || 'Network error occurred';
+      setError(`Network error: ${errorMessage}`);
+      
+      alert(`❌ Sync failed!\n\nNetwork error: ${errorMessage}\n\nPlease check:\n• Internet connection\n• Server status\n• Try again in a few moments`);
     } finally {
       setSyncLoading(false);
+    }
+  };
+
+  const debugDatabase = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      console.log('Getting debug information...');
+
+      const response = await fetch('/api/admin/order-status?debug=true', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      console.log('Debug response:', data);
+
+      if (response.ok) {
+        const debugInfo = data.data;
+        let debugMessage = '🔍 Database Debug Information:\n\n';
+        
+        debugMessage += `📸 Payment Screenshots:\n`;
+        debugMessage += `• Total: ${debugInfo.collections.payment_screenshots.total}\n`;
+        debugMessage += `• Verified: ${debugInfo.collections.payment_screenshots.verified}\n`;
+        
+        debugMessage += `\n📦 Orders:\n`;
+        debugMessage += `• Total: ${debugInfo.collections.orders.total}\n`;
+        debugMessage += `• With Payment Screenshot: ${debugInfo.collections.orders.withPaymentScreenshot}\n`;
+        
+        debugMessage += `\n📋 Order Statuses:\n`;
+        debugMessage += `• Total: ${debugInfo.collections.order_status.total}\n`;
+        
+        debugMessage += `\n👥 Users:\n`;
+        debugMessage += `• Buyers: ${debugInfo.collections.buyers.total}\n`;
+        debugMessage += `• Sellers: ${debugInfo.collections.sellers.total}\n`;
+        debugMessage += `• Listings: ${debugInfo.collections.listings.total}\n`;
+
+        if (debugInfo.collections.payment_screenshots.verified === 0) {
+          debugMessage += `\n⚠️ ISSUE: No verified payments found!\n`;
+          debugMessage += `This explains why sync isn't working.\n`;
+          debugMessage += `Check if payments are being verified properly.`;
+        }
+
+        alert(debugMessage);
+      } else {
+        alert(`❌ Debug failed: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Debug error:', error);
+      alert(`❌ Debug error: ${error.message}`);
     }
   };
 
@@ -451,6 +519,22 @@ export default function OrderStatusManagement() {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button
+            onClick={() => router.push('/admin-dashboard/profile?tab=schedule')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500'
+            }}
+          >
+            📅 Schedule
+          </button>
+          
+          <button
             onClick={syncVerifiedPayments}
             disabled={syncLoading}
             style={{
@@ -465,6 +549,23 @@ export default function OrderStatusManagement() {
             }}
           >
             {syncLoading ? '🔄 Syncing...' : '🔄 Sync Verified Payments'}
+          </button>
+          
+          <button
+            onClick={debugDatabase}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#17a2b8',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500'
+            }}
+            title="Debug database state to troubleshoot sync issues"
+          >
+            🔍 Debug Database
           </button>
           
           {/* Bulk Assign Admin */}

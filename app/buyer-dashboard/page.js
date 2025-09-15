@@ -39,6 +39,7 @@ import {
   FileText,
   Pen,
   MessageCircle,
+
 } from "lucide-react";
 import { useCart } from "../../components/contexts/CartContext";
 import CartDrawer from "../../components/CartDrawer";
@@ -53,6 +54,7 @@ import {
   clearAllTokens,
 } from "../../lib/auth";
 import "./BuyerDashboard.css";
+
 
 const useBuyer = () => {
   const [buyer, setBuyer] = useState(null);
@@ -542,12 +544,14 @@ const BuyerDashboard = () => {
     isLoading: cartLoading,
     isCartOpen,
   } = useCart();
+
   const {
     buyer,
     loading: buyerLoading,
     error: buyerError,
     updateProfile: updateBuyerProfile,
   } = useBuyer();
+
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 10000 },
     conditions: [],
@@ -634,6 +638,15 @@ const BuyerDashboard = () => {
       return;
     }
   }, []);
+
+  // Auto-rotate promo banner
+  useEffect(() => {
+    if (promoSlides.length <= 1) return;
+    const id = setInterval(() => {
+      setPromoIndex((prev) => (prev + 1) % promoSlides.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [promoSlides.length]);
 
   // Mouse tracking effect
   useEffect(() => {
@@ -838,6 +851,17 @@ const BuyerDashboard = () => {
           return 0;
       }
     });
+
+  // Quick filter functions
+  const handleDrafterFilter = () => {
+    setSearchQuery('drafter');
+    setSelectedCategory('all');
+  };
+
+  const handleAkashFilter = () => {
+    setSearchQuery('akash');
+    setSelectedCategory('all');
+  };
 
   // Helper functions
   const handleWishlistToggle = async (product, event) => {
@@ -1168,6 +1192,7 @@ const BuyerDashboard = () => {
         </div>
       </header>
 
+
       {/* Trending Assignments Section - Horizontal Layout */}
       <div className="trending-assignments-horizontal">
         <div className="trending-header-horizontal">
@@ -1354,6 +1379,7 @@ const BuyerDashboard = () => {
                 <span className="location">NSUT</span>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -1377,8 +1403,10 @@ const BuyerDashboard = () => {
                 </div>
                 <div className="college-info">
                   <BookOpen size={18} className="college-icon" />
+
                   <span>{buyer.university || "Student"}</span>
                   {buyer.year && <span>• {buyer.year} year</span>}
+
                 </div>
                 <div className="member-duration">
                   Member since{" "}
@@ -1579,6 +1607,22 @@ const BuyerDashboard = () => {
             </div>
 
             <div className="viewControls">
+              {/* Quick filter buttons */}
+              <div className="quickFilters">
+                <button
+                  className={`quickFilterButton ${searchQuery.toLowerCase().includes('drafter') ? 'active' : ''}`}
+                  onClick={handleDrafterFilter}
+                >
+                  📐 Drafter
+                </button>
+                <button
+                  className={`quickFilterButton ${searchQuery.toLowerCase().includes('akash') ? 'active' : ''}`}
+                  onClick={handleAkashFilter}
+                >
+                  📖 Akash
+                </button>
+              </div>
+              
               <button
                 className={`filterToggle mobileOnly ${
                   getActiveFilterCount() > 0 ? "active" : ""
@@ -1739,10 +1783,12 @@ const BuyerDashboard = () => {
                             cartLoading || isInCart(product.id || product._id)
                           }
                         >
+
                           <ShoppingCart size={16} />
                           {isInCart(product.id || product._id)
                             ? "In Cart"
                             : "Add to Cart"}
+
                         </button>
                         <button
                           className="contactSellerButton"

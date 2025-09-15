@@ -60,15 +60,54 @@ export async function POST(request) {
     const client = await clientPromise;
     const db = client.db('campusmart');
     
+    // Convert screenshotId to ObjectId or handle UUID
+    let screenshotObjectId;
+    let isUUID = false;
+    
+    try {
+      // First try to convert as ObjectId
+      screenshotObjectId = new ObjectId(screenshotId);
+    } catch (error) {
+      // If not ObjectId, check if it's a UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(screenshotId)) {
+        isUUID = true;
+        // For UUID, we'll search by the string ID directly
+        screenshotObjectId = screenshotId;
+        console.log('🔍 UUID format detected:', screenshotId);
+      } else {
+        return Response.json({ 
+          error: 'Invalid screenshot ID format. Expected MongoDB ObjectId or UUID format.' 
+        }, { status: 400 });
+      }
+    }
+    
     // First, get the screenshot details
     const screenshotsCollection = db.collection('payment_screenshots');
-    const screenshot = await screenshotsCollection.findOne({ _id: screenshotId });
+    let screenshot;
+    
+    if (isUUID) {
+      // Search by UUID string
+      screenshot = await screenshotsCollection.findOne({ _id: screenshotId });
+    } else {
+      // Search by ObjectId
+      screenshot = await screenshotsCollection.findOne({ _id: screenshotObjectId });
+    }
 
     if (!screenshot) {
       return Response.json({ 
         error: 'Payment screenshot not found' 
       }, { status: 404 });
     }
+
+    console.log('🔍 Found screenshot:', {
+      id: screenshot._id,
+      idType: typeof screenshot._id,
+      currentStatus: screenshot.status,
+      productId: screenshot.productId,
+      buyerId: screenshot.buyerId,
+      sellerId: screenshot.sellerId
+    });
 
     // Check if already processed
     if (screenshot.status !== 'pending_verification') {
@@ -89,8 +128,12 @@ export async function POST(request) {
       updateData.rejectionReason = rejectionReason;
     }
 
+    console.log('📝 Updating screenshot with data:', updateData);
+    console.log('🔧 Using ID for update:', isUUID ? screenshotId : screenshotObjectId);
+    console.log('🔧 ID type:', isUUID ? 'UUID (string)' : 'ObjectId');
+
     const result = await screenshotsCollection.updateOne(
-      { _id: screenshotId },
+      { _id: isUUID ? screenshotId : screenshotObjectId },
       { $set: updateData }
     );
 
@@ -98,6 +141,12 @@ export async function POST(request) {
       return Response.json({ 
         error: 'Payment screenshot not found' 
       }, { status: 404 });
+    }
+
+    if (result.modifiedCount === 0) {
+      console.log('⚠️ Screenshot update resulted in no changes');
+    } else {
+      console.log('✅ Screenshot status updated successfully');
     }
 
     // Update the corresponding order status
@@ -117,10 +166,18 @@ export async function POST(request) {
       orderUpdate.rejectedBy = admin.adminId || admin.userId;
     }
 
-    await ordersCollection.updateOne(
-      { paymentScreenshotId: screenshotId },
+    console.log('📦 Looking for order with paymentScreenshotId:', isUUID ? screenshotId : screenshotObjectId);
+
+    const orderResult = await ordersCollection.updateOne(
+      { paymentScreenshotId: isUUID ? screenshotId : screenshotObjectId },
       { $set: orderUpdate }
     );
+
+    if (orderResult.matchedCount === 0) {
+      console.log('⚠️ No order found with paymentScreenshotId:', isUUID ? screenshotId : screenshotObjectId);
+    } else {
+      console.log('✅ Order status updated successfully');
+    }
 
     // If verified, also update the listing status to 'sold';
     // If rejected, revert listing back to 'active'
@@ -137,7 +194,7 @@ export async function POST(request) {
     if (status === 'verified') {
       try {
         const listingsCollection = db.collection('listings');
-        await listingsCollection.updateOne(
+        const listingResult = await listingsCollection.updateOne(
           { _id: productObjectId || screenshot.productId },
           { 
             $set: { 
@@ -147,7 +204,12 @@ export async function POST(request) {
             }
           }
         );
-        console.log('✅ Listing marked as sold:', screenshot.productId);
+        
+        if (listingResult.matchedCount > 0) {
+          console.log('✅ Listing marked as sold:', screenshot.productId);
+        } else {
+          console.log('⚠️ No listing found to mark as sold:', screenshot.productId);
+        }
       } catch (listingError) {
         console.error('❌ Error updating listing status:', listingError);
         // Don't fail the entire operation if listing update fails
@@ -155,79 +217,29 @@ export async function POST(request) {
     } else if (status === 'rejected') {
       try {
         const listingsCollection = db.collection('listings');
-        await listingsCollection.updateOne(
+        const listingResult = await listingsCollection.updateOne(
           { _id: productObjectId || screenshot.productId },
-          {
-            $set: {
-              status: 'active'
-            },
-            $unset: {
-              reservedBy: '',
-              reservedAt: '',
-              reservedOrderId: ''
+          { 
+            $set: { 
+              status: 'active',
+              soldAt: null,
+              soldTo: null
             }
           }
         );
-        console.log('↩️ Listing reactivated after payment rejection:', screenshot.productId);
+        
+        if (listingResult.matchedCount > 0) {
+          console.log('✅ Listing reverted to active:', screenshot.productId);
+        } else {
+          console.log('⚠️ No listing found to revert:', screenshot.productId);
+        }
       } catch (listingError) {
-        console.error('❌ Error reactivating listing after rejection:', listingError);
+        console.error('❌ Error reverting listing status:', listingError);
+        // Don't fail the entire operation if listing update fails
       }
     }
 
-    // Log the verification action
-    console.log(`✅ Payment screenshot ${status} by admin:`, {
-      screenshotId,
-      status,
-      adminId: admin.adminId || admin.userId,
-      adminName: admin.name,
-      verifiedAt: updateData.verifiedAt,
-      buyerId: screenshot.buyerId,
-      sellerId: screenshot.sellerId,
-      productId: screenshot.productId,
-      amount: screenshot.amount
-    });
-
-    // Create notification records (you can add these collections if needed)
-    try {
-      const notificationsCollection = db.collection('notifications');
-      
-      // Notify buyer
-      await notificationsCollection.insertOne({
-        _id: new ObjectId(),
-        userId: screenshot.buyerId,
-        userType: 'buyer',
-        type: 'payment_verification',
-        title: status === 'verified' ? 'Payment Verified!' : 'Payment Rejected',
-        message: status === 'verified' 
-          ? 'Your payment has been verified. The seller will be notified to proceed with delivery.'
-          : `Your payment has been rejected. Reason: ${rejectionReason}`,
-        isRead: false,
-        createdAt: new Date(),
-        relatedId: screenshotId,
-        relatedType: 'payment'
-      });
-
-      // Notify seller
-      await notificationsCollection.insertOne({
-        _id: new ObjectId(),
-        userId: screenshot.sellerId,
-        userType: 'seller',
-        type: 'payment_verification',
-        title: status === 'verified' ? 'Payment Received!' : 'Payment Issue',
-        message: status === 'verified' 
-          ? 'Payment for your item has been verified. Please proceed with delivery to the buyer.'
-          : `Payment verification failed for your item. Reason: ${rejectionReason}`,
-        isRead: false,
-        createdAt: new Date(),
-        relatedId: screenshotId,
-        relatedType: 'payment'
-      });
-
-      console.log('✅ Notifications sent to buyer and seller');
-    } catch (notificationError) {
-      console.error('❌ Error creating notifications:', notificationError);
-      // Don't fail the main operation
-    }
+    console.log('🎉 Payment verification process completed successfully');
 
     return Response.json({
       success: true,
@@ -236,16 +248,16 @@ export async function POST(request) {
         screenshotId, 
         status,
         verifiedAt: updateData.verifiedAt,
-        verifiedBy: admin.name || admin.adminId
+        verifiedBy: updateData.verifiedBy
       }
-    }, { status: 200 });
+    });
 
   } catch (error) {
-    console.error('❌ Error verifying payment screenshot:', error);
+    console.error('❌ Error in payment verification:', error);
     return Response.json({
       success: false,
       error: 'Internal server error',
-      message: error.message
+      details: error.message
     }, { status: 500 });
   }
 }
