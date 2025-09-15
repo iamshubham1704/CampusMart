@@ -1221,7 +1221,7 @@ const BuyerDashboard = () => {
               <h4>Data Structures Assignment</h4>
               <p>Computer Science • Due in 2 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹800</span>
+                <span className="budget">₹120</span>
                 <span className="location">MAIT</span>
               </div>
             </div>
@@ -1234,7 +1234,7 @@ const BuyerDashboard = () => {
               <h4>Physics Lab Report</h4>
               <p>Physics • Due in 1 week</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹500</span>
+                <span className="budget">₹350</span>
                 <span className="location">DTU</span>
               </div>
             </div>
@@ -1244,10 +1244,10 @@ const BuyerDashboard = () => {
               <PenTool size={20} />
             </div>
             <div className="trending-content-horizontal">
-              <h4>Engineering Project</h4>
+              <h4>Engineering Project-Final Year</h4>
               <p>Engineering • Due in 3 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹1200</span>
+                <span className="budget">₹750</span>
                 <span className="location">NSUT</span>
               </div>
             </div>
@@ -1260,7 +1260,7 @@ const BuyerDashboard = () => {
               <h4>Mathematics Assignment</h4>
               <p>Mathematics • Due in 5 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹600</span>
+                <span className="budget">₹150</span>
                 <span className="location">IP University</span>
               </div>
             </div>
@@ -1286,7 +1286,7 @@ const BuyerDashboard = () => {
               <h4>Software Development</h4>
               <p>Computer Science • Due in 4 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹1500</span>
+                <span className="budget">₹150</span>
                 <span className="location">GGSIPU</span>
               </div>
             </div>
@@ -1313,7 +1313,7 @@ const BuyerDashboard = () => {
               <h4>Data Structures Assignment</h4>
               <p>Computer Science • Due in 2 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹800</span>
+                <span className="budget">₹150</span>
                 <span className="location">MAIT</span>
               </div>
             </div>
@@ -1326,7 +1326,7 @@ const BuyerDashboard = () => {
               <h4>Physics Lab Report</h4>
               <p>Physics • Due in 1 week</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹500</span>
+                <span className="budget">₹350</span>
                 <span className="location">DTU</span>
               </div>
             </div>
@@ -1339,7 +1339,7 @@ const BuyerDashboard = () => {
               <h4>Engineering Project</h4>
               <p>Engineering • Due in 3 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹1200</span>
+                <span className="budget">₹750</span>
                 <span className="location">NSUT</span>
               </div>
             </div>
@@ -1353,7 +1353,7 @@ const BuyerDashboard = () => {
               <h4>Data Structures Assignment</h4>
               <p>Computer Science • Due in 2 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹800</span>
+                <span className="budget">₹150</span>
                 <span className="location">MAIT</span>
               </div>
             </div>
@@ -1366,7 +1366,7 @@ const BuyerDashboard = () => {
               <h4>Physics Lab Report</h4>
               <p>Physics • Due in 1 week</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹500</span>
+                <span className="budget">₹350</span>
                 <span className="location">DTU</span>
               </div>
             </div>
@@ -1379,7 +1379,7 @@ const BuyerDashboard = () => {
               <h4>Engineering Project</h4>
               <p>Engineering • Due in 3 days</p>
               <div className="trending-meta-horizontal">
-                <span className="budget">₹1200</span>
+                <span className="budget">₹750</span>
                 <span className="location">NSUT</span>
               </div>
             </div>
