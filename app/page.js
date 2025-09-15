@@ -582,7 +582,7 @@ const CampusMart = () => {
                     </Link>
                   </li>
                   <li className="nav-item">
-                    <Link href="/assignments" className="nav-link">
+                    <Link href="/buyer-dashboard/assignments" className="nav-link">
                       <FileText size={18} />
                       <span>Assignment</span>
                     </Link>
