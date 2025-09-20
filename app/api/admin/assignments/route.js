@@ -80,10 +80,20 @@ export async function GET(request) {
             );
           }
 
+          // Populate assigned admin details
+          let assignedToAdmin = null;
+          if (assignment.assignedToAdmin) {
+            assignedToAdmin = await db.collection("admins").findOne(
+              { _id: new ObjectId(assignment.assignedToAdmin) },
+              { projection: { name: 1, email: 1 } } // Project only non-sensitive fields
+            );
+          }
+
           return {
             ...assignment,
             buyer: buyer || {},
             assignedToAlpha: assignedToAlpha || null, // Add the assigned alpha details here
+            assignedToAdmin: assignedToAdmin || null, // Add the assigned admin details here
           };
         } catch (error) {
           console.error("Error populating assignment details:", error);
@@ -91,6 +101,7 @@ export async function GET(request) {
             ...assignment,
             buyer: {},
             assignedToAlpha: null,
+            assignedToAdmin: null,
           };
         }
       })

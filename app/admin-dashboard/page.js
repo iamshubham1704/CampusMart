@@ -37,7 +37,10 @@ export default function AdminDashboard() {
     verifiedPayments: 0,
     sellerPaymentRequests: 0,
     pendingSellerPayments: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    productRevenue: 0,
+    assignmentRevenue: 0,
+    completedAssignments: 0
   });
 
   // Reports stats state
@@ -245,6 +248,9 @@ export default function AdminDashboard() {
         }),
         fetch('/api/admin/seller-transactions', {
           headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/admin/assignment-revenue', {
+          headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
 
@@ -253,11 +259,12 @@ export default function AdminDashboard() {
         productsResponse,
         ordersResponse,
         paymentsResponse,
-        sellerPaymentsResponse
+        sellerPaymentsResponse,
+        assignmentRevenueResponse
       ] = await Promise.race([apiCalls, timeout]);
 
       // Check for authentication errors
-      const responses = [usersResponse, productsResponse, ordersResponse, paymentsResponse, sellerPaymentsResponse];
+      const responses = [usersResponse, productsResponse, ordersResponse, paymentsResponse, sellerPaymentsResponse, assignmentRevenueResponse];
       const unauthorizedResponse = responses.find(res => res.status === 401);
       
       if (unauthorizedResponse) {
@@ -280,7 +287,7 @@ export default function AdminDashboard() {
         }
       };
 
-      const [usersData, productsData, ordersData, paymentsData, sellerPaymentsData] = await Promise.all(
+      const [usersData, productsData, ordersData, paymentsData, sellerPaymentsData, assignmentRevenueData] = await Promise.all(
         responses.map(processResponse)
       );
 
@@ -294,6 +301,10 @@ export default function AdminDashboard() {
       });
 
       // Calculate stats with null checking
+      const productRevenue = paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const assignmentRevenue = assignmentRevenueData?.data?.totalRevenue || 0;
+      const totalRevenue = productRevenue + assignmentRevenue;
+
       const newStats = {
         totalUsers: (usersData?.data?.buyers?.length || 0) + (usersData?.data?.sellers?.length || 0),
         totalBuyers: usersData?.data?.buyers?.length || 0,
@@ -304,7 +315,10 @@ export default function AdminDashboard() {
         verifiedPayments: paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.length || 0,
         sellerPaymentRequests: sellerPaymentsData?.data?.summary?.total || 0,
         pendingSellerPayments: sellerPaymentsData?.data?.summary?.pending || 0,
-        totalRevenue: paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
+        totalRevenue: totalRevenue,
+        productRevenue: productRevenue,
+        assignmentRevenue: assignmentRevenue,
+        completedAssignments: assignmentRevenueData?.data?.completedCount || 0
       };
 
       setDashboardStats(newStats);
@@ -2001,6 +2015,38 @@ export default function AdminDashboard() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Assignment Revenue Section */}
+      <div style={{
+        backgroundColor: 'white',
+        padding: '1.5rem',
+        borderRadius: '16px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        border: '1px solid #e9ecef',
+        marginTop: '2rem'
+      }}>
+        <h2 style={{ color: '#212529', margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Assignment Revenue</h2>
+        <p style={{ margin: '0.5rem 0 1rem 0', color: '#6c757d' }}>Revenue from completed assignments and academic services.</p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#28a745', fontWeight: 700, fontSize: '1.75rem' }}>{dashboardStats.completedAssignments.toLocaleString()}</div>
+            <div style={{ color: '#6c757d' }}>Completed Assignments</div>
+          </div>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#0d6efd', fontWeight: 700, fontSize: '1.75rem' }}>₹{dashboardStats.assignmentRevenue.toLocaleString('en-IN')}</div>
+            <div style={{ color: '#6c757d' }}>Assignment Revenue</div>
+          </div>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#e83e8c', fontWeight: 700, fontSize: '1.75rem' }}>₹{Math.round(dashboardStats.assignmentRevenue * 0.10).toLocaleString('en-IN')}</div>
+            <div style={{ color: '#6c757d' }}>Commission (10%)</div>
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: '#e7f3ff', border: '1px solid #b3d9ff', borderRadius: '6px', padding: '0.75rem', fontSize: '0.9rem', color: '#004085' }}>
+          <strong>Note:</strong> Assignment revenue is calculated from completed assignments with set buyer prices. This revenue is included in the total platform revenue.
+        </div>
       </div>
 
       {/* Footer */}

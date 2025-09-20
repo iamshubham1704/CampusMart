@@ -81,6 +81,14 @@ export async function POST(request) {
           }
         },
         {
+          $lookup: {
+            from: 'admins',
+            localField: 'assignedToAdmin',
+            foreignField: '_id',
+            as: 'assignedAdmin'
+          }
+        },
+        {
           $project: {
             _id: 1,
             title: 1,
@@ -100,6 +108,8 @@ export async function POST(request) {
             assignedBy: { $arrayElemAt: ['$admin.name', 0] },
             assignedByEmail: { $arrayElemAt: ['$admin.email', 0] },
             assignedByPhone: { $arrayElemAt: ['$admin.phone', 0] }, // <-- ✅ Added phone
+            assignedAdminName: { $arrayElemAt: ['$assignedAdmin.name', 0] },
+            assignedAdminEmail: { $arrayElemAt: ['$assignedAdmin.email', 0] },
             createdAt: 1,
             updatedAt: 1,
           }
