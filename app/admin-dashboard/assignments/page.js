@@ -38,6 +38,8 @@ const AdminAssignmentsPage = () => {
   const [success, setSuccess] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [adminFilter, setAdminFilter] = useState("all");
+  const [alphaFilter, setAlphaFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
@@ -54,8 +56,11 @@ const AdminAssignmentsPage = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(new Date());
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isAssignAdminModalOpen, setIsAssignAdminModalOpen] = useState(false);
   const [alphas, setAlphas] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const [selectedAlpha, setSelectedAlpha] = useState("");
+  const [selectedAdmin, setSelectedAdmin] = useState("");
   const [paymentRequestsCount, setPaymentRequestsCount] = useState(0);
 
   const statusOptions = [
@@ -67,10 +72,21 @@ const AdminAssignmentsPage = () => {
     { value: "cancelled", label: "Cancelled", color: "text-red-600" },
   ];
 
+  const adminFilterOptions = [
+    { value: "all", label: "All Admins" },
+    ...admins.map(admin => ({ value: admin._id, label: admin.name }))
+  ];
+
+  const alphaFilterOptions = [
+    { value: "all", label: "All Alphas" },
+    ...alphas.map(alpha => ({ value: alpha._id, label: alpha.name }))
+  ];
+
   // ALL useEffect hooks must be at the top level, before any conditional logic
   useEffect(() => {
     checkAuthAndFetchProfile();
     fetchAlphas();
+    fetchAdmins();
     fetchPaymentRequestsCount();
   }, []);
 
@@ -78,7 +94,7 @@ const AdminAssignmentsPage = () => {
     if (assignments.length > 0) {
       filterAssignments();
     }
-  }, [assignments, searchTerm, statusFilter]);
+  }, [assignments, searchTerm, statusFilter, adminFilter, alphaFilter]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -107,6 +123,27 @@ const AdminAssignmentsPage = () => {
     } catch (error) {
       console.error("Error fetching alphas:", error);
       setError("Failed to fetch alphas");
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      const token = getStoredToken("admin");
+      if (!token) return;
+      const response = await fetch("/api/admin/admins", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAdmins(data.data?.admins || []);
+      }
+    } catch (error) {
+      console.error("Error fetching admins:", error);
+      setError("Failed to fetch admins");
     }
   };
 
@@ -192,6 +229,12 @@ const AdminAssignmentsPage = () => {
     setIsAssignModalOpen(true);
   };
 
+  const handleOpenAssignAdminModal = (assignment) => {
+    setSelectedAssignment(assignment);
+    setSelectedAdmin(assignment.assignedToAdmin?._id || "");
+    setIsAssignAdminModalOpen(true);
+  };
+
   const handleAssignAlpha = async (e) => {
     e.preventDefault();
     if (!selectedAlpha) {
@@ -230,6 +273,51 @@ const AdminAssignmentsPage = () => {
       setIsAssignModalOpen(false);
       setSelectedAssignment(null);
       setSelectedAlpha("");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAssignAdmin = async (e) => {
+    e.preventDefault();
+    if (!selectedAdmin) {
+      setError("Please select an Admin");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      setError("");
+      setSuccess("");
+      const token = getStoredToken("admin");
+      const response = await fetch("/api/admin/assign-admin", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          assignmentId: selectedAssignment._id,
+          adminId: selectedAdmin,
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to assign Admin");
+      }
+      const data = await response.json();
+      setSuccess("Admin assigned successfully!");
+      setAssignments((prev) =>
+        prev.map((assignment) =>
+          assignment._id === selectedAssignment._id
+            ? { ...assignment, ...data.data }
+            : assignment
+        )
+      );
+      setIsAssignAdminModalOpen(false);
+      setSelectedAssignment(null);
+      setSelectedAdmin("");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -311,6 +399,18 @@ const AdminAssignmentsPage = () => {
       filtered = filtered.filter(
         (assignment) => assignment.status === statusFilter
       );
+    }
+
+    if (adminFilter !== "all") {
+      filtered = filtered.filter((assignment) => {
+        return assignment.assignedToAdmin?._id === adminFilter;
+      });
+    }
+
+    if (alphaFilter !== "all") {
+      filtered = filtered.filter((assignment) => {
+        return assignment.assignedToAlpha?._id === alphaFilter;
+      });
     }
 
     if (searchTerm) {
@@ -610,31 +710,53 @@ const AdminAssignmentsPage = () => {
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className={styles["filters-section"]}>
-        <div className={styles["search-box"]}>
-          <Search size={20} />
-          <input
-            type="text"
-            placeholder="Search assignments, subjects, or buyers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className={styles["filter-controls"]}>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className={styles["status-filter"]}
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+       {/* Filters and Search */}
+       <div className={styles["filters-section"]}>
+         <div className={styles["search-box"]}>
+           <Search size={20} />
+           <input
+             type="text"
+             placeholder="Search assignments, subjects, or buyers..."
+             value={searchTerm}
+             onChange={(e) => setSearchTerm(e.target.value)}
+           />
+         </div>
+         <div className={styles["filter-controls"]}>
+           <select
+             value={statusFilter}
+             onChange={(e) => setStatusFilter(e.target.value)}
+             className={styles["status-filter"]}
+           >
+             {statusOptions.map((option) => (
+               <option key={option.value} value={option.value}>
+                 {option.label}
+               </option>
+             ))}
+           </select>
+           <select
+             value={adminFilter}
+             onChange={(e) => setAdminFilter(e.target.value)}
+             className={styles["admin-filter"]}
+           >
+             {adminFilterOptions.map((option) => (
+               <option key={option.value} value={option.value}>
+                 {option.label}
+               </option>
+             ))}
+           </select>
+           <select
+             value={alphaFilter}
+             onChange={(e) => setAlphaFilter(e.target.value)}
+             className={styles["alpha-filter"]}
+           >
+             {alphaFilterOptions.map((option) => (
+               <option key={option.value} value={option.value}>
+                 {option.label}
+               </option>
+             ))}
+           </select>
+         </div>
+       </div>
 
       {/* Assignments List */}
       <div className={styles["assignments-content"]}>
@@ -771,34 +893,67 @@ const AdminAssignmentsPage = () => {
                     </div>
                   </div>
 
-                  {/* Assigned Alpha Information */}
-                  {/* Assigned Alpha Information */}
-                  {assignment.assignedToAlpha && (
-                    <div className={styles["buyer-info"]}>
-                      <h4>Alpha Details:</h4>
-                      <div className={styles["buyer-details"]}>
-                        <div className={styles["buyer-item"]}>
-                          <User size={16} />
-                          <span>
-                            <strong>Name:</strong>{" "}
-                            {assignment.assignedToAlpha.name || "N/A"}
-                          </span>
-                        </div>
-                        <div className={styles["buyer-item"]}>
-                          <span>
-                            <strong>Email:</strong>{" "}
-                            {assignment.assignedToAlpha.email || "N/A"}
-                          </span>
-                        </div>
-                        <div className={styles["buyer-item"]}>
-                          <span>
-                            <strong>Phone:</strong>{" "}
-                            {assignment.assignedToAlpha.phone || "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                   {/* Assignment Team Information */}
+                   {(assignment.assignedToAlpha || assignment.assignedToAdmin) && (
+                     <div className={styles["buyer-info"]}>
+                       <h4>Assignment Team:</h4>
+                       <div className={styles["buyer-details"]}>
+                         {/* Assigned Alpha Information */}
+                         {assignment.assignedToAlpha && (
+                           <div className={styles["team-member"]}>
+                             <div className={styles["team-member-header"]}>
+                               <Users size={16} />
+                               <strong>Alpha (Worker):</strong>
+                             </div>
+                             <div className={styles["team-member-details"]}>
+                               <div className={styles["buyer-item"]}>
+                                 <span>
+                                   <strong>Name:</strong>{" "}
+                                   {assignment.assignedToAlpha.name || "N/A"}
+                                 </span>
+                               </div>
+                               <div className={styles["buyer-item"]}>
+                                 <span>
+                                   <strong>Email:</strong>{" "}
+                                   {assignment.assignedToAlpha.email || "N/A"}
+                                 </span>
+                               </div>
+                               <div className={styles["buyer-item"]}>
+                                 <span>
+                                   <strong>Phone:</strong>{" "}
+                                   {assignment.assignedToAlpha.phone || "N/A"}
+                                 </span>
+                               </div>
+                             </div>
+                           </div>
+                         )}
+
+                         {/* Assigned Admin Information */}
+                         {assignment.assignedToAdmin && (
+                           <div className={styles["team-member"]}>
+                             <div className={styles["team-member-header"]}>
+                               <User size={16} />
+                               <strong>Admin (Supervisor):</strong>
+                             </div>
+                             <div className={styles["team-member-details"]}>
+                               <div className={styles["buyer-item"]}>
+                                 <span>
+                                   <strong>Name:</strong>{" "}
+                                   {assignment.assignedToAdmin.name || "N/A"}
+                                 </span>
+                               </div>
+                               <div className={styles["buyer-item"]}>
+                                 <span>
+                                   <strong>Email:</strong>{" "}
+                                   {assignment.assignedToAdmin.email || "N/A"}
+                                 </span>
+                               </div>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                     </div>
+                   )}
 
                   {assignment.additionalRequirements && (
                     <div className={styles["additional-requirements"]}>
@@ -874,7 +1029,20 @@ const AdminAssignmentsPage = () => {
                       onClick={() => handleOpenAssignModal(assignment)}
                     >
                       <Users size={16} />
-                      Assign Alpha
+                      {assignment.assignedToAlpha 
+                        ? `Alpha: ${assignment.assignedToAlpha.name}` 
+                        : "Assign Alpha"
+                      }
+                    </button>
+                    <button
+                      className={`${styles["action-button"]} ${styles["assign-admin"]}`}
+                      onClick={() => handleOpenAssignAdminModal(assignment)}
+                    >
+                      <User size={16} />
+                      {assignment.assignedToAdmin 
+                        ? `Admin: ${assignment.assignedToAdmin.name}` 
+                        : "Assign Admin"
+                      }
                     </button>
                     {assignment.status === "alpha_completed" && (
                       <button
@@ -1177,6 +1345,85 @@ const AdminAssignmentsPage = () => {
                     <>
                       <CheckCircle size={16} />
                       Confirm Assignment
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Admin Modal */}
+      {isAssignAdminModalOpen && selectedAssignment && (
+        <div
+          className={styles["modal-overlay"]}
+          onClick={() => setIsAssignAdminModalOpen(false)}
+        >
+          <div
+            className={styles["edit-modal"]}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles["modal-header"]}>
+              <h2>Assign Admin for {selectedAssignment.title}</h2>
+              <button
+                className={styles["close-button"]}
+                onClick={() => setIsAssignAdminModalOpen(false)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleAssignAdmin} className={styles["edit-form"]}>
+              {error && (
+                <div className={styles["error-message"]}>
+                  <AlertCircle size={16} />
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className={styles["success-message"]}>
+                  <CheckCircle size={16} />
+                  {success}
+                </div>
+              )}
+              <div className={styles["form-group"]}>
+                <label>Select Admin *</label>
+                <select
+                  value={selectedAdmin}
+                  onChange={(e) => setSelectedAdmin(e.target.value)}
+                  required
+                >
+                  <option value="">-- Select an Admin --</option>
+                  {admins.map((admin) => (
+                    <option key={admin._id} value={admin._id}>
+                      {admin.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles["form-actions"]}>
+                <button
+                  type="button"
+                  className={styles["cancel-button"]}
+                  onClick={() => setIsAssignAdminModalOpen(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles["submit-button"]}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 size={16} className={styles.spinner} />
+                      Assigning...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} />
+                      Assign Admin
                     </>
                   )}
                 </button>

@@ -62,7 +62,7 @@ export async function GET(request) {
             let assignedAdmin = null;
             
             // Try different possible admin ID fields
-            const adminId = assignment.adminId || assignment.assignedAdmin || assignment.assignedTo;
+            const adminId = assignment.adminId || assignment.assignedAdmin || assignment.assignedToAdmin || assignment.assignedTo;
             
             if (adminId) {
               try {
