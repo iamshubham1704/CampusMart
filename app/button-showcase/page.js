@@ -18,7 +18,7 @@ const ButtonShowcase = () => {
   const [loading, setLoading] = useState(false);
 
   const handleClick = (message) => {
-    console.log(message);
+    // console.log(message);
   };
 
   const handleLoading = () => {
