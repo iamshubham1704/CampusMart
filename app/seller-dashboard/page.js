@@ -188,7 +188,7 @@ const SellerDashboard = () => {
         return;
       }
 
-      console.log('Making API calls with valid token...');
+      // console.log('Making API calls with valid token...');
 
       // Use real APIs by default; no dummy fallbacks
       const useRealAPIs = true;
@@ -259,7 +259,7 @@ const SellerDashboard = () => {
       
       if (statsResponse.success && statsResponse.stats) {
         sellerStats = statsResponse.stats;
-        console.log('Stats fetched successfully');
+        // console.log('Stats fetched successfully');
       } else {
         console.warn('Stats API failed:', {
           success: statsResponse.success,
