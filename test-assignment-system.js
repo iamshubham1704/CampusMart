@@ -12,8 +12,7 @@ const requiredFiles = [
   'app/api/assignments/upload-pdf/route.js',
   'app/api/admin/assignments/route.js',
   'app/buyer-dashboard/assignments/page.js',
-  'app/buyer-dashboard/assignments/Assignments.module.css',
-  'app/admin-dashboard/assignments/page.js',
+  'app/buyer-dashboard/assignments/Assignments.module.css',  'app/admin-dashboard/assignments/page.js',
   'app/admin-dashboard/assignments/Assignments.module.css',
   'lib/mongo.js',
   'lib/auth.js'
