@@ -1,136 +1,69 @@
 // app/api/admin/users/route.js
-import { verifyToken } from '@/lib/auth';
+import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongo';
+import { verifyAdminToken } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
-// Verify admin token
-function verifyAdminToken(request) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
-    
-    // Check if user has admin role
-    if (!decoded || decoded.role !== 'admin') {
-      return null;
-    }
-
-    return decoded;
-  } catch (error) {
-    console.error('Admin token verification failed:', error);
-    return null;
-  }
-}
-
-// GET - Fetch all buyers and sellers
+// GET - Fetch available users for team assignment
 export async function GET(request) {
   try {
     const decoded = verifyAdminToken(request);
     if (!decoded) {
-      return Response.json({ 
-        error: 'Unauthorized. Admin access required.' 
-      }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type'); // 'seller' or 'buyer'
+    const search = searchParams.get('search'); // Search text
+    const limitParam = parseInt(searchParams.get('limit') || '200', 10);
 
     const client = await clientPromise;
     const db = client.db('campusmart');
 
-    // Get query parameters
-    const url = new URL(request.url);
-    const userType = url.searchParams.get('type'); // 'buyer', 'seller', or null for all
-    const getAll = url.searchParams.get('all') === 'true'; // Get all users without pagination
-    const page = parseInt(url.searchParams.get('page')) || 1;
-    const limit = parseInt(url.searchParams.get('limit')) || 20;
-    const skip = (page - 1) * limit;
-
-    let users = [];
-    let totalCount = 0;
-
-    if (userType === 'buyer' || !userType) {
-      const buyers = await db.collection('buyers')
-        .find({})
-        .skip(getAll ? 0 : (userType === 'buyer' ? skip : 0))
-        .limit(getAll ? 0 : (userType === 'buyer' ? limit : 0))
-        .project({ password: 0 }) // Exclude password
-        .sort({ createdAt: -1 })
-        .toArray();
-
-      const buyersWithType = buyers.map(buyer => ({
-        ...buyer,
-        userType: 'buyer'
-      }));
-
-      users = users.concat(buyersWithType);
-
-      if (userType === 'buyer') {
-        totalCount = await db.collection('buyers').countDocuments({});
+    // Build filters for buyers and sellers separately
+    const buildFilter = () => {
+      const f = {};
+    if (search) {
+        f.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+          { college: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } }
+        ];
       }
-    }
+      return f;
+    };
 
-    if (userType === 'seller' || !userType) {
-      const sellers = await db.collection('sellers')
-        .find({})
-        .skip(getAll ? 0 : (userType === 'seller' ? skip : 0))
-        .limit(getAll ? 0 : (userType === 'seller' ? limit : 0))
-        .project({ password: 0 }) // Exclude password
-        .sort({ createdAt: -1 })
-        .toArray();
+    const projection = { _id: 1, name: 1, email: 1, phone: 1, college: 1, isActive: 1, createdAt: 1 };
 
-      const sellersWithType = sellers.map(seller => ({
-        ...seller,
-        userType: 'seller'
-      }));
+    const shouldFetchBuyers = !type || type === 'buyer';
+    const shouldFetchSellers = !type || type === 'seller';
 
-      users = users.concat(sellersWithType);
+    const [buyers, sellers] = await Promise.all([
+      shouldFetchBuyers
+        ? db.collection('buyers').find(buildFilter(), { projection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
+        : Promise.resolve([]),
+      shouldFetchSellers
+        ? db.collection('sellers').find(buildFilter(), { projection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
+        : Promise.resolve([])
+    ]);
 
-      if (userType === 'seller') {
-        totalCount = await db.collection('sellers').countDocuments({});
-      }
-    }
+    // Normalize into a single list
+    const normalized = [
+      ...buyers.map(b => ({ ...b, role: 'buyer', userType: 'buyer' })),
+      ...sellers.map(s => ({ ...s, role: 'seller', userType: 'seller' }))
+    ]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, limitParam);
 
-    // If fetching all users, get total count
-    if (!userType) {
-      const [buyerCount, sellerCount] = await Promise.all([
-        db.collection('buyers').countDocuments({}),
-        db.collection('sellers').countDocuments({})
-      ]);
-      totalCount = buyerCount + sellerCount;
-
-      // Apply pagination for all users only if not getting all
-      if (!getAll) {
-        users = users.slice(skip, skip + limit);
-      }
-    }
-
-    return Response.json({
-      success: true,
-      data: {
-        users,
-        pagination: getAll ? {
-          page: 1,
-          limit: totalCount,
-          total: totalCount,
-          totalPages: 1
-        } : {
-          page,
-          limit,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / limit)
-        }
-      }
+    return NextResponse.json({ 
+      success: true, 
+      data: normalized,
+      total: normalized.length
     }, { status: 200 });
-
   } catch (error) {
-    console.error('Error fetching users:', error);
-    return Response.json({
-      success: false,
-      error: 'Internal server error'
-    }, { status: 500 });
+    console.error('GET /api/admin/users error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

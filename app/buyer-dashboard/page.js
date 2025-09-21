@@ -1,19 +1,20 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Filter,
   Heart,
   ShoppingCart,
+  ArrowLeft,
   User,
-  Bell,
+  Share2,
   Grid3X3,
-  Star,
   MapPin,
   Clock,
   DollarSign,
   BookOpen,
+  PenTool,
   Laptop,
   Coffee,
   Shirt,
@@ -21,7 +22,6 @@ import {
   Gamepad2,
   Menu,
   X,
-  Sparkles,
   Eye,
   Sun,
   Moon,
@@ -36,18 +36,25 @@ import {
   Save,
   Package,
   ChevronDown,
+  FileText,
   Pen,
   MessageCircle,
-  Share2
-} from 'lucide-react';
-import { useCart } from '../../components/contexts/CartContext';
-import CartDrawer from '../../components/CartDrawer';
-import ProductViewModal from './quick-view/page';
-import { useWishlist } from '../../components/contexts/WishlistContext';
-import WishlistModal from './wishlist/page';
-import Link from 'next/link';
-import { getStoredToken, isAuthenticated, redirectToLogin, clearAllTokens } from '../../lib/auth';
-import './BuyerDashboard.css';
+
+} from "lucide-react";
+import { useCart } from "../../components/contexts/CartContext";
+import CartDrawer from "../../components/CartDrawer";
+import ProductViewModal from "./quick-view/page";
+import { useWishlist } from "../../components/contexts/WishlistContext";
+import WishlistModal from "./wishlist/page";
+import Link from "next/link";
+import {
+  getStoredToken,
+  isAuthenticated,
+  redirectToLogin,
+  clearAllTokens,
+} from "../../lib/auth";
+import "./BuyerDashboard.css";
+
 
 const useBuyer = () => {
   const [buyer, setBuyer] = useState(null);
@@ -59,67 +66,75 @@ const useBuyer = () => {
       setLoading(true);
       setError(null);
 
-      console.log('Checking authentication for buyer dashboard...');
-      
+      console.log("Checking authentication for buyer dashboard...");
+
       // Check authentication first
-      if (!isAuthenticated('buyer')) {
-        console.log('Buyer not authenticated, redirecting to login');
-        redirectToLogin('buyer');
+      if (!isAuthenticated("buyer")) {
+        console.log("Buyer not authenticated, redirecting to login");
+        redirectToLogin("buyer");
         return;
       }
 
-      const token = getStoredToken('buyer');
+      const token = getStoredToken("buyer");
       if (!token) {
-        console.log('No buyer token found, redirecting to login');
-        redirectToLogin('buyer');
+        console.log("No buyer token found, redirecting to login");
+        redirectToLogin("buyer");
         return;
       }
 
       // Also check if we have the token in localStorage directly
-      const directToken = localStorage.getItem('buyerToken') || localStorage.getItem('auth-token');
+      const directToken =
+        localStorage.getItem("buyerToken") ||
+        localStorage.getItem("auth-token");
       if (!directToken) {
-        console.log('No direct token found in localStorage, redirecting to login');
-        redirectToLogin('buyer');
+        console.log(
+          "No direct token found in localStorage, redirecting to login"
+        );
+        redirectToLogin("buyer");
         return;
       }
 
-      console.log('Token found, fetching buyer profile...');
-      console.log('Using token:', token.substring(0, 20) + '...');
+      console.log("Token found, fetching buyer profile...");
+      console.log("Using token:", token.substring(0, 20) + "...");
 
       // Use the direct token from localStorage for the API call
-      const response = await fetch('/api/buyer/profile', {
-        method: 'GET',
+      const response = await fetch("/api/buyer/profile", {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${directToken}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${directToken}`,
+          "Content-Type": "application/json",
+        },
       });
 
-      console.log('Profile response status:', response.status);
+      console.log("Profile response status:", response.status);
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.log('Unauthorized response, redirecting to login');
-          redirectToLogin('buyer');
+          console.log("Unauthorized response, redirecting to login");
+          redirectToLogin("buyer");
           return;
         }
         const errorText = await response.text();
-        console.error('Profile fetch error:', errorText);
-        
+        console.error("Profile fetch error:", errorText);
+
         // Try to parse as JSON for better error messages
         try {
           const errorData = JSON.parse(errorText);
-          throw new Error(`Profile fetch failed: ${errorData.message || errorData.error || response.statusText}`);
+          throw new Error(
+            `Profile fetch failed: ${
+              errorData.message || errorData.error || response.statusText
+            }`
+          );
         } catch (parseError) {
           throw new Error(`Failed to fetch profile: ${response.statusText}`);
         }
       }
 
       const data = await response.json();
-      console.log('Profile data received:', data);
+      console.log("Profile data received:", data);
       setBuyer(data.data);
     } catch (error) {
-      console.error('Error fetching buyer profile:', error);
+      console.error("Error fetching buyer profile:", error);
       setError(error.message);
       setBuyer(null);
     } finally {
@@ -131,35 +146,35 @@ const useBuyer = () => {
     try {
       setLoading(true);
 
-      const token = getStoredToken('buyer');
+      const token = getStoredToken("buyer");
       if (!token) {
-        redirectToLogin('buyer');
+        redirectToLogin("buyer");
         return;
       }
 
-      const response = await fetch('/api/buyer/profile', {
-        method: 'PUT',
+      const response = await fetch("/api/buyer/profile", {
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          redirectToLogin('buyer');
+          redirectToLogin("buyer");
           return;
         }
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+        throw new Error(errorData.message || "Failed to update profile");
       }
 
       const data = await response.json();
       setBuyer(data.data);
       return { success: true, data: data.data };
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
@@ -173,29 +188,36 @@ const useBuyer = () => {
   return { buyer, updateProfile, loading, error, refetch: fetchBuyerProfile };
 };
 
-const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }) => {
+const ProfileModal = ({
+  isOpen,
+  onClose,
+  isDarkTheme,
+  buyer,
+  loading,
+  onUpdate,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    location: '',
-    university: '',
-    year: ''
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    university: "",
+    year: "",
   });
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState('');
+  const [saveError, setSaveError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState("");
 
   useEffect(() => {
     if (buyer) {
       setFormData({
-        name: buyer.name || '',
-        email: buyer.email || '',
-        phone: buyer.phone || '',
-        location: buyer.location || '',
-        university: buyer.university || '',
-        year: buyer.year || ''
+        name: buyer.name || "",
+        email: buyer.email || "",
+        phone: buyer.phone || "",
+        location: buyer.location || "",
+        university: buyer.university || "",
+        year: buyer.year || "",
       });
     }
   }, [buyer]);
@@ -207,47 +229,48 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
     }
     try {
       setSaving(true);
-      setSaveError('');
-      setSaveSuccess('');
+      setSaveError("");
+      setSaveSuccess("");
       const payload = {
         name: formData.name,
         phone: formData.phone,
         location: formData.location,
         university: formData.university,
-        year: formData.year
+        year: formData.year,
       };
       const result = await onUpdate(payload);
       if (result && result.success) {
-        setSaveSuccess('Profile updated successfully');
+        setSaveSuccess("Profile updated successfully");
         setIsEditing(false);
       } else {
-        setSaveError(result?.error || 'Failed to update profile');
+        setSaveError(result?.error || "Failed to update profile");
       }
     } catch (e) {
-      setSaveError(e.message || 'Failed to update profile');
+      setSaveError(e.message || "Failed to update profile");
     } finally {
       setSaving(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('buyerToken');
-    localStorage.removeItem('token');
-    localStorage.removeItem('authToken');
-    window.location.href = '/buyer-login';
+    localStorage.removeItem("buyerToken");
+    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
+    window.location.href = "/buyer-login";
   };
 
   if (!isOpen || loading || !buyer) {
-    if (loading) return (
-      <div className="modalOverlay">
-        <div className="profileModal">
-          <div className="loadingContainer">
-            <Loader2 size={32} className="spinner" />
-            <p>Loading profile...</p>
+    if (loading)
+      return (
+        <div className="modalOverlay">
+          <div className="profileModal">
+            <div className="loadingContainer">
+              <Loader2 size={32} className="spinner" />
+              <p>Loading profile...</p>
+            </div>
           </div>
         </div>
-      </div>
-    );
+      );
     return null;
   }
 
@@ -264,7 +287,12 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
         <div className="profileSection">
           <div className="avatarContainer">
             <img
-              src={buyer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(buyer.name)}&size=120&background=3b82f6&color=ffffff`}
+              src={
+                buyer.avatar ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  buyer.name
+                )}&size=120&background=3b82f6&color=ffffff`
+              }
               alt={buyer.name}
               className="avatar"
             />
@@ -279,16 +307,24 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
           </p>
 
           {buyer.verified && (
-            <span className="verifiedBadge">
-              ✓ Verified Student
-            </span>
+            <span className="verifiedBadge">✓ Verified Student</span>
           )}
-          <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8' }}>
-            <a href={`mailto:${buyer.email}`} style={{ color: 'inherit', textDecoration: 'none', marginRight: 12 }}>
+          <div style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
+            <a
+              href={`mailto:${buyer.email}`}
+              style={{
+                color: "inherit",
+                textDecoration: "none",
+                marginRight: 12,
+              }}
+            >
               <Mail size={14} style={{ marginRight: 4 }} /> {buyer.email}
             </a>
             {buyer.phone && (
-              <a href={`tel:${buyer.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+              <a
+                href={`tel:${buyer.phone}`}
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
                 <Phone size={14} style={{ marginRight: 4 }} /> {buyer.phone}
               </a>
             )}
@@ -300,32 +336,47 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
             <h3>Personal Information</h3>
             <button
               className="editButton"
-              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+              onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
               disabled={loading || saving}
             >
-              {(loading || saving) ? <Loader2 size={16} className="spinner" /> : isEditing ? <Save size={16} /> : <Edit3 size={16} />}
-              {(loading || saving) ? 'Saving...' : isEditing ? 'Save' : 'Edit'}
+              {loading || saving ? (
+                <Loader2 size={16} className="spinner" />
+              ) : isEditing ? (
+                <Save size={16} />
+              ) : (
+                <Edit3 size={16} />
+              )}
+              {loading || saving ? "Saving..." : isEditing ? "Save" : "Edit"}
             </button>
           </div>
 
           {(saveError || saveSuccess) && (
-            <div style={{
-              background: saveError ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
-              color: saveError ? '#ef4444' : '#10b981',
-              padding: '8px 12px',
-              borderRadius: 8,
-              marginBottom: 12
-            }}>
+            <div
+              style={{
+                background: saveError
+                  ? "rgba(239,68,68,0.1)"
+                  : "rgba(16,185,129,0.1)",
+                color: saveError ? "#ef4444" : "#10b981",
+                padding: "8px 12px",
+                borderRadius: 8,
+                marginBottom: 12,
+              }}
+            >
               {saveError || saveSuccess}
             </div>
           )}
 
           <div className="formFields">
             {[
-              { key: 'name', label: 'Name', icon: User, type: 'text' },
-              { key: 'email', label: 'Email', icon: Mail, type: 'email' },
-              { key: 'phone', label: 'Phone', icon: Phone, type: 'tel' },
-              { key: 'university', label: 'College', icon: BookOpen, type: 'text' },
+              { key: "name", label: "Name", icon: User, type: "text" },
+              { key: "email", label: "Email", icon: Mail, type: "email" },
+              { key: "phone", label: "Phone", icon: Phone, type: "tel" },
+              {
+                key: "university",
+                label: "College",
+                icon: BookOpen,
+                type: "text",
+              },
             ].map(({ key, label, icon: Icon, type }) => (
               <div key={key} className="fieldGroup">
                 <label className="fieldLabel">
@@ -336,13 +387,15 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
                   <input
                     type={type}
                     value={formData[key]}
-                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, [key]: e.target.value })
+                    }
                     className="fieldInput"
                     disabled={saving}
                   />
                 ) : (
                   <div className="fieldDisplay">
-                    {buyer[key] || 'Not specified'}
+                    {buyer[key] || "Not specified"}
                   </div>
                 )}
               </div>
@@ -356,7 +409,9 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
               {isEditing ? (
                 <select
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
                   className="fieldInput"
                   disabled={saving}
                 >
@@ -368,7 +423,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
                 </select>
               ) : (
                 <div className="fieldDisplay">
-                  {buyer.location || 'Not specified'}
+                  {buyer.location || "Not specified"}
                 </div>
               )}
             </div>
@@ -381,7 +436,9 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
               {isEditing ? (
                 <select
                   value={formData.year}
-                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, year: e.target.value })
+                  }
                   className="fieldInput"
                   disabled={saving}
                 >
@@ -394,7 +451,7 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
                 </select>
               ) : (
                 <div className="fieldDisplay">
-                  {buyer.year || 'Not specified'}
+                  {buyer.year || "Not specified"}
                 </div>
               )}
             </div>
@@ -402,7 +459,10 @@ const ProfileModal = ({ isOpen, onClose, isDarkTheme, buyer, loading, onUpdate }
         </div>
 
         <div className="actionButtons">
-          <button className="settingsButton" onClick={() => console.log('Settings clicked')}>
+          <button
+            className="settingsButton"
+            onClick={() => console.log("Settings clicked")}
+          >
             <Settings size={16} />
             Settings
           </button>
@@ -452,14 +512,14 @@ function ConditionFilter({ selectedConditions, onConditionChange }) {
 
 const BuyerDashboard = () => {
   const router = useRouter();
-  
+
   // Mouse tracking state
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const dashboardRef = useRef(null);
 
   // State management
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -467,7 +527,7 @@ const BuyerDashboard = () => {
     isInWishlist,
     getWishlistCount,
     toggleWishlist,
-    loading: wishlistLoading
+    loading: wishlistLoading,
   } = useWishlist();
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [listings, setListings] = useState([]);
@@ -482,95 +542,115 @@ const BuyerDashboard = () => {
     isInCart,
     openCart,
     isLoading: cartLoading,
-    isCartOpen
+    isCartOpen,
   } = useCart();
-  const { buyer, loading: buyerLoading, error: buyerError, updateProfile: updateBuyerProfile } = useBuyer();
+
+  const {
+    buyer,
+    loading: buyerLoading,
+    error: buyerError,
+    updateProfile: updateBuyerProfile,
+  } = useBuyer();
+
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 10000 },
     conditions: [],
     locations: [],
-    sortBy: 'newest'
+    sortBy: "newest",
   });
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
+  // Promo banner state (safe defaults to avoid build-time errors)
+  const [promoIndex, setPromoIndex] = useState(0);
+  const promoSlides = [];
+
   // Location dropdown state
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
-  const [locationSearchQuery, setLocationSearchQuery] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
   const locationDropdownRef = useRef(null);
 
   // Available locations for dropdown
   const availableLocations = [
-    'Maharaja Agrasen Institute of Technology (MAIT)',
-    'Indian Institute of Technology Delhi (IIT Delhi)',
-    'Delhi Technological University (DTU)',
-    'Netaji Subhas University of Technology (NSUT)',
-    'Indraprastha Institute of Information Technology Delhi (IIIT Delhi)',
-    'Jamia Millia Islamia - Faculty of Engineering and Technology',
-    'Guru Tegh Bahadur Institute of Technology (GTBIT)',
-    'Bharati Vidyapeeth’s College of Engineering',
-    'Bhagwan Parshuram Institute of Technology (BPIT)',
-    'Maharaja Surajmal Institute of Technology (MSIT)',
-    'Bhaskaracharya College of Applied Sciences',
-    'Acharya Narendra Dev College',
-    'Cluster Innovation Centre (CIC), University of Delhi',
-    'Faculty of Technology, University of Delhi',
-    'Ambedkar Institute of Technology',
-    'School of Planning and Architecture (SPA), Delhi',
-    'Indira Gandhi Delhi Technical University for Women (IGDTUW)',
-    'Amity School of Engineering & Technology, Delhi',
-    'Jamia Hamdard - School of Engineering Science & Technology',
-    'Guru Premsukh Memorial College of Engineering',
-    'National Institute of Technology Delhi (NIT Delhi)',
-    'University School of Biotechnology',
-    'University School of Chemical Technology',
-    'University School of Information Technology',
-    'University School of Automation and Robotics',
-    'Dr. Akhilesh Das Gupta Institute of Professional Studies',
-    'CBP Government Engineering College',
-    'Govind Ballabh Pant Engineering College',
-    'Delhi Institute of Tool Engineering',
-    'Sushant School of Art and Architecture',
-    'TVB School of Habitat Studies',
-    'Vastu Kala Academy',
-    'HMR Institute of Technology & Management',
-    'Northern India Engineering College',
-    'Fairfield Institute of Management and Technology',
-    'Shri Ram College of Commerce (SRCC)',
-    'Hindu College',
-    'Hansraj College',
-    'St. Stephen’s College',
-    'Miranda House',
-    'Lady Shri Ram College for Women (LSR)',
-    'Ramjas College',
-    'Kirori Mal College',
-    'Daulat Ram College',
-    'Indraprastha College for Women (IP College)',
-    'Sri Venkateswara College',
-    'Atma Ram Sanatan Dharma College (ARSD)',
-    'Gargi College',
-    'Maitreyi College',
-    'Delhi College of Arts & Commerce (DCAC)'
+    "Maharaja Agrasen Institute of Technology (MAIT)",
+    "Indian Institute of Technology Delhi (IIT Delhi)",
+    "Delhi Technological University (DTU)",
+    "Netaji Subhas University of Technology (NSUT)",
+    "Indraprastha Institute of Information Technology Delhi (IIIT Delhi)",
+    "Jamia Millia Islamia - Faculty of Engineering and Technology",
+    "Guru Tegh Bahadur Institute of Technology (GTBIT)",
+    "Bharati Vidyapeeth’s College of Engineering",
+    "Bhagwan Parshuram Institute of Technology (BPIT)",
+    "Maharaja Surajmal Institute of Technology (MSIT)",
+    "Bhaskaracharya College of Applied Sciences",
+    "Acharya Narendra Dev College",
+    "Cluster Innovation Centre (CIC), University of Delhi",
+    "Faculty of Technology, University of Delhi",
+    "Ambedkar Institute of Technology",
+    "School of Planning and Architecture (SPA), Delhi",
+    "Indira Gandhi Delhi Technical University for Women (IGDTUW)",
+    "Amity School of Engineering & Technology, Delhi",
+    "Jamia Hamdard - School of Engineering Science & Technology",
+    "Guru Premsukh Memorial College of Engineering",
+    "National Institute of Technology Delhi (NIT Delhi)",
+    "University School of Biotechnology",
+    "University School of Chemical Technology",
+    "University School of Information Technology",
+    "University School of Automation and Robotics",
+    "Dr. Akhilesh Das Gupta Institute of Professional Studies",
+    "CBP Government Engineering College",
+    "Govind Ballabh Pant Engineering College",
+    "Delhi Institute of Tool Engineering",
+    "Sushant School of Art and Architecture",
+    "TVB School of Habitat Studies",
+    "Vastu Kala Academy",
+    "HMR Institute of Technology & Management",
+    "Northern India Engineering College",
+    "Fairfield Institute of Management and Technology",
+    "Shri Ram College of Commerce (SRCC)",
+    "Hindu College",
+    "Hansraj College",
+    "St. Stephen’s College",
+    "Miranda House",
+    "Lady Shri Ram College for Women (LSR)",
+    "Ramjas College",
+    "Kirori Mal College",
+    "Daulat Ram College",
+    "Indraprastha College for Women (IP College)",
+    "Sri Venkateswara College",
+    "Atma Ram Sanatan Dharma College (ARSD)",
+    "Gargi College",
+    "Maitreyi College",
+    "Delhi College of Arts & Commerce (DCAC)",
   ];
 
   // Filter locations based on search
-  const filteredLocations = availableLocations.filter(location =>
+  const filteredLocations = availableLocations.filter((location) =>
     location.toLowerCase().includes(locationSearchQuery.toLowerCase())
   );
 
   // Authentication check effect
   useEffect(() => {
     // Check if user is authenticated on component mount
-    const token = getStoredToken('buyer');
-    if (!token || !isAuthenticated('buyer')) {
+    const token = getStoredToken("buyer");
+    if (!token || !isAuthenticated("buyer")) {
       // Clear any invalid tokens and redirect to login
       clearAllTokens();
-      router.push('/buyer-login');
+      router.push("/buyer-login");
       return;
     }
   }, []);
+
+  // Auto-rotate promo banner
+  useEffect(() => {
+    if (promoSlides.length <= 1) return;
+    const id = setInterval(() => {
+      setPromoIndex((prev) => (prev + 1) % promoSlides.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [promoSlides.length]);
 
   // Mouse tracking effect
   useEffect(() => {
@@ -583,82 +663,90 @@ const BuyerDashboard = () => {
         });
 
         // Update CSS var for searchBar glow
-        const search = document.querySelector('.searchBar');
+        const search = document.querySelector(".searchBar");
         if (search) {
           const mx = ((e.clientX - rect.left) / rect.width) * 100;
-          search.style.setProperty('--mx', mx + '%');
+          search.style.setProperty("--mx", mx + "%");
         }
       }
     };
 
     const dashboard = dashboardRef.current;
     if (dashboard) {
-      dashboard.addEventListener('mousemove', handleMouseMove);
-      return () => dashboard.removeEventListener('mousemove', handleMouseMove);
+      dashboard.addEventListener("mousemove", handleMouseMove);
+      return () => dashboard.removeEventListener("mousemove", handleMouseMove);
     }
   }, []);
 
   // Close location dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+      if (
+        locationDropdownRef.current &&
+        !locationDropdownRef.current.contains(event.target)
+      ) {
         setIsLocationDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   useEffect(() => {
-    if (listings.length === 0 && process.env.NODE_ENV === 'development') {
+    if (listings.length === 0 && process.env.NODE_ENV === "development") {
       setListings([
         {
-          id: '654321098765432109876545',
-          title: 'Advanced Physics Textbook',
-          description: 'Complete textbook for physics course',
+          id: "654321098765432109876545",
+          title: "Advanced Physics Textbook",
+          description: "Complete textbook for physics course",
           price: 500,
           originalPrice: 800,
-          category: 'textbooks',
-          condition: 'Like New',
-          location: 'North Campus',
+          category: "textbooks",
+          condition: "Like New",
+          location: "North Campus",
           seller: {
-            id: '654321098765432109876544',
-            name: 'Alice Johnson',
-            avatar: 'https://ui-avatars.com/api/?name=Alice+Johnson&size=100&background=c084fc&color=ffffff',
+            id: "654321098765432109876544",
+            name: "Alice Johnson",
+            avatar:
+              "https://ui-avatars.com/api/?name=Alice+Johnson&size=100&background=c084fc&color=ffffff",
             rating: 4.8,
             verified: true,
           },
           rating: 4.8,
-          timePosted: '2 hours ago',
+          timePosted: "2 hours ago",
           views: 23,
-          image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop',
+
+          image: 'https://ik.imagekit.io/zuxeumnng/campusmart/Asserts/drafter.jpg?updatedAt=1757927822487',
           createdAt: '2023-12-01T10:00:00Z'
+
         },
         {
-          id: '654321098765432109876546',
+          id: "654321098765432109876546",
           title: 'MacBook Pro 13"',
-          description: 'Excellent condition laptop perfect for students',
+          description: "Excellent condition laptop perfect for students",
           price: 45000,
           originalPrice: 65000,
-          category: 'electronics',
-          condition: 'Excellent',
-          location: 'South Campus',
+          category: "electronics",
+          condition: "Excellent",
+          location: "South Campus",
           seller: {
-            id: '654321098765432109876547',
-            name: 'Bob Smith',
-            avatar: 'https://ui-avatars.com/api/?name=Bob+Smith&size=100&background=10b981&color=ffffff',
+            id: "654321098765432109876547",
+            name: "Bob Smith",
+            avatar:
+              "https://ui-avatars.com/api/?name=Bob+Smith&size=100&background=10b981&color=ffffff",
             rating: 4.9,
             verified: true,
           },
           rating: 4.9,
-          timePosted: '5 hours ago',
+          timePosted: "5 hours ago",
           views: 45,
-          image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop',
-          createdAt: '2023-12-01T07:00:00Z'
-        }
+          image:
+            "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop",
+          createdAt: "2023-12-01T07:00:00Z",
+        },
       ]);
       setLoading(false);
     }
@@ -666,14 +754,14 @@ const BuyerDashboard = () => {
 
   // Categories
   const categories = [
-    { id: 'all', name: 'All Items', icon: Grid3X3 },
-    { id: 'textbooks', name: 'Textbooks', icon: BookOpen },
-    { id: 'electronics', name: 'Electronics', icon: Laptop },
-    { id: 'clothing', name: 'Clothing', icon: Shirt },
-    { id: 'Stationery', name: 'Stationery', icon: Pen },
-    { id: 'furniture', name: 'Furniture', icon: Home },
-    { id: 'food', name: 'Food & Drinks', icon: Coffee },
-    { id: 'gaming', name: 'Gaming', icon: Gamepad2 },
+    { id: "all", name: "All Items", icon: Grid3X3 },
+    { id: "textbooks", name: "Textbooks", icon: BookOpen },
+    { id: "electronics", name: "Electronics", icon: Laptop },
+    { id: "clothing", name: "Clothing", icon: Shirt },
+    { id: "Stationery", name: "Stationery", icon: Pen },
+    { id: "furniture", name: "Furniture", icon: Home },
+    { id: "food", name: "Food & Drinks", icon: Coffee },
+    { id: "gaming", name: "Gaming", icon: Gamepad2 },
   ];
 
   // Fetch listings from API
@@ -682,18 +770,18 @@ const BuyerDashboard = () => {
       setLoading(true);
       setError(null);
 
-      const token = getStoredToken('buyer');
+      const token = getStoredToken("buyer");
       const headers = {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       };
 
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch('/api/listings/public', {
-        method: 'GET',
-        headers
+      const response = await fetch("/api/listings/public", {
+        method: "GET",
+        headers,
       });
 
       if (!response.ok) {
@@ -702,9 +790,8 @@ const BuyerDashboard = () => {
 
       const data = await response.json();
       setListings(data.data || data.listings || []);
-
     } catch (err) {
-      console.error('Error fetching listings:', err);
+      console.error("Error fetching listings:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -717,31 +804,69 @@ const BuyerDashboard = () => {
 
   useEffect(() => {
     if (!buyerLoading && !buyer) {
-      console.warn('User is not logged in to BuyerDashboard.');
+      console.warn("User is not logged in to BuyerDashboard.");
     }
   }, [buyerLoading, buyer]);
 
   // Filter and sort products
-  const filteredProducts = listings.filter(product => {
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesPrice = product.price >= filters.priceRange.min && product.price <= filters.priceRange.max;
-    const matchesCondition = filters.conditions.length === 0 || filters.conditions.includes(product.condition);
-    const locationFilters = (filters.locations || []).map(l => (l || '').toLowerCase());
-    const productCollege = (product.college || product.location || '').toLowerCase();
-    const matchesCollege = locationFilters.length === 0 || locationFilters.includes(productCollege);
+  const filteredProducts = listings
+    .filter((product) => {
+      const matchesSearch =
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "all" || product.category === selectedCategory;
+      const matchesPrice =
+        product.price >= filters.priceRange.min &&
+        product.price <= filters.priceRange.max;
+      const matchesCondition =
+        filters.conditions.length === 0 ||
+        filters.conditions.includes(product.condition);
+      const locationFilters = (filters.locations || []).map((l) =>
+        (l || "").toLowerCase()
+      );
+      const productCollege = (
+        product.college ||
+        product.location ||
+        ""
+      ).toLowerCase();
+      const matchesCollege =
+        locationFilters.length === 0 ||
+        locationFilters.includes(productCollege);
 
-    return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesCollege;
-  }).sort((a, b) => {
-    switch (filters.sortBy) {
-      case 'newest': return new Date(b.createdAt) - new Date(a.createdAt);
-      case 'oldest': return new Date(a.createdAt) - new Date(b.createdAt);
-      case 'price-low': return a.price - b.price;
-      case 'price-high': return b.price - a.price;
-      default: return 0;
-    }
-  });
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesPrice &&
+        matchesCondition &&
+        matchesCollege
+      );
+    })
+    .sort((a, b) => {
+      switch (filters.sortBy) {
+        case "newest":
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        case "oldest":
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
+        default:
+          return 0;
+      }
+    });
+
+  // Quick filter functions
+  const handleDrafterFilter = () => {
+    setSearchQuery('drafter');
+    setSelectedCategory('all');
+  };
+
+  const handleAkashFilter = () => {
+    setSearchQuery('akash');
+    setSelectedCategory('all');
+  };
 
   // Helper functions
   const handleWishlistToggle = async (product, event) => {
@@ -749,7 +874,7 @@ const BuyerDashboard = () => {
     const productIdToToggle = product.id || product._id;
     const success = await toggleWishlist(productIdToToggle);
     if (success) {
-      console.log('Wishlist updated successfully');
+      console.log("Wishlist updated successfully");
     }
   };
 
@@ -757,28 +882,32 @@ const BuyerDashboard = () => {
     const productIdToAdd = product.id || product._id;
     const success = await addToCart(productIdToAdd, 1);
     if (success) {
-      console.log('Item added to cart successfully');
+      console.log("Item added to cart successfully");
     }
   };
 
   const handleShareProduct = async (product) => {
     try {
-      const shareUrl = `${window.location.origin}/shared-listing/${product.id || product._id}`;
+      const shareUrl = `${window.location.origin}/shared-listing/${
+        product.id || product._id
+      }`;
       await navigator.clipboard.writeText(shareUrl);
-      
+
       // Show success message (you can implement a toast notification here)
-      alert('Shareable link copied to clipboard!');
+      alert("Shareable link copied to clipboard!");
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      console.error("Failed to copy link:", err);
       // Fallback for older browsers
-      const shareUrl = `${window.location.origin}/shared-listing/${product.id || product._id}`;
-      const textArea = document.createElement('textarea');
+      const shareUrl = `${window.location.origin}/shared-listing/${
+        product.id || product._id
+      }`;
+      const textArea = document.createElement("textarea");
       textArea.value = shareUrl;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textArea);
-      alert('Shareable link copied to clipboard!');
+      alert("Shareable link copied to clipboard!");
     }
   };
 
@@ -787,11 +916,11 @@ const BuyerDashboard = () => {
       priceRange: { min: 0, max: 10000 },
       conditions: [],
       locations: [],
-      sortBy: 'newest'
+      sortBy: "newest",
     });
-    setSelectedCategory('all');
-    setSearchQuery('');
-    setSelectedLocation('');
+    setSelectedCategory("all");
+    setSearchQuery("");
+    setSelectedLocation("");
   };
 
   const getActiveFilterCount = () => {
@@ -799,36 +928,36 @@ const BuyerDashboard = () => {
     if (filters.conditions.length > 0) count++;
     if (filters.locations.length > 0) count++;
     if (filters.priceRange.min > 0 || filters.priceRange.max < 10000) count++;
-    if (selectedCategory !== 'all') count++;
+    if (selectedCategory !== "all") count++;
     if (searchQuery) count++;
     if (selectedLocation) count++;
     return count;
   };
 
   const handlePriceRangeChange = (field, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      priceRange: { ...prev.priceRange, [field]: parseInt(value) }
+      priceRange: { ...prev.priceRange, [field]: parseInt(value) },
     }));
   };
 
   const handleConditionChange = (condition, checked) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       conditions: checked
         ? [...prev.conditions, condition]
-        : prev.conditions.filter(c => c !== condition)
+        : prev.conditions.filter((c) => c !== condition),
     }));
   };
 
   const handleLocationSelect = (location) => {
     setSelectedLocation(location);
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      locations: location ? [location] : []
+      locations: location ? [location] : [],
     }));
     setIsLocationDropdownOpen(false);
-    setLocationSearchQuery('');
+    setLocationSearchQuery("");
   };
 
   const openProductModal = (productId) => {
@@ -844,21 +973,21 @@ const BuyerDashboard = () => {
   const closeSidebar = () => {
     setIsSidebarOpen(false);
     // Remove body scroll lock when sidebar closes
-    document.body.style.overflow = 'unset';
+    document.body.style.overflow = "unset";
   };
 
   const openSidebar = () => {
     setIsSidebarOpen(true);
     // Prevent body scroll when sidebar is open on mobile
     if (window.innerWidth < 1024) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     }
   };
 
   // Clean up body scroll lock on component unmount
   useEffect(() => {
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, []);
 
@@ -868,8 +997,8 @@ const BuyerDashboard = () => {
       setIsHeaderScrolled(window.scrollY > 8);
     };
     onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const toggleMobileMenu = () => {
@@ -879,33 +1008,38 @@ const BuyerDashboard = () => {
   // Fetch pending order count
   const fetchPendingOrderCount = async () => {
     try {
-      const token = getStoredToken('buyer');
+      const token = getStoredToken("buyer");
       if (!token) return;
 
-      const response = await fetch('/api/buyer/order-history?page=1&limit=1000', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        "/api/buyer/order-history?page=1&limit=1000",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
         const orders = data.data?.orders || [];
-        
+
         // Count orders that are pending delivery or in payment verification
-        const pendingCount = orders.filter(order => {
+        const pendingCount = orders.filter((order) => {
           const status = order.displayStatus || order.status;
-          return status === 'payment_pending_verification' || 
-                 status === 'payment_verified' || 
-                 status === 'will_be_delivered_soon';
+          return (
+            status === "payment_pending_verification" ||
+            status === "payment_verified" ||
+            status === "will_be_delivered_soon"
+          );
         }).length;
-        
+
         setPendingOrderCount(pendingCount);
       }
     } catch (error) {
-      console.error('Error fetching pending order count:', error);
+      console.error("Error fetching pending order count:", error);
     }
   };
 
@@ -926,7 +1060,7 @@ const BuyerDashboard = () => {
 
   // Expose refresh function for other components
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.refreshPendingOrderCount = refreshPendingOrderCount;
     }
   }, []);
@@ -935,7 +1069,7 @@ const BuyerDashboard = () => {
 
   if (buyerLoading) {
     return (
-      <div className={`dashboard ${isDarkTheme ? 'dark' : 'light'}`}>
+      <div className={`dashboard ${isDarkTheme ? "dark" : "light"}`}>
         <div className="loadingScreen">
           <Loader2 size={48} className="spinner" />
           <p>Loading your profile...</p>
@@ -945,25 +1079,36 @@ const BuyerDashboard = () => {
   }
 
   return (
-    <div className={`dashboard ${isDarkTheme ? 'dark' : 'light'} ${isSidebarOpen ? 'sidebar-open' : ''}`} ref={dashboardRef}>
+    <div
+      className={`dashboard ${isDarkTheme ? "dark" : "light"} ${
+        isSidebarOpen ? "sidebar-open" : ""
+      }`}
+      ref={dashboardRef}
+    >
       {/* Mouse-tracking animated background */}
       <div className="animatedBackground">
         <div
           className="gradientOverlay"
           style={{
-            transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
+            transform: `translate(${mousePosition.x * 0.02}px, ${
+              mousePosition.y * 0.02
+            }px)`,
             background: isDarkTheme
               ? `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 35%, transparent 60%)`
-              : `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 35%, transparent 60%)`
+              : `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 35%, transparent 60%)`,
           }}
         />
       </div>
 
       {/* Header */}
-      <header className={`header ${isHeaderScrolled ? 'scrolled' : ''}`}>
+      <header className={`header ${isHeaderScrolled ? "scrolled" : ""}`}>
         <div className="headerContent">
           <div className="logoSection">
-            <button className="menuToggle" onClick={openSidebar} aria-label="Open menu">
+            <button
+              className="menuToggle"
+              onClick={openSidebar}
+              aria-label="Open menu"
+            >
               <Menu size={22} />
             </button>
             <div className="logo">
@@ -988,7 +1133,10 @@ const BuyerDashboard = () => {
           </Link>
 
           <div className="headerActions">
-            <button className="actionButton" onClick={() => setIsDarkTheme(!isDarkTheme)}>
+            <button
+              className="actionButton"
+              onClick={() => setIsDarkTheme(!isDarkTheme)}
+            >
               {isDarkTheme ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
@@ -1002,9 +1150,14 @@ const BuyerDashboard = () => {
               {getWishlistCount() > 0 && <span className="badge">{getWishlistCount()}</span>}
             </button> */}
 
-            <Link href="/buyer-dashboard/order-history" className="actionButton">
+            <Link
+              href="/buyer-dashboard/order-history"
+              className="actionButton"
+            >
               <Package size={20} />
-              {pendingOrderCount > 0 && <span className="badge">{pendingOrderCount}</span>}
+              {pendingOrderCount > 0 && (
+                <span className="badge">{pendingOrderCount}</span>
+              )}
             </Link>
 
             <button className="actionButton" onClick={openCart}>
@@ -1012,38 +1165,238 @@ const BuyerDashboard = () => {
               {totalItems > 0 && <span className="badge">{totalItems}</span>}
             </button>
 
-            <button 
-              className="actionButton" 
+            <button
+              className="actionButton"
               onClick={() => {
                 // Always check authentication - redirect to login if not authenticated
-                const token = getStoredToken('buyer');
-                if (buyer && token && isAuthenticated('buyer')) {
+                const token = getStoredToken("buyer");
+                if (buyer && token && isAuthenticated("buyer")) {
                   setIsProfileOpen(true);
                 } else {
                   // Clear any invalid tokens and redirect to login
                   clearAllTokens();
-                  router.push('/buyer-login');
+                  router.push("/buyer-login");
                 }
               }}
               title={buyer ? "View Profile" : "Login to access profile"}
             >
-              {buyer && (
+              {(buyer && (
                 <img
-                  src={buyer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(buyer.name)}&size=40&background=3b82f6&color=ffffff`}
+                  src={
+                    buyer.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      buyer.name
+                    )}&size=40&background=3b82f6&color=ffffff`
+                  }
                   alt={buyer.name}
                   className="userAvatar"
                 />
-              ) || <User size={20} />}
+              )) || <User size={20} />}
             </button>
           </div>
         </div>
       </header>
 
+
+      {/* Trending Assignments Section - Horizontal Layout */}
+      <div className="trending-assignments-horizontal">
+        <div className="trending-header-horizontal">
+          <h2>
+            <FileText size={24} />
+            Trending Assignments in Campus
+          </h2>
+          <Link
+            href="/buyer-dashboard/assignments"
+            className="view-all-link-horizontal"
+          >
+            Create Assignment
+            <ArrowLeft size={16} style={{ transform: "rotate(180deg)" }} />
+          </Link>
+        </div>
+        <div className="trending-cards-horizontal">
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Data Structures Assignment</h4>
+              <p>Computer Science • Due in 2 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹120</span>
+                <span className="location">MAIT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Physics Lab Report</h4>
+              <p>Physics • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">150</span>
+                <span className="location">DTU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Engineering Project-Final Year</h4>
+              <p>Engineering • Due in 3 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">120</span>
+                <span className="location">NSUT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Mathematics Assignment</h4>
+              <p>Mathematics • Due in 5 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹110</span>
+                <span className="location">IP University</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Chemistry Lab Report</h4>
+              <p>Chemistry • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹450</span>
+                <span className="location">JMI</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Software Development</h4>
+              <p>Computer Science • Due in 4 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹110</span>
+                <span className="location">GGSIPU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>History Research Paper</h4>
+              <p>History • Due in 6 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹700</span>
+                <span className="location">DU</span>
+              </div>
+            </div>
+          </div>
+          {/* Duplicate cards for infinite scroll effect */}
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Data Structures Assignment</h4>
+              <p>Computer Science • Due in 2 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹110</span>
+                <span className="location">MAIT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Physics Lab Report</h4>
+              <p>Physics • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">150</span>
+                <span className="location">DTU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Engineering Project</h4>
+              <p>Engineering • Due in 3 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">120</span>
+                <span className="location">NSUT</span>
+              </div>
+            </div>
+          </div>
+          {/* Additional duplicate cards for seamless infinite scroll */}
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <FileText size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Data Structures Assignment</h4>
+              <p>Computer Science • Due in 2 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">₹110</span>
+                <span className="location">MAIT</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <BookOpen size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Physics Lab Report</h4>
+              <p>Physics • Due in 1 week</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">150</span>
+                <span className="location">DTU</span>
+              </div>
+            </div>
+          </div>
+          <div className="trending-card-horizontal">
+            <div className="trending-icon-horizontal">
+              <PenTool size={20} />
+            </div>
+            <div className="trending-content-horizontal">
+              <h4>Engineering Project</h4>
+              <p>Engineering • Due in 3 days</p>
+              <div className="trending-meta-horizontal">
+                <span className="budget">120</span>
+                <span className="location">NSUT</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <div className="mainContent">
         {/* Sidebar */}
-        <aside className={`sidebar ${isSidebarOpen ? 'sidebarOpen' : ''}`}>
+        <aside className={`sidebar ${isSidebarOpen ? "sidebarOpen" : ""}`}>
           <div className="sidebarContent">
-            <button className="closeSidebar js-sidebar-close" onClick={closeSidebar}>
+            <button
+              className="closeSidebar js-sidebar-close"
+              onClick={closeSidebar}
+            >
               <X size={20} />
             </button>
 
@@ -1051,17 +1404,20 @@ const BuyerDashboard = () => {
               <div className="welcomeMessage">
                 <div className="greeting">
                   <div className="greeting-icon">👋</div>
-                  <h3>Welcome back, {buyer.name?.split(' ')[0]}!</h3>
+                  <h3>Welcome back, {buyer.name?.split(" ")[0]}!</h3>
                 </div>
                 <div className="college-info">
                   <BookOpen size={18} className="college-icon" />
-                  <span>{buyer.university || 'Student'}</span>
-                  {buyer.year && <span>• {buyer.year} </span>}
+
+                  <span>{buyer.university || "Student"}</span>
+                  {buyer.year && <span>• {buyer.year} year</span>}
+
                 </div>
                 <div className="member-duration">
-                  Member since {new Date(buyer.createdAt).toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    year: 'numeric' 
+                  Member since{" "}
+                  {new Date(buyer.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "numeric",
                   })}
                 </div>
               </div>
@@ -1078,10 +1434,16 @@ const BuyerDashboard = () => {
                   <Grid3X3 size={18} />
                   <span>Browse Items</span>
                 </Link>
+                <Link href="/buyer-dashboard/assignments" className="navItem">
+                  <FileText size={18} />
+                  <span>Assignments</span>
+                </Link>
                 <Link href="/buyer-dashboard/order-history" className="navItem">
                   <Package size={18} />
                   <span>Order History</span>
-                  {pendingOrderCount > 0 && <span className="navBadge">{pendingOrderCount}</span>}
+                  {pendingOrderCount > 0 && (
+                    <span className="navBadge">{pendingOrderCount}</span>
+                  )}
                 </Link>
                 <Link href="/buyer-dashboard/orders" className="navItem">
                   <ShoppingCart size={18} />
@@ -1104,12 +1466,14 @@ const BuyerDashboard = () => {
                 Categories
               </h3>
               <div className="categoryList">
-                {categories.map(category => {
+                {categories.map((category) => {
                   const IconComponent = category.icon;
                   return (
                     <button
                       key={category.id}
-                      className={`categoryItem ${selectedCategory === category.id ? 'active' : ''}`}
+                      className={`categoryItem ${
+                        selectedCategory === category.id ? "active" : ""
+                      }`}
                       onClick={() => setSelectedCategory(category.id)}
                     >
                       <IconComponent size={22} className="category-icon" />
@@ -1146,7 +1510,9 @@ const BuyerDashboard = () => {
                       max="10000"
                       step="100"
                       value={filters.priceRange.min}
-                      onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                      onChange={(e) =>
+                        handlePriceRangeChange("min", e.target.value)
+                      }
                       className="priceSlider"
                     />
                     <input
@@ -1155,7 +1521,9 @@ const BuyerDashboard = () => {
                       max="10000"
                       step="100"
                       value={filters.priceRange.max}
-                      onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                      onChange={(e) =>
+                        handlePriceRangeChange("max", e.target.value)
+                      }
                       className="priceSlider"
                     />
                   </div>
@@ -1167,7 +1535,7 @@ const BuyerDashboard = () => {
               </div>
 
               <div className="filterGroup">
-                <ConditionFilter 
+                <ConditionFilter
                   selectedConditions={filters.conditions}
                   onConditionChange={handleConditionChange}
                 />
@@ -1184,11 +1552,17 @@ const BuyerDashboard = () => {
                     className="locationInput js-location-dropdown"
                     placeholder="Select College"
                     value={selectedLocation}
-                    onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
+                    onClick={() =>
+                      setIsLocationDropdownOpen(!isLocationDropdownOpen)
+                    }
                     onChange={() => {}} // Read-only for display
                     readOnly
                   />
-                  <div className={`locationDropdown js-location-search ${isLocationDropdownOpen ? 'show' : ''}`}>
+                  <div
+                    className={`locationDropdown js-location-search ${
+                      isLocationDropdownOpen ? "show" : ""
+                    }`}
+                  >
                     <div className="locationSearch">
                       <input
                         type="text"
@@ -1202,11 +1576,11 @@ const BuyerDashboard = () => {
                     <div className="locationOptions">
                       <div
                         className="locationOption"
-                        onClick={() => handleLocationSelect('')}
+                        onClick={() => handleLocationSelect("")}
                       >
                         <span>All Colleges</span>
                       </div>
-                      {filteredLocations.map(location => (
+                      {filteredLocations.map((location) => (
                         <div
                           key={location}
                           className="locationOption"
@@ -1219,7 +1593,6 @@ const BuyerDashboard = () => {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </aside>
@@ -1231,15 +1604,34 @@ const BuyerDashboard = () => {
               <h2>Found {filteredProducts.length} items</h2>
               <p>
                 {getActiveFilterCount() > 0
-                  ? `${getActiveFilterCount()} filter${getActiveFilterCount() > 1 ? 's' : ''} applied`
-                  : 'Best deals for students'
-                }
+                  ? `${getActiveFilterCount()} filter${
+                      getActiveFilterCount() > 1 ? "s" : ""
+                    } applied`
+                  : "Best deals for students"}
               </p>
             </div>
 
             <div className="viewControls">
+              {/* Quick filter buttons */}
+              <div className="quickFilters">
+                <button
+                  className={`quickFilterButton ${searchQuery.toLowerCase().includes('drafter') ? 'active' : ''}`}
+                  onClick={handleDrafterFilter}
+                >
+                  📐 Drafter
+                </button>
+                <button
+                  className={`quickFilterButton ${searchQuery.toLowerCase().includes('akash') ? 'active' : ''}`}
+                  onClick={handleAkashFilter}
+                >
+                  📖 Akash
+                </button>
+              </div>
+              
               <button
-                className={`filterToggle mobileOnly ${getActiveFilterCount() > 0 ? 'active' : ''}`}
+                className={`filterToggle mobileOnly ${
+                  getActiveFilterCount() > 0 ? "active" : ""
+                }`}
                 onClick={openSidebar}
               >
                 <Filter size={18} />
@@ -1256,7 +1648,7 @@ const BuyerDashboard = () => {
               <AlertCircle size={20} />
               <span>
                 {error && `Listings: ${error}`}
-                {error && buyerError && ' | '}
+                {error && buyerError && " | "}
                 {buyerError && `Profile: ${buyerError}`}
               </span>
             </div>
@@ -1277,13 +1669,16 @@ const BuyerDashboard = () => {
                   <h3>No items found</h3>
                   <p>Try adjusting your search or filters</p>
                   {getActiveFilterCount() > 0 && (
-                    <button className="clearFiltersButton" onClick={clearAllFilters}>
+                    <button
+                      className="clearFiltersButton"
+                      onClick={clearAllFilters}
+                    >
                       Clear All Filters
                     </button>
                   )}
                 </div>
               ) : (
-                filteredProducts.map(product => (
+                filteredProducts.map((product) => (
                   <div
                     key={product.id || product._id}
                     className="productCard"
@@ -1298,7 +1693,11 @@ const BuyerDashboard = () => {
                         </button>
                       </div>
                       <button
-                        className={`wishlistButton ${isInWishlist(product.id || product._id) ? 'active' : ''}`}
+                        className={`wishlistButton ${
+                          isInWishlist(product.id || product._id)
+                            ? "active"
+                            : ""
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleWishlist(product);
@@ -1306,15 +1705,11 @@ const BuyerDashboard = () => {
                       >
                         <Heart size={18} />
                       </button>
-                      <div className="conditionBadge">
-                        {product.condition}
-                      </div>
+                      <div className="conditionBadge">{product.condition}</div>
                     </div>
 
                     <div className="productInfo">
                       <h3 className="productTitle">{product.title}</h3>
-
-                     
 
                       <div className="productMeta">
                         <div className="productMetaItem">
@@ -1333,18 +1728,22 @@ const BuyerDashboard = () => {
 
                       <div className="priceSection">
                         <div className="currentPrice">
-                          ₹{Math.round(
-                            (product.finalPrice !== undefined
+                          ₹
+                          {Math.round(
+                            product.finalPrice !== undefined
                               ? product.finalPrice
-                              : (product.price || 0) + ((product.price || 0) * ((product.commission ?? 0) / 100))
-                            )
+                              : (product.price || 0) +
+                                  (product.price || 0) *
+                                    ((product.commission ?? 0) / 100)
                           )}
                         </div>
                         {(() => {
-                          const buyerPrice = (product.finalPrice !== undefined
-                            ? product.finalPrice
-                            : (product.price || 0) + ((product.price || 0) * ((product.commission ?? 0) / 100))
-                          );
+                          const buyerPrice =
+                            product.finalPrice !== undefined
+                              ? product.finalPrice
+                              : (product.price || 0) +
+                                (product.price || 0) *
+                                  ((product.commission ?? 0) / 100);
                           if (product.originalPrice > buyerPrice) {
                             return (
                               <>
@@ -1352,7 +1751,10 @@ const BuyerDashboard = () => {
                                   ₹{product.originalPrice}
                                 </div>
                                 <div className="savings">
-                                  Save ₹{(product.originalPrice - buyerPrice).toFixed(2)}
+                                  Save ₹
+                                  {(product.originalPrice - buyerPrice).toFixed(
+                                    2
+                                  )}
                                 </div>
                               </>
                             );
@@ -1360,27 +1762,38 @@ const BuyerDashboard = () => {
                           return null;
                         })()}
                       </div>
-                        {/* Add this new section */}
-<div className="product-card-description">
-  <p className="product-description-text">
-    {product.description && product.description.length > 100 
-      ? `${product.description.substring(0, 500)}...` 
-      : product.description || 'No description available'}
-  </p>
-</div>
+                      {/* Add this new section */}
+                      <div className="product-card-description">
+                        <p className="product-description-text">
+                          {product.description &&
+                          product.description.length > 100
+                            ? `${product.description.substring(0, 500)}...`
+                            : product.description || "No description available"}
+                        </p>
+                      </div>
                       <div className="productActions">
                         <button
-                          className={`addToCartButton ${cartLoading || isInCart(product.id || product._id) ? 'disabled' : ''}`}
+                          className={`addToCartButton ${
+                            cartLoading || isInCart(product.id || product._id)
+                              ? "disabled"
+                              : ""
+                          }`}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (!isInCart(product.id || product._id)) {
                               handleAddToCart(product);
                             }
                           }}
-                          disabled={cartLoading || isInCart(product.id || product._id)}
+                          disabled={
+                            cartLoading || isInCart(product.id || product._id)
+                          }
                         >
-                          
-                          {isInCart(product.id || product._id) ? 'In Cart' : 'Add to Cart'}
+
+                          <ShoppingCart size={16} />
+                          {isInCart(product.id || product._id)
+                            ? "In Cart"
+                            : "Add to Cart"}
+
                         </button>
                         <button
                           className="contactSellerButton"
@@ -1423,7 +1836,12 @@ const BuyerDashboard = () => {
       />
 
       {/* Sidebar Overlay for Mobile */}
-      {isSidebarOpen && <div className="sidebarOverlay js-sidebar-overlay show" onClick={closeSidebar} />}
+      {isSidebarOpen && (
+        <div
+          className="sidebarOverlay js-sidebar-overlay show"
+          onClick={closeSidebar}
+        />
+      )}
 
       <ProductViewModal
         productId={selectedProductId}

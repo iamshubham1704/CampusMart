@@ -65,7 +65,14 @@ export async function GET(request) {
     // Series by group (day/month)
     const dateFormat = groupBy === 'month' ? '%Y-%m' : '%Y-%m-%d';
 
-    const [series, totals, completedOrdersCount] = await Promise.all([
+    // Fetch assignment revenue data
+    const assignmentMatchStage = {
+      status: 'completed',
+      buyerPrice: { $exists: true, $ne: null, $gt: 0 },
+      updatedAt: { $gte: start, $lte: endInclusive }
+    };
+
+    const [series, totals, completedOrdersCount, assignmentSeries, assignmentTotals] = await Promise.all([
       db.collection('order_status').aggregate([
         { $match: matchStage },
         // Join with listings to fetch fallback price/commission if missing on order_status
@@ -144,15 +151,62 @@ export async function GET(request) {
       db.collection('order_status').countDocuments({ 
         overallStatus: 'completed', 
         completedAt: { $gte: start, $lte: endInclusive } 
-      })
+      }),
+
+      // Assignment series aggregation
+      db.collection('assignments').aggregate([
+        { $match: assignmentMatchStage },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: dateFormat,
+                date: '$updatedAt'
+              }
+            },
+            soldCount: { $sum: 1 },
+            revenue: { $sum: '$buyerPrice' },
+            commission: { $sum: { $multiply: ['$buyerPrice', 0.10] } } // 10% commission
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]).toArray(),
+
+      // Assignment totals aggregation
+      db.collection('assignments').aggregate([
+        { $match: assignmentMatchStage },
+        {
+          $group: {
+            _id: null,
+            soldCount: { $sum: 1 },
+            revenue: { $sum: '$buyerPrice' },
+            commission: { $sum: { $multiply: ['$buyerPrice', 0.10] } } // 10% commission
+          }
+        }
+      ]).toArray()
     ]);
 
     const totalsDoc = totals?.[0] || { soldCount: 0, revenue: 0, commission: 0 };
-    const totalRevenue = totalsDoc.revenue || 0;
-    const totalCommission = totalsDoc.commission || 0;
+    const assignmentTotalsDoc = assignmentTotals?.[0] || { soldCount: 0, revenue: 0, commission: 0 };
+    
+    const productRevenue = totalsDoc.revenue || 0;
+    const productCommission = totalsDoc.commission || 0;
+    const assignmentRevenue = assignmentTotalsDoc.revenue || 0;
+    const assignmentCommission = assignmentTotalsDoc.commission || 0;
+    
+    const totalRevenue = productRevenue + assignmentRevenue;
+    const totalCommission = productCommission + assignmentCommission;
 
     // Prepare series with commission calculated based on completed orders
     const seriesWithCommission = (series || []).map(item => ({
+      period: item._id,
+      soldCount: item.soldCount || 0,
+      revenue: item.revenue || 0,
+      commission: item.commission || 0
+    }));
+
+    // Prepare assignment series
+    const assignmentSeriesWithCommission = (assignmentSeries || []).map(item => ({
       period: item._id,
       soldCount: item.soldCount || 0,
       revenue: item.revenue || 0,
@@ -169,9 +223,17 @@ export async function GET(request) {
           totalRevenue,
           totalCommission,
           commissionPercent,
-          completedOrders: completedOrdersCount || 0
+          completedOrders: completedOrdersCount || 0,
+          // Assignment totals
+          completedAssignments: assignmentTotalsDoc.soldCount || 0,
+          assignmentRevenue,
+          assignmentCommission,
+          // Breakdown
+          productRevenue,
+          productCommission
         },
-        series: seriesWithCommission
+        series: seriesWithCommission,
+        assignmentSeries: assignmentSeriesWithCommission
       }
     }, { status: 200 });
   } catch (error) {

@@ -1,4 +1,4 @@
-// // app/api/admin/register/route.js
+
 // import { MongoClient } from 'mongodb';
 // import bcrypt from 'bcryptjs';
 
@@ -29,8 +29,8 @@
 //       return Response.json({ error: 'Password must be at least 6 characters long' }, { status: 400 });
 //     }
 
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 12);
+    // Hash password
+    // const hashedPassword = await bcrypt.hash(password, 12);
 
 //     await client.connect();
 //     isConnected = true;
@@ -42,7 +42,7 @@
 //     const existingAdmin = await adminsCollection.findOne({ 
 //       email: email.toLowerCase().trim() 
 //     });
-    
+
 //     if (existingAdmin) {
 //       return Response.json({ 
 //         error: 'Admin already exists with this email' 
@@ -76,13 +76,14 @@
 
 //   } catch (err) {
 //     console.error('Admin registration error:', err);
-    
+
+
 //     if (err.code === 11000) {
 //       return Response.json({ 
 //         error: 'Admin already exists with this email' 
 //       }, { status: 409 });
 //     }
-    
+
 //     return Response.json({ 
 //       error: 'Internal server error. Please try again later.' 
 //     }, { status: 500 });
@@ -95,4 +96,6 @@
 //       }
 //     }
 //   }
+// }
 
+// }

@@ -37,7 +37,10 @@ export default function AdminDashboard() {
     verifiedPayments: 0,
     sellerPaymentRequests: 0,
     pendingSellerPayments: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    productRevenue: 0,
+    assignmentRevenue: 0,
+    completedAssignments: 0
   });
 
   // Reports stats state
@@ -53,6 +56,11 @@ export default function AdminDashboard() {
   const [commissionPercent, setCommissionPercent] = useState(10);
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionSaving, setCommissionSaving] = useState(false);
+
+  // Alphas management state
+  const [alphas, setAlphas] = useState([]);
+  const [alphasLoading, setAlphasLoading] = useState(false);
+  const [showAlphasModal, setShowAlphasModal] = useState(false);
 
   const router = useRouter();
 
@@ -78,15 +86,16 @@ export default function AdminDashboard() {
   }, [filter]);
 
   // Filter and paginate users
-  const filteredUsers = users.filter(user => {
-    const matchesFilter = filter === "all" || user.userType === filter;
+  const filteredUsers = users && users.length > 0 ? users.filter(user => {
+    if (!user) return false;
+    const matchesFilter = filter === "all" || user.role === filter; // Changed from userType to role
     const lowerSearch = searchTerm.toLowerCase();
     const phoneString = (user.phone || "").toString();
-    const matchesSearch = user.name.toLowerCase().includes(lowerSearch) ||
-                         user.email.toLowerCase().includes(lowerSearch) ||
+    const matchesSearch = (user.name && user.name.toLowerCase().includes(lowerSearch)) ||
+                         (user.email && user.email.toLowerCase().includes(lowerSearch)) ||
                          phoneString.includes(lowerSearch);
     return matchesFilter && matchesSearch;
-  });
+  }) : [];
 
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
@@ -132,6 +141,7 @@ export default function AdminDashboard() {
       fetchData();
       fetchCommission();
       fetchOrderAnalytics(true);
+      fetchAlphas();
     } catch (error) {
       console.error('Error initializing admin:', error);
       clearAuthData();
@@ -167,7 +177,7 @@ export default function AdminDashboard() {
 
       // Always fetch ALL users first, then filter locally
       const [usersResponse, statsResponse] = await Promise.all([
-        fetch('/api/admin/users?all=true', {
+        fetch('/api/admin/users', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -184,7 +194,9 @@ export default function AdminDashboard() {
 
       if (usersResponse.ok) {
         console.log('Users API Response:', usersData);
-        setUsers(usersData.data.users);
+        // Handle both possible response structures
+        const usersArray = usersData.data?.users || usersData.data || [];
+        setUsers(usersArray);
         // Reset to first page when new data arrives
         setCurrentPage(1);
       } else {
@@ -236,6 +248,9 @@ export default function AdminDashboard() {
         }),
         fetch('/api/admin/seller-transactions', {
           headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/admin/assignment-revenue', {
+          headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
 
@@ -244,11 +259,12 @@ export default function AdminDashboard() {
         productsResponse,
         ordersResponse,
         paymentsResponse,
-        sellerPaymentsResponse
+        sellerPaymentsResponse,
+        assignmentRevenueResponse
       ] = await Promise.race([apiCalls, timeout]);
 
       // Check for authentication errors
-      const responses = [usersResponse, productsResponse, ordersResponse, paymentsResponse, sellerPaymentsResponse];
+      const responses = [usersResponse, productsResponse, ordersResponse, paymentsResponse, sellerPaymentsResponse, assignmentRevenueResponse];
       const unauthorizedResponse = responses.find(res => res.status === 401);
       
       if (unauthorizedResponse) {
@@ -271,7 +287,7 @@ export default function AdminDashboard() {
         }
       };
 
-      const [usersData, productsData, ordersData, paymentsData, sellerPaymentsData] = await Promise.all(
+      const [usersData, productsData, ordersData, paymentsData, sellerPaymentsData, assignmentRevenueData] = await Promise.all(
         responses.map(processResponse)
       );
 
@@ -285,6 +301,10 @@ export default function AdminDashboard() {
       });
 
       // Calculate stats with null checking
+      const productRevenue = paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const assignmentRevenue = assignmentRevenueData?.data?.totalRevenue || 0;
+      const totalRevenue = productRevenue + assignmentRevenue;
+
       const newStats = {
         totalUsers: (usersData?.data?.buyers?.length || 0) + (usersData?.data?.sellers?.length || 0),
         totalBuyers: usersData?.data?.buyers?.length || 0,
@@ -295,7 +315,10 @@ export default function AdminDashboard() {
         verifiedPayments: paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.length || 0,
         sellerPaymentRequests: sellerPaymentsData?.data?.summary?.total || 0,
         pendingSellerPayments: sellerPaymentsData?.data?.summary?.pending || 0,
-        totalRevenue: paymentsData?.data?.screenshots?.filter(p => p.status === 'verified')?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
+        totalRevenue: totalRevenue,
+        productRevenue: productRevenue,
+        assignmentRevenue: assignmentRevenue,
+        completedAssignments: assignmentRevenueData?.data?.completedCount || 0
       };
 
       setDashboardStats(newStats);
@@ -327,6 +350,31 @@ export default function AdminDashboard() {
       console.error('Error fetching commission settings:', e);
     } finally {
       setCommissionLoading(false);
+    }
+  };
+
+  const fetchAlphas = async () => {
+    try {
+      setAlphasLoading(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/alpha/list', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAlphas(data.data || []);
+      } else {
+        console.error('Failed to fetch alphas:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching alphas:', error);
+    } finally {
+      setAlphasLoading(false);
     }
   };
 
@@ -1200,6 +1248,73 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Academic Management */}
+          <div style={{ 
+            padding: '1.5rem', 
+            border: '1px solid #e9ecef', 
+            borderRadius: '12px',
+            backgroundColor: '#f8f9fa'
+          }}>
+            <h3 style={{ color: '#212529', marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>
+              🎓 Academic Management
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                onClick={() => navigateWithErrorHandler('/admin-dashboard/assignments')}
+                style={{
+                  padding: '0.875rem 1rem',
+                  backgroundColor: '#6f42c1',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  fontSize: '0.9rem'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#59359a'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#6f42c1'}
+              >
+                📝 Assignments Management
+              </button>
+              <button
+                onClick={() => setShowAlphasModal(true)}
+                style={{
+                  padding: '0.875rem 1rem',
+                  backgroundColor: '#17a2b8',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  position: 'relative',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  fontSize: '0.9rem'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#117a8b'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
+              >
+                👥 View All Alphas
+                <span style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  borderRadius: '12px',
+                  padding: '4px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600'
+                }}>
+                  {alphas.length}
+                </span>
+              </button>
+            </div>
+          </div>
+
 
       <div style={{
         backgroundColor: 'white',
@@ -1902,6 +2017,38 @@ export default function AdminDashboard() {
         )}
       </div>
 
+      {/* Assignment Revenue Section */}
+      <div style={{
+        backgroundColor: 'white',
+        padding: '1.5rem',
+        borderRadius: '16px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        border: '1px solid #e9ecef',
+        marginTop: '2rem'
+      }}>
+        <h2 style={{ color: '#212529', margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Assignment Revenue</h2>
+        <p style={{ margin: '0.5rem 0 1rem 0', color: '#6c757d' }}>Revenue from completed assignments and academic services.</p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#28a745', fontWeight: 700, fontSize: '1.75rem' }}>{dashboardStats.completedAssignments.toLocaleString()}</div>
+            <div style={{ color: '#6c757d' }}>Completed Assignments</div>
+          </div>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#0d6efd', fontWeight: 700, fontSize: '1.75rem' }}>₹{dashboardStats.assignmentRevenue.toLocaleString('en-IN')}</div>
+            <div style={{ color: '#6c757d' }}>Assignment Revenue</div>
+          </div>
+          <div style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#e83e8c', fontWeight: 700, fontSize: '1.75rem' }}>₹{Math.round(dashboardStats.assignmentRevenue * 0.10).toLocaleString('en-IN')}</div>
+            <div style={{ color: '#6c757d' }}>Commission (10%)</div>
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: '#e7f3ff', border: '1px solid #b3d9ff', borderRadius: '6px', padding: '0.75rem', fontSize: '0.9rem', color: '#004085' }}>
+          <strong>Note:</strong> Assignment revenue is calculated from completed assignments with set buyer prices. This revenue is included in the total platform revenue.
+        </div>
+      </div>
+
       {/* Footer */}
       <div style={{
         textAlign: 'center',
@@ -1923,6 +2070,273 @@ export default function AdminDashboard() {
           Data refreshes automatically every 30 seconds
         </p>
       </div>
+
+      {/* Alphas Modal */}
+      {showAlphasModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }} onClick={() => setShowAlphasModal(false)}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '800px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem',
+              borderBottom: '1px solid #e9ecef',
+              paddingBottom: '1rem'
+            }}>
+              <h2 style={{ margin: 0, color: '#212529', fontSize: '1.5rem', fontWeight: '600' }}>
+                👥 All Registered Alphas
+              </h2>
+              <button
+                onClick={() => setShowAlphasModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6c757d',
+                  padding: '0.25rem'
+                }}
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+
+            {alphasLoading ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: '#6c757d'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '4px solid #e9ecef',
+                  borderTop: '4px solid #007bff',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 1rem'
+                }}></div>
+                Loading alphas...
+              </div>
+            ) : alphas.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: '#6c757d',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
+                <h3 style={{ margin: '0 0 0.5rem 0' }}>No Alphas Found</h3>
+                <p style={{ margin: 0 }}>No alphas have registered yet.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{
+                  marginBottom: '1rem',
+                  padding: '1rem',
+                  backgroundColor: '#e7f3ff',
+                  borderRadius: '8px',
+                  border: '1px solid #b3d9ff'
+                }}>
+                  <strong>Total Alphas:</strong> {alphas.length} registered assignment helpers
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8f9fa' }}>
+                        <th style={{
+                          padding: '0.75rem',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #dee2e6',
+                          fontWeight: '600',
+                          color: '#212529'
+                        }}>Name</th>
+                        <th style={{
+                          padding: '0.75rem',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #dee2e6',
+                          fontWeight: '600',
+                          color: '#212529'
+                        }}>Email</th>
+                        <th style={{
+                          padding: '0.75rem',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #dee2e6',
+                          fontWeight: '600',
+                          color: '#212529'
+                        }}>Phone</th>
+                        <th style={{
+                          padding: '0.75rem',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #dee2e6',
+                          fontWeight: '600',
+                          color: '#212529'
+                        }}>Joined</th>
+                        <th style={{
+                          padding: '0.75rem',
+                          textAlign: 'center',
+                          borderBottom: '1px solid #dee2e6',
+                          fontWeight: '600',
+                          color: '#212529'
+                        }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alphas.map((alpha, index) => (
+                        <tr key={alpha._id} style={{
+                          borderBottom: '1px solid #f1f3f5',
+                          backgroundColor: index % 2 === 0 ? '#fff' : '#f9f9f9'
+                        }}>
+                          <td style={{
+                            padding: '0.75rem',
+                            fontWeight: '500',
+                            color: '#212529'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <div style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.9rem',
+                                fontWeight: '600'
+                              }}>
+                                {alpha.name ? alpha.name.charAt(0).toUpperCase() : 'A'}
+                              </div>
+                              {alpha.name || 'No Name'}
+                            </div>
+                          </td>
+                          <td style={{
+                            padding: '0.75rem',
+                            color: '#6c757d'
+                          }}>
+                            {alpha.email || 'No Email'}
+                          </td>
+                          <td style={{
+                            padding: '0.75rem',
+                            color: '#6c757d'
+                          }}>
+                            {alpha.phone || 'No Phone'}
+                          </td>
+                          <td style={{
+                            padding: '0.75rem',
+                            color: '#6c757d',
+                            fontSize: '0.9rem'
+                          }}>
+                            {alpha.createdAt
+                              ? new Date(alpha.createdAt).toLocaleDateString('en-IN', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })
+                              : 'Unknown'
+                            }
+                          </td>
+                          <td style={{
+                            padding: '0.75rem',
+                            textAlign: 'center'
+                          }}>
+                            <span style={{
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '12px',
+                              fontSize: '0.8rem',
+                              fontWeight: '600',
+                              backgroundColor: alpha.isActive !== false ? '#d1ecf1' : '#f8d7da',
+                              color: alpha.isActive !== false ? '#0c5460' : '#721c24'
+                            }}>
+                              {alpha.isActive !== false ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  color: '#6c757d'
+                }}>
+                  <strong>Note:</strong> Alphas are academic support staff who help with assignments and provide tutoring services to students.
+                </div>
+              </>
+            )}
+
+            <div style={{
+              marginTop: '1.5rem',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '0.5rem'
+            }}>
+              <button
+                onClick={() => {
+                  fetchAlphas();
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                🔄 Refresh
+              </button>
+              <button
+                onClick={() => setShowAlphasModal(false)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

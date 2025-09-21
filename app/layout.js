@@ -1,4 +1,3 @@
-import GlobalReportButton from '@/components/GlobalReportButton';
 import styles from './global.css';
 import Script from "next/script";
 
@@ -43,7 +42,6 @@ export default function RootLayout({ children }) {
       </head>
       <body className={styles.root}>
         {children}
-        <GlobalReportButton/>
       </body>
     </html>
   );
