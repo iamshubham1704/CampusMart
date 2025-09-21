@@ -19,7 +19,7 @@ const requiredFiles = [
   'lib/auth.js'
 ];
 
-console.log('📁 Checking required files...');
+// console.log('📁 Checking required files...');
 let allFilesExist = true;
 
 requiredFiles.forEach(file => {
@@ -31,7 +31,7 @@ requiredFiles.forEach(file => {
   }
 });
 
-console.log('');
+// console.log('');
 
 // Test 2: Check package.json for required dependencies
 console.log('📦 Checking package.json dependencies...');

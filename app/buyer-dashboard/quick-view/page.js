@@ -542,12 +542,13 @@ We will verify your payment and confirm your order shortly. You can track your o
                       alt={product.title}
                       className="product-image"
                       onError={handleImageError}
-                      onLoad={() =>
-                        console.log(
-                          "✅ Image loaded successfully:",
-                          getCurrentImageUrl()
-                        )
-                      }
+                      // onLoad={() =>
+                      // // console.log(
+                      // //   "✅ Image loaded successfully:",
+                      // //     getCurrentImageUrl()
+                      // //  )
+
+                      // }
                     />
 
                     {/* Image Navigation */}

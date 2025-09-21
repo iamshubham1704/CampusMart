@@ -87,15 +87,16 @@ const useBuyer = () => {
         localStorage.getItem("buyerToken") ||
         localStorage.getItem("auth-token");
       if (!directToken) {
-        console.log(
-          "No direct token found in localStorage, redirecting to login"
-        );
+      //  console.log(
+       //   "No direct token found in localStorage, redirecting to login"
+       // );
         redirectToLogin("buyer");
         return;
       }
 
-      console.log("Token found, fetching buyer profile...");
-      console.log("Using token:", token.substring(0, 20) + "...");
+      // console.log("Token found, fetching buyer profile...");
+      // console.log("Using token:", token.substring(0, 20) + "...");
+      
 
       // Use the direct token from localStorage for the API call
       const response = await fetch("/api/buyer/profile", {
