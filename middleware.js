@@ -160,7 +160,7 @@ export function middleware(request) {
     const validation = validateTokenBasic(token);
     if (!validation.valid) {
       // Log validation failure reason for debugging
-      console.log(`Token validation failed: ${validation.reason}`);
+      // console.log(`Token validation failed: ${validation.reason}`);
       
       // Token is invalid, redirect to login
       let loginUrl;

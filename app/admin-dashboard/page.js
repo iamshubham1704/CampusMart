@@ -193,7 +193,7 @@ export default function AdminDashboard() {
       const statsData = await statsResponse.json();
 
       if (usersResponse.ok) {
-        console.log('Users API Response:', usersData);
+        // console.log('Users API Response:', usersData);
         // Handle both possible response structures
         const usersArray = usersData.data?.users || usersData.data || [];
         setUsers(usersArray);

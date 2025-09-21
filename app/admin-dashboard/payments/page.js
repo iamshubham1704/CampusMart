@@ -112,7 +112,7 @@ export default function AdminPaymentsPage() {
       });
 
       const data = await response.json();
-      console.log('📡 Verification response:', data);
+      // console.log('📡 Verification response:', data);
 
       if (response.ok && data.success) {
         // Update the payment screenshot in local state
@@ -145,7 +145,7 @@ export default function AdminPaymentsPage() {
   const debugPaymentDatabase = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      console.log('🔍 Getting comprehensive payment database debug information...');
+      // console.log('🔍 Getting comprehensive payment database debug information...');
 
       // Use the new comprehensive debug endpoint
       const response = await fetch('/api/admin/debug', {
@@ -155,7 +155,7 @@ export default function AdminPaymentsPage() {
       });
 
       const data = await response.json();
-      console.log('📊 Comprehensive debug data:', data);
+      // console.log('📊 Comprehensive debug data:', data);
 
       if (response.ok && data.success) {
         const debugInfo = data.data;

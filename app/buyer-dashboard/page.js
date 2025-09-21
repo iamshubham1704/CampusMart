@@ -66,18 +66,18 @@ const useBuyer = () => {
       setLoading(true);
       setError(null);
 
-      console.log("Checking authentication for buyer dashboard...");
+      // console.log("Checking authentication for buyer dashboard...");
 
       // Check authentication first
       if (!isAuthenticated("buyer")) {
-        console.log("Buyer not authenticated, redirecting to login");
+        // console.log("Buyer not authenticated, redirecting to login");
         redirectToLogin("buyer");
         return;
       }
 
       const token = getStoredToken("buyer");
       if (!token) {
-        console.log("No buyer token found, redirecting to login");
+        // console.log("No buyer token found, redirecting to login");
         redirectToLogin("buyer");
         return;
       }
@@ -87,15 +87,16 @@ const useBuyer = () => {
         localStorage.getItem("buyerToken") ||
         localStorage.getItem("auth-token");
       if (!directToken) {
-        console.log(
-          "No direct token found in localStorage, redirecting to login"
-        );
+      //  console.log(
+       //   "No direct token found in localStorage, redirecting to login"
+       // );
         redirectToLogin("buyer");
         return;
       }
 
-      console.log("Token found, fetching buyer profile...");
-      console.log("Using token:", token.substring(0, 20) + "...");
+      // console.log("Token found, fetching buyer profile...");
+      // console.log("Using token:", token.substring(0, 20) + "...");
+      
 
       // Use the direct token from localStorage for the API call
       const response = await fetch("/api/buyer/profile", {
@@ -106,11 +107,11 @@ const useBuyer = () => {
         },
       });
 
-      console.log("Profile response status:", response.status);
+      // console.log("Profile response status:", response.status);
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.log("Unauthorized response, redirecting to login");
+          // console.log("Unauthorized response, redirecting to login");
           redirectToLogin("buyer");
           return;
         }
@@ -131,7 +132,7 @@ const useBuyer = () => {
       }
 
       const data = await response.json();
-      console.log("Profile data received:", data);
+      // console.log("Profile data received:", data);
       setBuyer(data.data);
     } catch (error) {
       console.error("Error fetching buyer profile:", error);
@@ -874,7 +875,7 @@ const BuyerDashboard = () => {
     const productIdToToggle = product.id || product._id;
     const success = await toggleWishlist(productIdToToggle);
     if (success) {
-      console.log("Wishlist updated successfully");
+      // console.log("Wishlist updated successfully");
     }
   };
 

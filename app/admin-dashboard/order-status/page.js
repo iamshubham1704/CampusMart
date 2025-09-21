@@ -194,7 +194,7 @@ export default function OrderStatusManagement() {
       setError(''); // Clear previous errors
       const token = localStorage.getItem('adminToken');
 
-      console.log('Starting sync of verified payments...');
+      // console.log('Starting sync of verified payments...');
 
       const response = await fetch('/api/admin/order-status', {
         method: 'POST',
@@ -205,7 +205,7 @@ export default function OrderStatusManagement() {
       });
 
       const data = await response.json();
-      console.log('Sync response:', data);
+      // console.log('Sync response:', data);
 
       if (response.ok) {
         if (data.data && data.data.created > 0) {
@@ -236,7 +236,7 @@ export default function OrderStatusManagement() {
   const debugDatabase = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      console.log('Getting debug information...');
+      // console.log('Getting debug information...');
 
       const response = await fetch('/api/admin/order-status?debug=true', {
         method: 'POST',
@@ -247,7 +247,7 @@ export default function OrderStatusManagement() {
       });
 
       const data = await response.json();
-      console.log('Debug response:', data);
+      // console.log('Debug response:', data);
 
       if (response.ok) {
         const debugInfo = data.data;
