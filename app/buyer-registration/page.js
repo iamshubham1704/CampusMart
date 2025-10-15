@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin, GraduationCap, Calendar } from 'lucide-react';
+import colleges from '../utils/colleges';
 
 const UnifiedBuyerRegistration = ({ updateProfile, isEditMode = false, initialData = {} }) => {
   const router = useRouter();
@@ -28,7 +29,7 @@ const UnifiedBuyerRegistration = ({ updateProfile, isEditMode = false, initialDa
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const colleges = ['MAIT', 'DTU', 'NSUT', 'IIIT Delhi', 'JMI', 'DU', 'Manual'];
+  // Use the comprehensive colleges list from utils
   const years = ['1st year', '2nd year', '3rd year', '4th year'];
   const courses = ['B.Tech', 'BCA', 'MCA', 'M.Tech', 'B.Sc', 'M.Sc', 'Manual'];
   const branches = ['CSE', 'IT', 'ECE', 'EEE', 'ME', 'CE', 'Civil', 'Chemical', 'Manual'];
@@ -627,7 +628,7 @@ const UnifiedBuyerRegistration = ({ updateProfile, isEditMode = false, initialDa
                 >
                   <option value="">Select your college</option>
                   {colleges.map((college) => (
-                    <option key={college} value={college === 'Manual' ? 'manual' : college.toLowerCase()}>
+                    <option key={college} value={college === 'Other' ? 'manual' : college}>
                       {college}
                     </option>
                   ))}

@@ -27,7 +27,7 @@ const colleges = [
   'University School of Chemical Technology',
   'University School of Information Technology',
   'University School of Automation and Robotics',
-  'Dr. Akhilesh Das Gupta Institute of Professional Studies',
+  'Dr. Akhilesh Das Gupta Institute of Professional Studies (ADGIPS)',
   'CBP Government Engineering College',
   'Govind Ballabh Pant Engineering College',
   'Delhi Institute of Tool Engineering',

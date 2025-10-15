@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin, Briefcase, Building2 } from 'lucide-react';
+import colleges from '../utils/colleges';
 
 const UnifiedSellerRegistration = () => {
   const router = useRouter();
@@ -23,7 +24,7 @@ const UnifiedSellerRegistration = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const colleges = ['MAIT', 'DTU', 'NSUT', 'IIIT Delhi', 'JMI', 'DU', 'Other'];
+  // Use the comprehensive colleges list from utils
   const businessTypes = ['Books & Notes', 'Electronics', 'Stationery', 'Fashion', 'Food & Snacks', 'Services', 'Other'];
 
   const handleChange = (e) => {
@@ -85,7 +86,7 @@ const UnifiedSellerRegistration = () => {
       return;
     }
 
-    const college = form.college === 'other' ? form.customCollege : form.college;
+    const college = form.college === 'Other' ? form.customCollege : form.college;
    
 
     if (!college ) {
@@ -608,7 +609,7 @@ const UnifiedSellerRegistration = () => {
                 >
                   <option value="">Select your college</option>
                   {colleges.map((college) => (
-                    <option key={college} value={college === 'Other' ? 'other' : college.toLowerCase()}>
+                    <option key={college} value={college === 'Other' ? 'other' : college}>
                       {college}
                     </option>
                   ))}

@@ -9724,6 +9724,64 @@ body {
   flex-shrink: 0;
 }
 
+/* College Display in Navbar */
+.college-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-right: 1rem;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  animation: collegeDisplaySlideIn 0.5s ease-out;
+  max-width: 200px;
+  overflow: hidden;
+}
+
+.college-display svg {
+  flex-shrink: 0;
+}
+
+.college-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes collegeDisplaySlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive college display */
+@media (max-width: 768px) {
+  .college-display {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    margin-right: 0.5rem;
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .college-display {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    margin-right: 0.25rem;
+    max-width: 120px;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .footer-support-row {

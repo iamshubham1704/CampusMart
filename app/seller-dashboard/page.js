@@ -11,7 +11,7 @@ import { listingsAPI, dashboardAPI } from '../utils/api';
 import EditListingModal from '../../components/EditListingModal';
 
 import SellerDeliveryIntegration from '../../components/SellerDeliveryIntegration';
-import { getStoredToken, isAuthenticated, redirectToLogin } from '../../lib/auth';
+import { getStoredToken, isAuthenticated, redirectToLogin, clearAllTokens } from '../../lib/auth';
 
 // import NotificationBadge from '../../components/NotificationBadge';
 
@@ -21,6 +21,7 @@ const SellerDashboard = () => {
   const [error, setError] = useState(null);
   const [sellerData, setSellerData] = useState(null);
   const [myListings, setMyListings] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
   
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

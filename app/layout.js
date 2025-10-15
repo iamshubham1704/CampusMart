@@ -1,5 +1,6 @@
 import styles from './global.css';
 import Script from "next/script";
+import ClientProviders from '../components/ClientProviders';
 
 export const metadata = {
   title: 'CampusMart',
@@ -41,7 +42,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={styles.root}>
-        {children}
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

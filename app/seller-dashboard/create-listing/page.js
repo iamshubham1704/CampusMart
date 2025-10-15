@@ -5,6 +5,7 @@ import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import { listingsAPI } from '../../utils/api';
 import { useImageUpload } from '../../../hooks/useImageUpload';
 import colleges from '../../utils/colleges';
+import { useCollege } from '../../../components/contexts/CollegeContext';
 import styles from './CreateListing.module.css'; 
 
 const CreateListing = () => {
@@ -13,6 +14,9 @@ const CreateListing = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const fileInputRef = useRef(null);
+  
+  // College context
+  const { selectedCollege } = useCollege();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -31,6 +35,16 @@ const CreateListing = () => {
 
   const [tagInput, setTagInput] = useState('');
   const { uploadSingleImage } = useImageUpload();
+
+  // Populate college field from selected college
+  React.useEffect(() => {
+    if (selectedCollege) {
+      setFormData(prev => ({
+        ...prev,
+        college: selectedCollege
+      }));
+    }
+  }, [selectedCollege]);
 
   // Categories for dropdown
   const categories = [

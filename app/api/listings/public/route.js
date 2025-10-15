@@ -21,6 +21,7 @@ export async function GET(request) {
     const maxPrice = searchParams.get('maxPrice');
     const condition = searchParams.get('condition');
     const location = searchParams.get('location');
+    const college = searchParams.get('college');
     
     let filter = { status: { $in: ['active', null] } };
     
@@ -53,7 +54,24 @@ export async function GET(request) {
     if (location) {
       filter.location = new RegExp(location, 'i');
     }
+    
+    // Add college filter
+    if (college) {
+      // Use flexible college matching - support both full name and abbreviation inside parentheses
+      // Example: "Maharaja Agrasen Institute of Technology (MAIT)" should match listings with either
+      // the full name or just "MAIT" stored in their `college` field.
+      const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const matchAbbr = college.match(/\(([^)]+)\)/);
+      const abbr = matchAbbr ? matchAbbr[1] : null;
+      const pattern = abbr
+        ? `${escapeRegExp(college)}|${escapeRegExp(abbr)}`
+        : `${escapeRegExp(college)}`;
+      filter.college = new RegExp(pattern, 'i');
+      console.log('🎯 Filtering by college (pattern):', pattern);
+    }
   
+    console.log('🔍 Final filter:', JSON.stringify(filter, null, 2));
+    
     const listings = await db.collection('listings')
       .aggregate([
         { $match: filter },
@@ -77,6 +95,11 @@ export async function GET(request) {
         { $limit: 100 }
       ])
       .toArray();
+      
+    console.log('📊 Found listings:', listings.length);
+    if (listings.length > 0) {
+      console.log('📝 Sample listing college:', listings[0].college);
+    }
     
     const transformedListings = listings.map(listing => {
       const seller = listing.sellerInfo && listing.sellerInfo[0];
@@ -107,6 +130,7 @@ export async function GET(request) {
         seller: seller?.name || seller?.businessName || 'Anonymous Seller',
         rating: seller?.rating || 4.5,
         location: listing.location || 'Campus',
+        college: listing.college || null,
         timePosted: formatTimeAgo(listing.createdAt),
         category: mapCategory(listing.category),
         condition: listing.condition || 'Good',
