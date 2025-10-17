@@ -3653,16 +3653,36 @@ select {
 .profileContent {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding: 1.5rem 2rem 2rem;
+  overflow-x: visible;
+  padding: 1.5rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   min-height: 0;
-  height: 100%;
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 130, 246, 0.3) rgba(0, 0, 0, 0.1);
   animation: fadeInUp 0.6s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+/* Custom scrollbar for profile content */
+.profileContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.profileContent::-webkit-scrollbar-track {
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 3px;
+}
+
+.profileContent::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border-radius: 3px;
+}
+
+.profileContent::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
 }
 
 @keyframes fadeInUp {
@@ -3674,6 +3694,116 @@ select {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Profile Section Styles */
+.profileSection {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.05) 0%, 
+    rgba(139, 92, 246, 0.03) 50%,
+    rgba(6, 182, 212, 0.02) 100%
+  );
+  border-radius: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: visible;
+  z-index: 1;
+}
+
+.profileSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(59, 130, 246, 0.3), 
+    transparent
+  );
+  z-index: 1;
+}
+
+.avatarContainer {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+  z-index: 10;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid rgba(59, 130, 246, 0.3);
+  object-fit: cover;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 5;
+  display: block;
+}
+
+.avatar:hover {
+  transform: scale(1.05);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.cameraButton {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  z-index: 15;
+}
+
+.cameraButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.userName {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0.5rem 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.light .userName {
+  color: #1e293b;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.memberSince {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0.25rem 0;
+}
+
+.verifiedBadge {
+  display: inline-block;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 /* Custom Scrollbar Styling */
@@ -3899,7 +4029,7 @@ select {
 
 /* Personal Information Section */
 .personalInfo {
-  padding: 2rem;
+  padding: 1.5rem;
   background: linear-gradient(135deg, 
     rgba(59, 130, 246, 0.08) 0%, 
     rgba(139, 92, 246, 0.05) 50%,
@@ -3907,7 +4037,7 @@ select {
   );
   border-radius: 1rem;
   border: 1px solid rgba(59, 130, 246, 0.15);
-  margin: 0 1rem;
+  margin: 0;
 }
 
 .personalInfoHeader {
@@ -4042,6 +4172,88 @@ select {
   font-weight: 700;
   color: #f1f5f9;
   line-height: 1.4;
+}
+
+/* Enhanced Form Fields */
+.formFields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fieldLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 0.25rem;
+}
+
+.light .fieldLabel {
+  color: #1e293b;
+}
+
+.fieldInput {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.light .fieldInput {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #1e293b;
+}
+
+.fieldInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.light .fieldInput:focus {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.fieldInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fieldDisplay {
+  background: rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.light .fieldDisplay {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(59, 130, 246, 0.15);
+  color: #1e293b;
 }
 
 .light .fieldValue {

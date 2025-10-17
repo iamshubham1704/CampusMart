@@ -39,7 +39,10 @@ import {
   Instagram,
   Linkedin,
   MessageCircle,
+  Building2,
 } from 'lucide-react';
+import { useCollege } from '../components/contexts/CollegeContext';
+import CollegeSelectionModal from '../components/CollegeSelectionModal';
 
 const CampusMart = () => {
   const router = useRouter();
@@ -54,6 +57,9 @@ const CampusMart = () => {
   const [currentProductSlide, setCurrentProductSlide] = useState(0);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   const [isSticky, setIsSticky] = useState(false);
+
+  // College context
+  const { selectedCollege, setSelectedCollege, colleges } = useCollege();
 
   const testimonialImages = [
     {
@@ -235,16 +241,66 @@ const CampusMart = () => {
 
     const loadTrending = async () => {
       try {
-        const responses = await Promise.all(
-          trendingListingIds.map(async (id) => {
-            try {
-              // Use live API so shared-listing IDs resolve to real data
-              // Fetch via local proxy to avoid CORS and ensure SSR/edge compatibility
-              const res = await fetch(`/api/proxy-listings/${id}`, { cache: 'no-store' });
-              if (!res.ok) return null;
-              const data = await res.json();
-              if (!data?.success || !data?.listing) return null;
-              const l = data.listing;
+        // If no college is selected, show default products
+        if (!selectedCollege) {
+          const responses = await Promise.all(
+            trendingListingIds.map(async (id) => {
+              try {
+                // Use live API so shared-listing IDs resolve to real data
+                // Fetch via local proxy to avoid CORS and ensure SSR/edge compatibility
+                const res = await fetch(`/api/proxy-listings/${id}`, { cache: 'no-store' });
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (!data?.success || !data?.listing) return null;
+                const l = data.listing;
+                const imgObj = Array.isArray(l.images) && l.images.length > 0 ? l.images[0] : null;
+                const imageUrl = imgObj?.thumbnailUrl || imgObj?.url || '/next.svg';
+                const price = Number(l.price) || 0;
+                const originalPrice = Number(l.originalPrice) || Math.round(price * 1.2);
+                const discount = originalPrice > 0 ? Math.max(0, Math.min(95, Math.round(((originalPrice - price) / originalPrice) * 100))) : 0;
+
+                return {
+                  id: l.id || l._id,
+                  title: l.title || 'Listing',
+                  price,
+                  originalPrice,
+                  image: imageUrl,
+                  discount,
+                  rating: l.seller?.rating || 4.6,
+                  badge: l.category ? 'Featured ' + l.category : 'Featured',
+                  category: l.category || 'General'
+                };
+              } catch {
+                return null;
+              }
+            })
+          );
+
+          const filtered = responses.filter(Boolean);
+          if (!isCancelled && filtered.length > 0) {
+            setFeaturedProducts(filtered);
+          }
+          return;
+        }
+
+        // If college is selected, fetch college-specific products
+        try {
+          const queryParams = new URLSearchParams();
+          queryParams.append('college', selectedCollege);
+          queryParams.append('limit', '12'); // Limit to 12 for trending
+
+          const res = await fetch(`/api/listings/public?${queryParams.toString()}`, {
+            cache: 'no-store'
+          });
+
+          if (!res.ok) {
+            console.error('Failed to fetch college-specific listings');
+            return;
+          }
+
+          const data = await res.json();
+          if (data.success && data.listings && data.listings.length > 0) {
+            const collegeProducts = data.listings.map(l => {
               const imgObj = Array.isArray(l.images) && l.images.length > 0 ? l.images[0] : null;
               const imageUrl = imgObj?.thumbnailUrl || imgObj?.url || '/next.svg';
               const price = Number(l.price) || 0;
@@ -252,7 +308,7 @@ const CampusMart = () => {
               const discount = originalPrice > 0 ? Math.max(0, Math.min(95, Math.round(((originalPrice - price) / originalPrice) * 100))) : 0;
 
               return {
-                id: l.id || l._id,
+                id: l._id || l.id,
                 title: l.title || 'Listing',
                 price,
                 originalPrice,
@@ -260,17 +316,17 @@ const CampusMart = () => {
                 discount,
                 rating: l.seller?.rating || 4.6,
                 badge: l.category ? 'Featured ' + l.category : 'Featured',
-                category: l.category || 'General'
+                category: l.category || 'General',
+                college: l.college || selectedCollege
               };
-            } catch {
-              return null;
-            }
-          })
-        );
+            });
 
-        const filtered = responses.filter(Boolean);
-        if (!isCancelled && filtered.length > 0) {
-          setFeaturedProducts(filtered);
+            if (!isCancelled) {
+              setFeaturedProducts(collegeProducts);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load college-specific listings:', error);
         }
       } catch (e) {
         console.error('Failed to load trending listings:', e);
@@ -281,7 +337,7 @@ const CampusMart = () => {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [selectedCollege]);
 
   // Hero slides data
   const heroSlides = [
@@ -541,6 +597,9 @@ const CampusMart = () => {
 
   return (
     <>
+      {/* College Selection Modal */}
+      <CollegeSelectionModal />
+      
       {/* Interactive Background Elements - Only on desktop */}
       {!isMobile && (
         <div className="interactive-background">
@@ -599,6 +658,14 @@ const CampusMart = () => {
 
             {/* Right Actions */}
             <div className="nav-actions">
+              {/* Selected College Display */}
+              {selectedCollege && (
+                <div className="college-display">
+                  <Building2 size={16} />
+                  <span className="college-name">{selectedCollege}</span>
+                </div>
+              )}
+
               {/* Theme Toggle */}
               <button
                 className="theme-toggle"
@@ -793,8 +860,21 @@ const CampusMart = () => {
       <section className="trending-products-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Trending Products</h2>
-            <p className="section-subtitle">Discover the most popular items from students in your campus</p>
+            <h2 className="section-title">
+              {selectedCollege ? `Trending Products at ${selectedCollege}` : 'Trending Products'}
+            </h2>
+            <p className="section-subtitle">
+              {selectedCollege 
+                ? `Discover the most popular items from students at ${selectedCollege}`
+                : 'Discover the most popular items from students in your campus'
+              }
+            </p>
+            {selectedCollege && (
+              <div className="college-badge">
+                <Building2 size={16} />
+                <span>{selectedCollege}</span>
+              </div>
+            )}
           </div>
           
           <div className="trending-carousel-container">

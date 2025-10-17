@@ -53,6 +53,8 @@ import {
   redirectToLogin,
   clearAllTokens,
 } from "../../lib/auth";
+import { useCollege } from "../../components/contexts/CollegeContext";
+import { Building2 } from "lucide-react";
 import "./BuyerDashboard.css";
 
 
@@ -285,176 +287,178 @@ const ProfileModal = ({
           </button>
         </div>
 
-        <div className="profileSection">
-          <div className="avatarContainer">
-            <img
-              src={
-                buyer.avatar ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  buyer.name
-                )}&size=120&background=3b82f6&color=ffffff`
-              }
-              alt={buyer.name}
-              className="avatar"
-            />
-            <button className="cameraButton">
-              <Camera size={16} />
-            </button>
-          </div>
-
-          <h3 className="userName">{buyer.name}</h3>
-          <p className="memberSince">
-            Member since {new Date(buyer.createdAt).toLocaleDateString()}
-          </p>
-
-          {buyer.verified && (
-            <span className="verifiedBadge">✓ Verified Student</span>
-          )}
-          <div style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
-            <a
-              href={`mailto:${buyer.email}`}
-              style={{
-                color: "inherit",
-                textDecoration: "none",
-                marginRight: 12,
-              }}
-            >
-              <Mail size={14} style={{ marginRight: 4 }} /> {buyer.email}
-            </a>
-            {buyer.phone && (
-              <a
-                href={`tel:${buyer.phone}`}
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                <Phone size={14} style={{ marginRight: 4 }} /> {buyer.phone}
-              </a>
-            )}
-          </div>
-        </div>
-
-        <div className="personalInfo">
-          <div className="personalInfoHeader">
-            <h3>Personal Information</h3>
-            <button
-              className="editButton"
-              onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              disabled={loading || saving}
-            >
-              {loading || saving ? (
-                <Loader2 size={16} className="spinner" />
-              ) : isEditing ? (
-                <Save size={16} />
-              ) : (
-                <Edit3 size={16} />
-              )}
-              {loading || saving ? "Saving..." : isEditing ? "Save" : "Edit"}
-            </button>
-          </div>
-
-          {(saveError || saveSuccess) && (
-            <div
-              style={{
-                background: saveError
-                  ? "rgba(239,68,68,0.1)"
-                  : "rgba(16,185,129,0.1)",
-                color: saveError ? "#ef4444" : "#10b981",
-                padding: "8px 12px",
-                borderRadius: 8,
-                marginBottom: 12,
-              }}
-            >
-              {saveError || saveSuccess}
+        <div className="profileContent">
+          <div className="profileSection">
+            <div className="avatarContainer">
+              <img
+                src={
+                  buyer.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    buyer.name
+                  )}&size=120&background=3b82f6&color=ffffff`
+                }
+                alt={buyer.name}
+                className="avatar"
+              />
+              <button className="cameraButton">
+                <Camera size={16} />
+              </button>
             </div>
-          )}
 
-          <div className="formFields">
-            {[
-              { key: "name", label: "Name", icon: User, type: "text" },
-              { key: "email", label: "Email", icon: Mail, type: "email" },
-              { key: "phone", label: "Phone", icon: Phone, type: "tel" },
-              {
-                key: "university",
-                label: "College",
-                icon: BookOpen,
-                type: "text",
-              },
-            ].map(({ key, label, icon: Icon, type }) => (
-              <div key={key} className="fieldGroup">
+            <h3 className="userName">{buyer.name}</h3>
+            <p className="memberSince">
+              Member since {new Date(buyer.createdAt).toLocaleDateString()}
+            </p>
+
+            {buyer.verified && (
+              <span className="verifiedBadge">✓ Verified Student</span>
+            )}
+            <div style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
+              <a
+                href={`mailto:${buyer.email}`}
+                style={{
+                  color: "inherit",
+                  textDecoration: "none",
+                  marginRight: 12,
+                }}
+              >
+                <Mail size={14} style={{ marginRight: 4 }} /> {buyer.email}
+              </a>
+              {buyer.phone && (
+                <a
+                  href={`tel:${buyer.phone}`}
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  <Phone size={14} style={{ marginRight: 4 }} /> {buyer.phone}
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div className="personalInfo">
+            <div className="personalInfoHeader">
+              <h3>Personal Information</h3>
+              <button
+                className="editButton"
+                onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
+                disabled={loading || saving}
+              >
+                {loading || saving ? (
+                  <Loader2 size={16} className="spinner" />
+                ) : isEditing ? (
+                  <Save size={16} />
+                ) : (
+                  <Edit3 size={16} />
+                )}
+                {loading || saving ? "Saving..." : isEditing ? "Save" : "Edit"}
+              </button>
+            </div>
+
+            {(saveError || saveSuccess) && (
+              <div
+                style={{
+                  background: saveError
+                    ? "rgba(239,68,68,0.1)"
+                    : "rgba(16,185,129,0.1)",
+                  color: saveError ? "#ef4444" : "#10b981",
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  marginBottom: 12,
+                }}
+              >
+                {saveError || saveSuccess}
+              </div>
+            )}
+
+            <div className="formFields">
+              {[
+                { key: "name", label: "Name", icon: User, type: "text" },
+                { key: "email", label: "Email", icon: Mail, type: "email" },
+                { key: "phone", label: "Phone", icon: Phone, type: "tel" },
+                {
+                  key: "university",
+                  label: "College",
+                  icon: BookOpen,
+                  type: "text",
+                },
+              ].map(({ key, label, icon: Icon, type }) => (
+                <div key={key} className="fieldGroup">
+                  <label className="fieldLabel">
+                    <Icon size={16} />
+                    {label}
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type={type}
+                      value={formData[key]}
+                      onChange={(e) =>
+                        setFormData({ ...formData, [key]: e.target.value })
+                      }
+                      className="fieldInput"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <div className="fieldDisplay">
+                      {buyer[key] || "Not specified"}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div className="fieldGroup">
                 <label className="fieldLabel">
-                  <Icon size={16} />
-                  {label}
+                  <MapPin size={16} />
+                  Campus Location
                 </label>
                 {isEditing ? (
-                  <input
-                    type={type}
-                    value={formData[key]}
+                  <select
+                    value={formData.location}
                     onChange={(e) =>
-                      setFormData({ ...formData, [key]: e.target.value })
+                      setFormData({ ...formData, location: e.target.value })
                     }
                     className="fieldInput"
                     disabled={saving}
-                  />
+                  >
+                    <option value="">Select Location</option>
+                    <option value="MAIN CANTEEN">MAIN CANTEEN</option>
+                    <option value="GROUND">GROUND</option>
+                    <option value="LIBRARY">LIBRARY</option>
+                    <option value="OTHER">OTHER</option>
+                  </select>
                 ) : (
                   <div className="fieldDisplay">
-                    {buyer[key] || "Not specified"}
+                    {buyer.location || "Not specified"}
                   </div>
                 )}
               </div>
-            ))}
 
-            <div className="fieldGroup">
-              <label className="fieldLabel">
-                <MapPin size={16} />
-                Campus Location
-              </label>
-              {isEditing ? (
-                <select
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  className="fieldInput"
-                  disabled={saving}
-                >
-                  <option value="">Select Location</option>
-                  <option value="MAIN CANTEEN">MAIN CANTEEN</option>
-                  <option value="GROUND">GROUND</option>
-                  <option value="LIBRARY">LIBRARY</option>
-                  <option value="OTHER">OTHER</option>
-                </select>
-              ) : (
-                <div className="fieldDisplay">
-                  {buyer.location || "Not specified"}
-                </div>
-              )}
-            </div>
-
-            <div className="fieldGroup">
-              <label className="fieldLabel">
-                <BookOpen size={16} />
-                Academic Year
-              </label>
-              {isEditing ? (
-                <select
-                  value={formData.year}
-                  onChange={(e) =>
-                    setFormData({ ...formData, year: e.target.value })
-                  }
-                  className="fieldInput"
-                  disabled={saving}
-                >
-                  <option value="">Select Year</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="Graduate">Graduated</option>
-                </select>
-              ) : (
-                <div className="fieldDisplay">
-                  {buyer.year || "Not specified"}
-                </div>
-              )}
+              <div className="fieldGroup">
+                <label className="fieldLabel">
+                  <BookOpen size={16} />
+                  Academic Year
+                </label>
+                {isEditing ? (
+                  <select
+                    value={formData.year}
+                    onChange={(e) =>
+                      setFormData({ ...formData, year: e.target.value })
+                    }
+                    className="fieldInput"
+                    disabled={saving}
+                  >
+                    <option value="">Select Year</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="Graduate">Graduated</option>
+                  </select>
+                ) : (
+                  <div className="fieldDisplay">
+                    {buyer.year || "Not specified"}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -513,6 +517,14 @@ function ConditionFilter({ selectedConditions, onConditionChange }) {
 
 const BuyerDashboard = () => {
   const router = useRouter();
+
+  // College context
+  const { selectedCollege } = useCollege();
+  
+  // Debug college selection
+  useEffect(() => {
+    console.log('🏫 Selected college in buyer dashboard:', selectedCollege);
+  }, [selectedCollege]);
 
   // Mouse tracking state
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -780,7 +792,19 @@ const BuyerDashboard = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch("/api/listings/public", {
+      // Add college filter if selected
+      const queryParams = new URLSearchParams();
+      if (selectedCollege) {
+        queryParams.append('college', selectedCollege);
+        console.log('🔍 Fetching listings for college:', selectedCollege);
+      } else {
+        console.log('🔍 Fetching all listings (no college selected)');
+      }
+
+      const url = `/api/listings/public?${queryParams.toString()}`;
+      console.log('📡 API URL:', url);
+
+      const response = await fetch(url, {
         method: "GET",
         headers,
       });
@@ -790,6 +814,17 @@ const BuyerDashboard = () => {
       }
 
       const data = await response.json();
+      console.log('📊 API Response:', data);
+      console.log('📦 Listings count:', data.listings?.length || 0);
+      
+      // Debug college values in listings
+      if (data.listings && data.listings.length > 0) {
+        console.log('🏫 College values in listings:');
+        data.listings.forEach((listing, index) => {
+          console.log(`   ${index + 1}. ${listing.title} - College: ${listing.college || 'No college'}`);
+        });
+      }
+      
       setListings(data.data || data.listings || []);
     } catch (err) {
       console.error("Error fetching listings:", err);
@@ -801,7 +836,7 @@ const BuyerDashboard = () => {
 
   useEffect(() => {
     fetchListings();
-  }, []);
+  }, [selectedCollege]);
 
   useEffect(() => {
     if (!buyerLoading && !buyer) {
@@ -823,17 +858,9 @@ const BuyerDashboard = () => {
       const matchesCondition =
         filters.conditions.length === 0 ||
         filters.conditions.includes(product.condition);
-      const locationFilters = (filters.locations || []).map((l) =>
-        (l || "").toLowerCase()
-      );
-      const productCollege = (
-        product.college ||
-        product.location ||
-        ""
-      ).toLowerCase();
-      const matchesCollege =
-        locationFilters.length === 0 ||
-        locationFilters.includes(productCollege);
+      // College filtering - only show listings from the selected college
+      const matchesCollege = !selectedCollege || 
+        (product.college && product.college.toLowerCase().includes(selectedCollege.toLowerCase()));
 
       return (
         matchesSearch &&
@@ -1134,6 +1161,14 @@ const BuyerDashboard = () => {
           </Link>
 
           <div className="headerActions">
+            {/* Selected College Display */}
+            {selectedCollege && (
+              <div className="college-display">
+                <Building2 size={16} />
+                <span className="college-name">{selectedCollege}</span>
+              </div>
+            )}
+
             <button
               className="actionButton"
               onClick={() => setIsDarkTheme(!isDarkTheme)}
