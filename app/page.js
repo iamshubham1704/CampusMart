@@ -457,7 +457,7 @@ const CampusMart = () => {
         
         const target = parseFloat(counter.getAttribute('data-target'));
         const duration = 2000; // 2 seconds
-        const increment = target / (duration / 16); // 60fps
+        const increment = target / (duration / 16); 
         let current = 0;
         
         // Set initial value to 0 for animation

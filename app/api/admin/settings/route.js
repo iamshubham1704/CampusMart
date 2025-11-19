@@ -1,12 +1,13 @@
 import clientPromise from '@/lib/mongo';
 import { verifyAdminToken } from '@/lib/auth';
+import { NextResponse } from 'next/server';
 
 // GET: Fetch global admin settings (commission, etc.)
 export async function GET(request) {
   try {
     const admin = verifyAdminToken(request);
     if (!admin) {
-      return Response.json({ error: 'Unauthorized. Admin access required.' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Unauthorized. Admin access required.' }, { status: 401 });
     }
 
     const client = await clientPromise;
@@ -14,7 +15,7 @@ export async function GET(request) {
 
     const settingsDoc = await db.collection('settings').findOne({ _id: 'global_settings' });
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
       data: {
         commissionPercent: settingsDoc?.commissionPercent ?? 10
@@ -22,7 +23,7 @@ export async function GET(request) {
     }, { status: 200 });
   } catch (error) {
     console.error('Error fetching admin settings:', error);
-    return Response.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -31,14 +32,14 @@ export async function PUT(request) {
   try {
     const admin = verifyAdminToken(request);
     if (!admin) {
-      return Response.json({ error: 'Unauthorized. Admin access required.' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Unauthorized. Admin access required.' }, { status: 401 });
     }
 
     const { commissionPercent } = await request.json();
 
     const parsed = parseFloat(commissionPercent);
     if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
-      return Response.json({ error: 'commissionPercent must be a number between 0 and 100' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'commissionPercent must be a number between 0 and 100' }, { status: 400 });
     }
 
     const client = await clientPromise;
@@ -56,10 +57,10 @@ export async function PUT(request) {
       { upsert: true }
     );
 
-    return Response.json({ success: true, message: 'Settings updated successfully' }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Settings updated successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error updating admin settings:', error);
-    return Response.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 

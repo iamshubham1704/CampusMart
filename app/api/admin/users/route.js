@@ -39,12 +39,23 @@ export async function GET(request) {
     const shouldFetchBuyers = !type || type === 'buyer';
     const shouldFetchSellers = !type || type === 'seller';
 
+    // Optimize queries by adding indexes and limiting fields
+    const optimizedProjection = {
+      _id: 1,
+      name: 1,
+      email: 1,
+      phone: 1,
+      college: 1,
+      isActive: 1,
+      createdAt: 1
+    };
+    
     const [buyers, sellers] = await Promise.all([
       shouldFetchBuyers
-        ? db.collection('buyers').find(buildFilter(), { projection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
+        ? db.collection('buyers').find(buildFilter(), { projection: optimizedProjection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
         : Promise.resolve([]),
       shouldFetchSellers
-        ? db.collection('sellers').find(buildFilter(), { projection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
+        ? db.collection('sellers').find(buildFilter(), { projection: optimizedProjection }).sort({ createdAt: -1 }).limit(limitParam).toArray()
         : Promise.resolve([])
     ]);
 
@@ -72,7 +83,8 @@ export async function PUT(request) {
   try {
     const decoded = verifyAdminToken(request);
     if (!decoded) {
-      return Response.json({ 
+      return NextResponse.json({ 
+        success: false,
         error: 'Unauthorized. Admin access required.' 
       }, { status: 401 });
     }
@@ -80,13 +92,15 @@ export async function PUT(request) {
     const { userId, userType, isActive } = await request.json();
 
     if (!userId || !userType || typeof isActive !== 'boolean') {
-      return Response.json({ 
+      return NextResponse.json({ 
+        success: false,
         error: 'Missing required fields: userId, userType, isActive' 
       }, { status: 400 });
     }
 
     if (!['buyer', 'seller'].includes(userType)) {
-      return Response.json({ 
+      return NextResponse.json({ 
+        success: false,
         error: 'Invalid userType. Must be buyer or seller' 
       }, { status: 400 });
     }
@@ -98,7 +112,8 @@ export async function PUT(request) {
     try {
       objectId = new ObjectId(userId);
     } catch (error) {
-      return Response.json({ 
+      return NextResponse.json({ 
+        success: false,
         error: 'Invalid userId format' 
       }, { status: 400 });
     }
@@ -117,7 +132,8 @@ export async function PUT(request) {
     );
 
     if (result.matchedCount === 0) {
-      return Response.json({ 
+      return NextResponse.json({ 
+        success: false,
         error: 'User not found' 
       }, { status: 404 });
     }
@@ -128,7 +144,7 @@ export async function PUT(request) {
       { projection: { password: 0 } }
     );
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
       message: `User ${isActive ? 'activated' : 'banned'} successfully`,
       data: {
@@ -139,7 +155,7 @@ export async function PUT(request) {
 
   } catch (error) {
     console.error('Error updating user status:', error);
-    return Response.json({
+    return NextResponse.json({
       success: false,
       error: 'Internal server error'
     }, { status: 500 });

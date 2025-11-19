@@ -1,21 +1,6 @@
 // app/api/admin/analytics/orders/route.js
-import { verifyToken } from '@/lib/auth';
+import { verifyToken, verifyAdminToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
-
-// Verify admin token helper
-function verifyAdminToken(request) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-    const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'admin') return null;
-    return decoded;
-  } catch (error) {
-    console.error('Admin token verification failed:', error);
-    return null;
-  }
-}
 
 // Utility to coerce date input and clamp to valid range
 function parseDate(value, fallback) {

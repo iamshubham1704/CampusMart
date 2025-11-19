@@ -1,31 +1,8 @@
 // app/api/admin/payment-screenshots/route.js - CREATE NEW FILE
-import { verifyToken } from '@/lib/auth';
+import { verifyToken, verifyAdminToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
 import { ObjectId } from 'mongodb';
-
-// Verify admin token
-function verifyAdminToken(request) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
-    
-    // Check if user has admin role
-    if (!decoded || decoded.role !== 'admin') {
-      return null;
-    }
-
-    return decoded;
-  } catch (error) {
-    console.error('Admin token verification failed:', error);
-    return null;
-  }
-}
+import { createIdCandidates } from '@/lib/objectIdHelper';
 
 export async function GET(request) {
   try {
@@ -53,18 +30,10 @@ export async function GET(request) {
       filter.status = status;
     }
     if (buyerId) {
-      const candidates = [buyerId];
-      if (ObjectId.isValid(buyerId)) {
-        try { candidates.push(new ObjectId(buyerId)); } catch (_) {}
-      }
-      filter.buyerId = { $in: candidates };
+      filter.buyerId = { $in: createIdCandidates(buyerId) };
     }
     if (sellerId) {
-      const candidates = [sellerId];
-      if (ObjectId.isValid(sellerId)) {
-        try { candidates.push(new ObjectId(sellerId)); } catch (_) {}
-      }
-      filter.sellerId = { $in: candidates };
+      filter.sellerId = { $in: createIdCandidates(sellerId) };
     }
 
     // Calculate pagination
@@ -93,11 +62,8 @@ export async function GET(request) {
           const buyersCollection = db.collection('buyers');
           let buyer = null;
           try {
-            const buyerKey = (typeof screenshot.buyerId === 'string' && ObjectId.isValid(screenshot.buyerId))
-              ? new ObjectId(screenshot.buyerId)
-              : screenshot.buyerId;
             buyer = await buyersCollection.findOne(
-              { _id: buyerKey },
+              { _id: { $in: createIdCandidates(screenshot.buyerId) } },
               { projection: { name: 1, email: 1, phone: 1 } }
             );
           } catch (_) {}
@@ -106,11 +72,8 @@ export async function GET(request) {
           const sellersCollection = db.collection('sellers');
           let seller = null;
           try {
-            const sellerKey = (typeof screenshot.sellerId === 'string' && ObjectId.isValid(screenshot.sellerId))
-              ? new ObjectId(screenshot.sellerId)
-              : screenshot.sellerId;
             seller = await sellersCollection.findOne(
-              { _id: sellerKey },
+              { _id: { $in: createIdCandidates(screenshot.sellerId) } },
               { projection: { name: 1, email: 1, phone: 1 } }
             );
           } catch (_) {}
@@ -119,11 +82,8 @@ export async function GET(request) {
           const productsCollection = db.collection('listings');
           let product = null;
           try {
-            const productKey = (typeof screenshot.productId === 'string' && ObjectId.isValid(screenshot.productId))
-              ? new ObjectId(screenshot.productId)
-              : screenshot.productId;
             product = await productsCollection.findOne(
-              { _id: productKey },
+              { _id: { $in: createIdCandidates(screenshot.productId) } },
               { projection: { title: 1, price: 1, images: 1 } }
             );
           } catch (_) {}
@@ -163,11 +123,10 @@ export async function GET(request) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error('❌ Error fetching payment screenshots for admin:', error);
+    console.error('Error fetching payment screenshots for admin:', error);
     return Response.json({
       success: false,
-      error: 'Internal server error',
-      message: error.message
+      error: 'Internal server error'
     }, { status: 500 });
   }
 }

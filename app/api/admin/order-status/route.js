@@ -2,6 +2,7 @@
 import { verifyToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
 import { ObjectId } from 'mongodb';
+import { createIdCandidates } from '@/lib/objectIdHelper';
 
 // Define order steps
 const ORDER_STEPS = {
@@ -73,7 +74,7 @@ export async function GET(request) {
         ];
       } else {
         try {
-          filter.assignedAdminId = new ObjectId(adminFilter);
+          filter.assignedAdminId = { $in: createIdCandidates(adminFilter) };
         } catch (error) {
           console.error('Invalid admin ID format:', error);
         }
@@ -233,8 +234,7 @@ export async function POST(request) {
     console.error('Error syncing verified payments:', error);
     return Response.json({
       success: false,
-      error: 'Internal server error',
-      details: error.message
+      error: 'Internal server error'
     }, { status: 500 });
   }
 }
@@ -269,14 +269,7 @@ async function syncVerifiedPayments(db) {
     let errors = 0;
 
     // Helper to convert string ids to ObjectId when possible
-    const toObjectId = (id) => {
-      try {
-        if (!id) return null;
-        return typeof id === 'string' ? new ObjectId(id) : id;
-      } catch (_) {
-        return null;
-      }
-    };
+    
 
     for (const payment of verifiedPayments) {
       try {
@@ -302,15 +295,15 @@ async function syncVerifiedPayments(db) {
         // Get related data
         const [buyer, seller, product] = await Promise.all([
           db.collection('buyers').findOne(
-            { _id: toObjectId(payment.buyerId) || payment.buyerId },
+            { _id: { $in: createIdCandidates(payment.buyerId) } },
             { projection: { name: 1, email: 1, phone: 1 } }
           ),
           db.collection('sellers').findOne(
-            { _id: toObjectId(payment.sellerId) || payment.sellerId },
+            { _id: { $in: createIdCandidates(payment.sellerId) } },
             { projection: { name: 1, email: 1, phone: 1 } }
           ),
           db.collection('listings').findOne(
-            { _id: toObjectId(payment.productId) || payment.productId },
+            { _id: { $in: createIdCandidates(payment.productId) } },
             { projection: { title: 1, price: 1, commission: 1 } }
           )
         ]);
@@ -335,9 +328,9 @@ async function syncVerifiedPayments(db) {
         const orderStatus = {
           _id: new ObjectId(),
           orderId: order._id,
-          buyerId: toObjectId(payment.buyerId) || payment.buyerId,
-          sellerId: toObjectId(payment.sellerId) || payment.sellerId,
-          productId: toObjectId(payment.productId) || payment.productId,
+          buyerId: payment.buyerId,
+          sellerId: payment.sellerId,
+          productId: payment.productId,
           
           buyerName: buyer.name,
           buyerPhone: buyer.phone,

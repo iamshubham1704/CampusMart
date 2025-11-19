@@ -1,32 +1,7 @@
 // app/api/admin/assign-admin/route.js
 import clientPromise from "@/lib/mongo";
-import { verifyToken } from "@/lib/auth";
+import { verifyToken, verifyAdminToken } from "@/lib/auth";
 import { ObjectId } from "mongodb";
-
-/**
- * Verify Admin token
- * This function checks if the user has a valid token and an 'admin' role.
- */
-function verifyAdminToken(request) {
-  try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return null;
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
-
-    if (!decoded || decoded.role !== "admin") {
-      return null;
-    }
-
-    return decoded;
-  } catch (error) {
-    console.error("Admin token verification failed:", error);
-    return null;
-  }
-}
 
 /**
  * PUT - Assign an admin to a specific assignment

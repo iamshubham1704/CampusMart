@@ -2,6 +2,7 @@
 import { verifyAdminToken } from '@/lib/auth';
 import clientPromise from '@/lib/mongo';
 import { ObjectId } from 'mongodb';
+import { createIdCandidates } from '@/lib/objectIdHelper';
 
 // GET - Fetch all seller transaction requests for admin
 export async function GET(request) {
@@ -50,55 +51,26 @@ export async function GET(request) {
       transactions.map(async (transaction) => {
         try {
           // Get seller details
-          // Resolve seller by either string or ObjectId
-          const sellerCandidates = [];
-          if (transaction.sellerId) {
-            sellerCandidates.push(transaction.sellerId);
-            if (typeof transaction.sellerId === 'string' && ObjectId.isValid(transaction.sellerId)) {
-              try { sellerCandidates.push(new ObjectId(transaction.sellerId)); } catch (_) {}
-            }
-          }
           const seller = await db.collection('sellers').findOne(
-            sellerCandidates.length > 0 ? { _id: { $in: sellerCandidates } } : { _id: null },
+            { _id: { $in: createIdCandidates(transaction.sellerId) } },
             { projection: { name: 1, email: 1, phone: 1, profileImage: 1 } }
           );
 
           // Get buyer details
-          const buyerCandidates = [];
-          if (transaction.buyerId) {
-            buyerCandidates.push(transaction.buyerId);
-            if (typeof transaction.buyerId === 'string' && ObjectId.isValid(transaction.buyerId)) {
-              try { buyerCandidates.push(new ObjectId(transaction.buyerId)); } catch (_) {}
-            }
-          }
           const buyer = await db.collection('buyers').findOne(
-            buyerCandidates.length > 0 ? { _id: { $in: buyerCandidates } } : { _id: null },
+            { _id: { $in: createIdCandidates(transaction.buyerId) } },
             { projection: { name: 1, email: 1, phone: 1 } }
           );
 
           // Get product details
-          const productCandidates = [];
-          if (transaction.productId) {
-            productCandidates.push(transaction.productId);
-            if (typeof transaction.productId === 'string' && ObjectId.isValid(transaction.productId)) {
-              try { productCandidates.push(new ObjectId(transaction.productId)); } catch (_) {}
-            }
-          }
           const product = await db.collection('listings').findOne(
-            productCandidates.length > 0 ? { _id: { $in: productCandidates } } : { _id: null },
+            { _id: { $in: createIdCandidates(transaction.productId) } },
             { projection: { title: 1, price: 1, images: 1 } }
           );
 
           // Get order details
-          const orderCandidates = [];
-          if (transaction.orderId) {
-            orderCandidates.push(transaction.orderId);
-            if (typeof transaction.orderId === 'string' && ObjectId.isValid(transaction.orderId)) {
-              try { orderCandidates.push(new ObjectId(transaction.orderId)); } catch (_) {}
-            }
-          }
           const order = await db.collection('orders').findOne(
-            orderCandidates.length > 0 ? { _id: { $in: orderCandidates } } : { _id: null }
+            { _id: { $in: createIdCandidates(transaction.orderId) } }
           );
 
           return {
@@ -198,16 +170,8 @@ export async function PUT(request) {
     const db = client.db('campusmart');
 
     // Get transaction details - support both string and ObjectId _id
-    const idCandidates = [];
-    if (transactionId) {
-      idCandidates.push(transactionId);
-      if (ObjectId.isValid(transactionId)) {
-        try { idCandidates.push(new ObjectId(transactionId)); } catch (_) {}
-      }
-    }
-
     const transaction = await db.collection('seller_transactions').findOne({
-      _id: { $in: idCandidates }
+      _id: { $in: createIdCandidates(transactionId) }
     });
 
     if (!transaction) {
@@ -257,15 +221,8 @@ export async function PUT(request) {
 
     // Update related order status
     if (status === 'completed') {
-      const orderCandidates = [];
-      if (transaction.orderId) {
-        orderCandidates.push(transaction.orderId);
-        if (typeof transaction.orderId === 'string' && ObjectId.isValid(transaction.orderId)) {
-          try { orderCandidates.push(new ObjectId(transaction.orderId)); } catch (_) {}
-        }
-      }
       await db.collection('orders').updateOne(
-        { _id: { $in: orderCandidates } },
+        { _id: { $in: createIdCandidates(transaction.orderId) } },
         { 
           $set: { 
             sellerPaymentStatus: 'completed',
@@ -276,15 +233,8 @@ export async function PUT(request) {
         }
       );
     } else if (status === 'failed') {
-      const orderCandidates = [];
-      if (transaction.orderId) {
-        orderCandidates.push(transaction.orderId);
-        if (typeof transaction.orderId === 'string' && ObjectId.isValid(transaction.orderId)) {
-          try { orderCandidates.push(new ObjectId(transaction.orderId)); } catch (_) {}
-        }
-      }
       await db.collection('orders').updateOne(
-        { _id: { $in: orderCandidates } },
+        { _id: { $in: createIdCandidates(transaction.orderId) } },
         { 
           $set: { 
             sellerPaymentStatus: 'failed',
