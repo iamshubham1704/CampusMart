@@ -941,6 +941,30 @@
   flex-shrink: 0;
 }
 
+.auto-filter-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  color: #22c55e;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.dark .auto-filter-notice {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.auto-filter-notice .filter-icon {
+  font-size: 0.8rem;
+}
+
 .member-duration {
   margin-top: 0.75rem;
   font-size: 0.75rem;
@@ -2084,6 +2108,11 @@
     font-size: 0.75rem;
   }
 
+  .auto-filter-notice {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
   .categorySection h3 {
     font-size: 1rem;
   }
@@ -2242,6 +2271,11 @@
   .welcomeMessage .college-info {
     padding: 0.5rem;
     font-size: 0.7rem;
+  }
+
+  .auto-filter-notice {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.65rem;
   }
 
   .categorySection h3 {

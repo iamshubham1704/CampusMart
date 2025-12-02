@@ -587,56 +587,11 @@ const BuyerDashboard = () => {
 
   // Available locations for dropdown
   const availableLocations = [
-    "Maharaja Agrasen Institute of Technology (MAIT)",
-    "Indian Institute of Technology Delhi (IIT Delhi)",
-    "Delhi Technological University (DTU)",
-    "Netaji Subhas University of Technology (NSUT)",
-    "Indraprastha Institute of Information Technology Delhi (IIIT Delhi)",
-    "Jamia Millia Islamia - Faculty of Engineering and Technology",
-    "Guru Tegh Bahadur Institute of Technology (GTBIT)",
-    "Bharati Vidyapeeth’s College of Engineering",
-    "Bhagwan Parshuram Institute of Technology (BPIT)",
-    "Maharaja Surajmal Institute of Technology (MSIT)",
-    "Bhaskaracharya College of Applied Sciences",
-    "Acharya Narendra Dev College",
-    "Cluster Innovation Centre (CIC), University of Delhi",
-    "Faculty of Technology, University of Delhi",
-    "Ambedkar Institute of Technology",
-    "School of Planning and Architecture (SPA), Delhi",
-    "Indira Gandhi Delhi Technical University for Women (IGDTUW)",
-    "Amity School of Engineering & Technology, Delhi",
-    "Jamia Hamdard - School of Engineering Science & Technology",
-    "Guru Premsukh Memorial College of Engineering",
-    "National Institute of Technology Delhi (NIT Delhi)",
-    "University School of Biotechnology",
-    "University School of Chemical Technology",
-    "University School of Information Technology",
-    "University School of Automation and Robotics",
-    "Dr. Akhilesh Das Gupta Institute of Professional Studies",
-    "CBP Government Engineering College",
-    "Govind Ballabh Pant Engineering College",
-    "Delhi Institute of Tool Engineering",
-    "Sushant School of Art and Architecture",
-    "TVB School of Habitat Studies",
-    "Vastu Kala Academy",
-    "HMR Institute of Technology & Management",
-    "Northern India Engineering College",
-    "Fairfield Institute of Management and Technology",
-    "Shri Ram College of Commerce (SRCC)",
-    "Hindu College",
-    "Hansraj College",
-    "St. Stephen’s College",
-    "Miranda House",
-    "Lady Shri Ram College for Women (LSR)",
-    "Ramjas College",
-    "Kirori Mal College",
-    "Daulat Ram College",
-    "Indraprastha College for Women (IP College)",
-    "Sri Venkateswara College",
-    "Atma Ram Sanatan Dharma College (ARSD)",
-    "Gargi College",
-    "Maitreyi College",
-    "Delhi College of Arts & Commerce (DCAC)",
+      'Maharaja Agrasen Institute of Technology (MAIT)',
+   'vivekananda Institute of Professional Studies (VIPS)',
+   'Akhilesh Das Gupta Institute of Proffessional Studies (ADGIPS)',
+   'JSS Academy of Technical Education(JSSATE)',
+  
   ];
 
   // Filter locations based on search
@@ -858,9 +813,33 @@ const BuyerDashboard = () => {
       const matchesCondition =
         filters.conditions.length === 0 ||
         filters.conditions.includes(product.condition);
-      // College filtering - only show listings from the selected college
-      const matchesCollege = !selectedCollege || 
-        (product.college && product.college.toLowerCase().includes(selectedCollege.toLowerCase()));
+
+      // College-based filtering logic
+      const locationFilters = (filters.locations || []).map((l) =>
+        (l || "").toLowerCase()
+      );
+      const productCollege = (
+        product.college ||
+        product.location ||
+        ""
+      ).toLowerCase();
+      
+      // Determine if product matches college filter
+      let matchesCollege;
+      if (locationFilters.length > 0) {
+        // Manual filtering - user has selected specific locations
+        matchesCollege = locationFilters.includes(productCollege);
+      } else if (buyer && (buyer.university || buyer.college)) {
+        // Automatic filtering - filter by user's college
+        const userCollege = (buyer.university || buyer.college || "").toLowerCase();
+        matchesCollege = productCollege.includes(userCollege) || 
+                        userCollege.includes(productCollege) ||
+                        productCollege === "" || // Show products without college info
+                        userCollege === ""; // Show all if user has no college info
+      } else {
+        // No college info available - show all products
+        matchesCollege = true;
+      }
 
       return (
         matchesSearch &&
@@ -1449,6 +1428,12 @@ const BuyerDashboard = () => {
                   {buyer.year && <span>• {buyer.year} year</span>}
 
                 </div>
+                {(buyer.university || buyer.college) && filters.locations.length === 0 && (
+                  <div className="auto-filter-notice">
+                    <span className="filter-icon">🎯</span>
+                    <span>Showing items from your college</span>
+                  </div>
+                )}
                 <div className="member-duration">
                   Member since{" "}
                   {new Date(buyer.createdAt).toLocaleDateString("en-US", {
