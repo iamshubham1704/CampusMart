@@ -3,7 +3,7 @@
 
 const colleges = [
   'Maharaja Agrasen Institute of Technology (MAIT)',
-   'vivekananda Institute of Professional Studies (VIPS)',
+   'Vivekananda Institute of Professional Studies (VIPS)',
    'Akhilesh Das Gupta Institute of Proffessional Studies (ADGIPS)',
    'JSS Academy of Technical Education(JSSATE)',
 ];
