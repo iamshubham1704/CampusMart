@@ -24,12 +24,51 @@ export const CollegeProvider = ({ children }) => {
       if (savedCollege) {
         setSelectedCollege(savedCollege);
       } else {
-        // Show modal if no college is selected
-        setShowCollegeModal(true);
+        // Try to get college from user profile instead of showing modal
+        getCollegeFromUserProfile();
       }
       setLoading(false);
     }
   }, []);
+
+  // Function to get college from user profile
+  const getCollegeFromUserProfile = async () => {
+    try {
+      // Try to get token from localStorage
+      const buyerToken = localStorage.getItem('buyerToken');
+      const sellerToken = localStorage.getItem('sellerToken');
+      const authToken = localStorage.getItem('auth-token');
+      
+      const token = buyerToken || sellerToken || authToken;
+      
+      if (token) {
+        // Fetch user profile to get college
+        const response = await fetch('/api/user/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.college) {
+            const userCollege = data.data.college;
+            setSelectedCollege(userCollege);
+            localStorage.setItem('selectedCollege', userCollege);
+            return userCollege;
+          }
+        }
+      }
+      
+      // If no college found in profile, don't show modal - just don't set a college
+      return null;
+    } catch (error) {
+      console.error('Error fetching college from profile:', error);
+      return null;
+    }
+  };
 
   // Save college selection to localStorage
   const handleSetSelectedCollege = (college) => {

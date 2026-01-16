@@ -567,7 +567,7 @@ if (error && (error.includes('Authentication failed') || error.includes('Please 
                   placeholder="Enter your college"
                 />
               ) : (
-                <div className={styles.formValue}>{profileData.college || 'Not provided'}</div>
+                <div className={styles.formValue}>{profileData.college || profileData.university || 'Not provided'}</div>
               )}
             </div>
 

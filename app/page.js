@@ -42,7 +42,6 @@ import {
   Building2,
 } from 'lucide-react';
 import { useCollege } from '../components/contexts/CollegeContext';
-import CollegeSelectionModal from '../components/CollegeSelectionModal';
 
 const CampusMart = () => {
   const router = useRouter();
@@ -597,8 +596,6 @@ const CampusMart = () => {
 
   return (
     <>
-      {/* College Selection Modal */}
-      <CollegeSelectionModal />
       
       {/* Interactive Background Elements - Only on desktop */}
       {!isMobile && (

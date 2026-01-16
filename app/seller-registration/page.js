@@ -118,6 +118,13 @@ const UnifiedSellerRegistration = () => {
 
       setSuccess('Registration successful! Redirecting...');
       
+      // Set the selected college in localStorage to persist the selection
+      if (registrationData.college) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('selectedCollege', registrationData.college);
+        }
+      }
+      
       // Immediate redirect to login page
       router.push('/seller-login');
     } catch (err) {

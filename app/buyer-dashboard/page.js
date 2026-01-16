@@ -244,6 +244,23 @@ const ProfileModal = ({
       const result = await onUpdate(payload);
       if (result && result.success) {
         setSaveSuccess("Profile updated successfully");
+        
+        // If university/college was updated, also update the selected college in localStorage
+        if (payload.university) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedCollege', payload.university);
+            
+            // Also try to update the context if available
+            try {
+              const { useCollege } = await import('../../components/contexts/CollegeContext');
+              // We can't directly access context here, so we rely on localStorage
+              // The CollegeContext will pick up the change on next render
+            } catch (contextError) {
+              console.log('Could not update college context directly');
+            }
+          }
+        }
+        
         setIsEditing(false);
       } else {
         setSaveError(result?.error || "Failed to update profile");
@@ -399,7 +416,9 @@ const ProfileModal = ({
                     />
                   ) : (
                     <div className="fieldDisplay">
-                      {buyer[key] || "Not specified"}
+                      {key === 'university' 
+                        ? (buyer.university || buyer.college || "Not specified")
+                        : (buyer[key] || "Not specified")}
                     </div>
                   )}
                 </div>

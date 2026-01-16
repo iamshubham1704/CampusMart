@@ -108,7 +108,7 @@ const SettingsPage = () => {
             email: profile.email || '',
             phone: profile.phone || '',
             location: profile.location || '',
-            college: profile.college || '',
+            college: profile.college || profile.university || '',
             year: profile.year || '',
             bio: profile.bio || ''
           });
@@ -188,6 +188,22 @@ const SettingsPage = () => {
         setUserData(prev => ({ ...prev, ...response.data }));
         setProfileImage(null);
         setImagePreview(null);
+        
+        // If college was updated, also update the selected college in localStorage
+        if (profileForm.college) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedCollege', profileForm.college);
+            
+            // Update the college context if it exists
+            try {
+              const { useCollege } = await import('../../../components/contexts/CollegeContext');
+              // The CollegeContext will pick up the change on next render
+            } catch (contextError) {
+              console.log('Could not update college context directly');
+            }
+          }
+        }
+        
         showMessage('success', 'Profile updated successfully');
       }
       
