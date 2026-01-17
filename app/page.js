@@ -1309,8 +1309,8 @@ const CampusMart = () => {
                 </div>
               </div>
               <div className="social-media-zeberai">
-                <a href="#" className="social-icon-zeberai" aria-label="Twitter">
-                  <Twitter size={18} />
+                <a href="#" className="social-icon-zeberai" aria-label="X">
+                  <X size={18} />
                 </a>
                 <a href="#" className="social-icon-zeberai" aria-label="LinkedIn">
                   <Linkedin size={18} />

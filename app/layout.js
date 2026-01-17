@@ -1,4 +1,4 @@
-import styles from './global.css';
+import './global.css';
 import Script from "next/script";
 import ClientProviders from '../components/ClientProviders';
 
@@ -41,7 +41,7 @@ export default function RootLayout({ children }) {
           strategy="afterInteractive"
         />
       </head>
-      <body className={styles.root}>
+      <body>
         <ClientProviders>
           {children}
         </ClientProviders>
