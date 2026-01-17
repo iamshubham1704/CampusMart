@@ -169,7 +169,7 @@ export default function AdminLogin() {
         }}>
           Don't have an admin account?{' '}
           <Link 
-            href="/admin-register"
+            href="/admin-registration"
             style={{
               color: '#007bff',
               textDecoration: 'none'
