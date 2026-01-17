@@ -1,12 +1,12 @@
 // app/api/buyer/update-profile/route.js
 import { NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/auth';
 import { authOptions } from '../../auth/[...nextauth]/route.js';
 
 export async function PUT(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
